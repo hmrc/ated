@@ -17,8 +17,10 @@
 package models
 
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
-import play.api.libs.json.Json
+import play.api.libs.json._
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import play.api.libs.functional.syntax._
+
 
 
 case class PropertyDetailsAddress(line_1: String, line_2: String, line_3: Option[String], line_4: Option[String],
@@ -61,7 +63,44 @@ case class PropertyDetailsValue(anAcquisition: Option[Boolean] = None,
                                )
 
 object PropertyDetailsValue {
-  implicit val formats = Json.format[PropertyDetailsValue]
+
+  implicit val propertyDetailsValueReads: Reads[PropertyDetailsValue] = (
+    (JsPath \ "anAcquisition").readNullable[Boolean] and
+      (JsPath \ "isPropertyRevalued").readNullable[Boolean] and
+      (JsPath \ "revaluedValue").readNullable[BigDecimal] and
+      (JsPath \ "revaluedDate").readNullable[LocalDate] and
+      (JsPath \ "partAcqDispDate").readNullable[LocalDate] and
+      (JsPath \ "isOwnedBeforePolicyYear").readNullable[Boolean].orElse((JsPath \ "isOwnedBefore2012").readNullable[Boolean]) and
+      (JsPath \ "ownedBeforePolicyYearValue").readNullable[BigDecimal].orElse((JsPath \ "ownedBefore2012Value").readNullable[BigDecimal]) and
+      (JsPath \ "isNewBuild").readNullable[Boolean] and
+      (JsPath \ "newBuildValue").readNullable[BigDecimal] and
+      (JsPath \ "newBuildDate").readNullable[LocalDate] and
+      (JsPath \ "localAuthRegDate").readNullable[LocalDate] and
+      (JsPath \ "notNewBuildValue").readNullable[BigDecimal] and
+      (JsPath \ "notNewBuildDate").readNullable[LocalDate] and
+      (JsPath \ "isValuedByAgent").readNullable[Boolean] and
+      (JsPath \ "hasValueChanged").readNullable[Boolean]
+    )(PropertyDetailsValue.apply _)
+
+  implicit val propertyDetailsValueWrites: OWrites[PropertyDetailsValue] = (
+    (JsPath \ "anAcquisition").writeNullable[Boolean] and
+      (JsPath \ "isPropertyRevalued").writeNullable[Boolean] and
+      (JsPath \ "revaluedValue").writeNullable[BigDecimal] and
+      (JsPath \ "revaluedDate").writeNullable[LocalDate] and
+      (JsPath \ "partAcqDispDate").writeNullable[LocalDate] and
+      (JsPath \ "isOwnedBeforePolicyYear").writeNullable[Boolean] and
+      (JsPath \ "ownedBeforePolicyYearValue").writeNullable[BigDecimal] and
+      (JsPath \ "isNewBuild").writeNullable[Boolean] and
+      (JsPath \ "newBuildValue").writeNullable[BigDecimal] and
+      (JsPath \ "newBuildDate").writeNullable[LocalDate] and
+      (JsPath \ "localAuthRegDate").writeNullable[LocalDate] and
+      (JsPath \ "notNewBuildValue").writeNullable[BigDecimal] and
+      (JsPath \ "notNewBuildDate").writeNullable[LocalDate] and
+      (JsPath \ "isValuedByAgent").writeNullable[Boolean] and
+      (JsPath \ "hasValueChanged").writeNullable[Boolean]
+    )(unlift(PropertyDetailsValue.unapply _))
+
+  implicit val formats = OFormat(propertyDetailsValueReads, propertyDetailsValueWrites)
 }
 
 case class PropertyDetailsAcquisition(anAcquisition: Option[Boolean] = None)
