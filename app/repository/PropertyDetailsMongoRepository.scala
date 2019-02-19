@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,17 @@
 package repository
 
 import metrics.{Metrics, MetricsEnum}
-import models.PropertyDetails
+import models.{DisposeLiabilityReturn, PropertyDetails}
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.Logger
 import play.modules.reactivemongo.MongoDbConnection
+import reactivemongo.api.Cursor.FailOnError
 import reactivemongo.api.DB
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.mongo.{ReactiveRepository, Repository}
+import uk.gov.hmrc.mongo.ReactiveRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -43,7 +44,7 @@ case object PropertyDetailsDeleted extends PropertyDetailsDelete
 
 case object PropertyDetailsDeleteError extends PropertyDetailsDelete
 
-trait PropertyDetailsMongoRepository extends Repository[PropertyDetails, BSONObjectID] {
+trait PropertyDetailsMongoRepository extends ReactiveRepository[PropertyDetails, BSONObjectID] {
 
   def cachePropertyDetails(propertyDetails: PropertyDetails): Future[PropertyDetailsCache]
 
@@ -108,7 +109,8 @@ class PropertyDetailsReactiveMongoRepository(implicit mongo: () => DB)
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchPropDetails)
     val query = BSONDocument("atedRefNo" -> atedRefNo)
 
-    val result = collection.find(query).cursor[PropertyDetails]().collect[Seq]()
+    //TODO: Replace with find from ReactiveRepository
+    val result:Future[Seq[PropertyDetails]] = collection.find(query).cursor[PropertyDetails]().collect[Seq](maxDocs = -1, err = FailOnError[Seq[PropertyDetails]]())
 
     result onComplete {
       _ => timerContext.stop()
@@ -122,7 +124,8 @@ class PropertyDetailsReactiveMongoRepository(implicit mongo: () => DB)
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchPropDetails)
     val query = BSONDocument("atedRefNo" -> atedRefNo, "id" -> id)
 
-    val result = collection.find(query).cursor[PropertyDetails]().collect[Seq]()
+    //TODO: Replace with find from ReactiveRepository
+    val result:Future[Seq[PropertyDetails]] = collection.find(query).cursor[PropertyDetails]().collect[Seq](maxDocs = -1, err = FailOnError[Seq[PropertyDetails]]())
 
     result onComplete {
       _ => timerContext.stop()
