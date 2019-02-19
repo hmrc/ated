@@ -18,7 +18,8 @@ package connectors
 
 import config.WSHttp
 import models.SendEmailRequest
-import play.api.Logger
+import play.api.Mode.Mode
+import play.api.{Configuration, Logger, Play}
 import play.api.http.Status._
 import play.api.libs.json.Json
 import uk.gov.hmrc.http._
@@ -64,4 +65,8 @@ object EmailConnector extends EmailConnector {
   // $COVERAGE-OFF$
   val http: CoreGet with CorePost with CorePut = WSHttp
   // $COVERAGE-OFF$
+
+  override protected def mode: Mode = Play.current.mode
+
+  override protected def runModeConfiguration: Configuration = Play.current.configuration
 }

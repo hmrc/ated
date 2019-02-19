@@ -19,8 +19,10 @@ package connectors
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import play.api.Mode.Mode
+import play.api.{Configuration, Play}
 import play.api.libs.json.JsValue
 import play.api.test.Helpers._
 import uk.gov.hmrc.http._
@@ -34,6 +36,9 @@ class EmailConnectorSpec extends PlaySpec with OneServerPerSuite with MockitoSug
 
   object TestEmailConnector extends EmailConnector {
     val http: CoreGet with CorePost with CorePut = mockWSHttp
+    override protected def mode: Mode = Play.current.mode
+
+    override protected def runModeConfiguration: Configuration = Play.current.configuration
   }
 
   override def beforeEach() {

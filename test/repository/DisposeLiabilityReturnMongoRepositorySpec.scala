@@ -19,7 +19,7 @@ package repository
 import builders.ChangeLiabilityReturnBuilder
 import models.DisposeLiabilityReturn
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
 import reactivemongo.api.DB
 import uk.gov.hmrc.mongo.{Awaiting, MongoSpecSupport}

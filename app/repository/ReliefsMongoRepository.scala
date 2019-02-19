@@ -17,16 +17,17 @@
 package repository
 
 import metrics.{Metrics, MetricsEnum}
-import models.ReliefsTaxAvoidance
+import models.{DisposeLiabilityReturn, ReliefsTaxAvoidance}
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.Logger
 import play.modules.reactivemongo.MongoDbConnection
+import reactivemongo.api.Cursor.FailOnError
 import reactivemongo.api.DB
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.mongo.{ReactiveRepository, Repository}
+import uk.gov.hmrc.mongo.ReactiveRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -39,7 +40,7 @@ sealed trait ReliefDelete
 case object ReliefDeleted extends ReliefDelete
 case object ReliefDeletedError extends ReliefDelete
 
-trait ReliefsMongoRepository extends Repository[ReliefsTaxAvoidance, BSONObjectID] {
+trait ReliefsMongoRepository extends ReactiveRepository[ReliefsTaxAvoidance, BSONObjectID] {
 
   def cacheRelief(reliefs: ReliefsTaxAvoidance): Future[ReliefCached]
 
@@ -99,7 +100,9 @@ class ReliefsReactiveMongoRepository(implicit mongo: () => DB)
   def fetchReliefs(atedRefNo: String): Future[Seq[ReliefsTaxAvoidance]] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchRelief)
     val query = BSONDocument("atedRefNo" -> atedRefNo)
-    val result = collection.find(query).cursor[ReliefsTaxAvoidance]().collect[Seq]()
+    //TODO: Replace with find from ReactiveRepository
+    val result:Future[Seq[ReliefsTaxAvoidance]] = collection.find(query).cursor[ReliefsTaxAvoidance]().collect[Seq](maxDocs = -1, err = FailOnError[Seq[ReliefsTaxAvoidance]]())
+
     result onComplete {
       _ => timerContext.stop()
     }
