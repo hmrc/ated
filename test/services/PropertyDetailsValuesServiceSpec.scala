@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -243,8 +243,8 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       newProp.get.value.isDefined must be(true)
       val newValue = newProp.get.value.get
       newValue.anAcquisition must be(Some(true))
-      newValue.isOwnedBefore2012.isDefined must be(true)
-      newValue.ownedBefore2012Value.isDefined must be(true)
+      newValue.isOwnedBeforePolicyYear.isDefined must be(true)
+      newValue.ownedBeforePolicyYearValue.isDefined must be(true)
       newValue.isPropertyRevalued.isDefined must be(true)
       newValue.revaluedValue.isDefined must be(true)
       newValue.revaluedDate.isDefined must be(true)
@@ -314,8 +314,8 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       newProp.get.value.isDefined must be(true)
       val newValue = newProp.get.value.get
       newValue.anAcquisition must be(Some(true))
-      newValue.isOwnedBefore2012 must be(Some(true))
-      newValue.ownedBefore2012Value must be(Some(BigDecimal(333.22)))
+      newValue.isOwnedBeforePolicyYear must be(Some(true))
+      newValue.ownedBeforePolicyYearValue must be(Some(BigDecimal(333.22)))
 
       newValue.isPropertyRevalued.isDefined must be(true)
       newValue.revaluedValue.isDefined must be(true)
@@ -353,8 +353,8 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
 
       newProp.get.value.isDefined must be(true)
       val newValue = newProp.get.value.get
-      newValue.isOwnedBefore2012 must be(Some(false))
-      newValue.ownedBefore2012Value must be(Some(BigDecimal(333.22)))
+      newValue.isOwnedBeforePolicyYear must be(Some(false))
+      newValue.ownedBeforePolicyYearValue must be(Some(BigDecimal(333.22)))
     }
 
   }
@@ -390,8 +390,8 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       newProp.get.value.isDefined must be(true)
       val newValue = newProp.get.value.get
       newValue.anAcquisition must be(Some(true))
-      newValue.isOwnedBefore2012.isDefined must be(true)
-      newValue.ownedBefore2012Value.isDefined must be(true)
+      newValue.isOwnedBeforePolicyYear.isDefined must be(true)
+      newValue.ownedBeforePolicyYearValue.isDefined must be(true)
       newValue.isPropertyRevalued.isDefined must be(true)
       newValue.revaluedValue.isDefined must be(true)
       newValue.revaluedDate.isDefined must be(true)
@@ -433,8 +433,8 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       newProp.get.value.isDefined must be(true)
       val newValue = newProp.get.value.get
       newValue.anAcquisition must be(Some(true))
-      newValue.isOwnedBefore2012.isDefined must be(true)
-      newValue.ownedBefore2012Value.isDefined must be(true)
+      newValue.isOwnedBeforePolicyYear.isDefined must be(true)
+      newValue.ownedBeforePolicyYearValue.isDefined must be(true)
       newValue.isPropertyRevalued.isDefined must be(true)
       newValue.revaluedValue.isDefined must be(true)
       newValue.revaluedDate.isDefined must be(true)
@@ -476,8 +476,8 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       newProp.get.value.isDefined must be(true)
       val newValue = newProp.get.value.get
       newValue.anAcquisition must be(Some(true))
-      newValue.isOwnedBefore2012.isDefined must be(true)
-      newValue.ownedBefore2012Value.isDefined must be(true)
+      newValue.isOwnedBeforePolicyYear.isDefined must be(true)
+      newValue.ownedBeforePolicyYearValue.isDefined must be(true)
       newValue.isPropertyRevalued.isDefined must be(true)
       newValue.revaluedValue.isDefined must be(true)
       newValue.revaluedDate.isDefined must be(true)
@@ -514,8 +514,8 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       newProp.get.value.isDefined must be(true)
       val newValue = newProp.get.value.get
       newValue.anAcquisition must be(Some(true))
-      newValue.isOwnedBefore2012.isDefined must be(true)
-      newValue.ownedBefore2012Value.isDefined must be(true)
+      newValue.isOwnedBeforePolicyYear.isDefined must be(true)
+      newValue.ownedBeforePolicyYearValue.isDefined must be(true)
       newValue.isNewBuild.isDefined must be(true)
       newValue.newBuildValue.isDefined must be(true)
       newValue.newBuildDate.isDefined must be(true)

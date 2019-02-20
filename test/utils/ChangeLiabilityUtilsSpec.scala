@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -245,16 +245,25 @@ class ChangeLiabilityUtilsSpec extends PlaySpec with OneServerPerSuite {
       "return (Some(valuationDate),Some(valueToUse)), due to getValueAndDate - anAcquisition = false & isOwnedBefore2012 = true" in {
         val cL1 = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(2015, "123456789012")
         val value1 = ChangeLiabilityReturnBuilder.generateLiabilityValueDetails(periodKey = 2015)
-        val v2 = value1.copy(hasValueChanged = Some(true), anAcquisition = Some(false), isOwnedBefore2012 = Some(true), ownedBefore2012Value = Some(BigDecimal(1500000)))
+        val v2 = value1.copy(hasValueChanged = Some(true), anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(true), ownedBeforePolicyYearValue = Some(BigDecimal(1500000)))
         val cL2 = cL1.copy(value = Some(v2))
         val result1 = ChangeLiabilityUtils.changeLiabilityCalculated(cL2, None)
         result1.valuationDateToUse must be(Some(new LocalDate("2012-04-01")))
       }
 
+      "return (Some(valuationDate),Some(valueToUse)), due to getValueAndDate - anAcquisition = false & isOwnedBeforePolicyYear2017 = true" in {
+        val cL1 = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(2019, "123456789012")
+        val value1 = ChangeLiabilityReturnBuilder.generateLiabilityValueDetails(periodKey = 2019)
+        val v2 = value1.copy(hasValueChanged = Some(true), anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(true), ownedBeforePolicyYearValue = Some(BigDecimal(1500000)))
+        val cL2 = cL1.copy(value = Some(v2))
+        val result1 = ChangeLiabilityUtils.changeLiabilityCalculated(cL2, None)
+        result1.valuationDateToUse must be(Some(new LocalDate("2017-04-01")))
+      }
+
       "return (Some(valuationDate),Some(valueToUse)), due to getValueAndDate - anAcquisition = false & isOwnedBefore2012 = false, isNewBuild = true" in {
         val cL1 = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(2015, "123456789012")
         val value1 = ChangeLiabilityReturnBuilder.generateLiabilityValueDetails(periodKey = 2015)
-        val v2 = value1.copy(hasValueChanged = Some(true), anAcquisition = Some(false), isOwnedBefore2012 = Some(false),
+        val v2 = value1.copy(hasValueChanged = Some(true), anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(false),
           isNewBuild = Some(true), newBuildValue = Some(BigDecimal(1500000)), newBuildDate = Some(new LocalDate("2015-06-06")),
           localAuthRegDate = Some(new LocalDate("2015-05-05")))
         val cL2 = cL1.copy(value = Some(v2))
@@ -265,7 +274,7 @@ class ChangeLiabilityUtilsSpec extends PlaySpec with OneServerPerSuite {
       "return (Some(valuationDate),Some(valueToUse)), due to getValueAndDate - anAcquisition = false & isOwnedBefore2012 = false, isNewBuild = false" in {
         val cL1 = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(2015, "123456789012")
         val value1 = ChangeLiabilityReturnBuilder.generateLiabilityValueDetails(periodKey = 2016)
-        val v2 = value1.copy(hasValueChanged = Some(true), anAcquisition = Some(false), isOwnedBefore2012 = Some(false), isNewBuild = Some(false), notNewBuildValue = Some(BigDecimal(1500000)), notNewBuildDate = Some(new LocalDate("2015-06-06")))
+        val v2 = value1.copy(hasValueChanged = Some(true), anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(false), isNewBuild = Some(false), notNewBuildValue = Some(BigDecimal(1500000)), notNewBuildDate = Some(new LocalDate("2015-06-06")))
         val cL2 = cL1.copy(value = Some(v2))
         val result1 = ChangeLiabilityUtils.changeLiabilityCalculated(cL2, None)
         result1.valuationDateToUse must be(Some(new LocalDate("2015-06-06")))
@@ -349,7 +358,7 @@ class ChangeLiabilityUtilsSpec extends PlaySpec with OneServerPerSuite {
           periodKey = 2015,
           addressProperty = PropertyDetailsAddress("addr1", "addr2", None, None, None),
           value = Some(
-            PropertyDetailsValue(hasValueChanged = Some(true), ownedBefore2012Value = Some(BigDecimal(123.45)), isOwnedBefore2012 = Some(true))),
+            PropertyDetailsValue(hasValueChanged = Some(true), ownedBeforePolicyYearValue = Some(BigDecimal(123.45)), isOwnedBeforePolicyYear = Some(true))),
           formBundleReturn= Some(formBundleReturn)
         )
 
@@ -364,7 +373,7 @@ class ChangeLiabilityUtilsSpec extends PlaySpec with OneServerPerSuite {
           periodKey = 2015,
           addressProperty = PropertyDetailsAddress("addr1", "addr2", None, None, None),
           value = Some(
-            PropertyDetailsValue(hasValueChanged =None, ownedBefore2012Value = Some(BigDecimal(123.45)), isOwnedBefore2012 = Some(true))),
+            PropertyDetailsValue(hasValueChanged =None, ownedBeforePolicyYearValue = Some(BigDecimal(123.45)), isOwnedBeforePolicyYear = Some(true))),
           formBundleReturn= Some(formBundleReturn)
         )
 

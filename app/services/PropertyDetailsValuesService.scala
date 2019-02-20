@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,10 +42,10 @@ trait PropertyDetailsValuesService extends ReliefConstants {
           val updatedValued = foundPropertyDetails.value match {
             case Some(x) =>
               foundPropertyDetails.value.map(_.copy(
-                isOwnedBefore2012 = updatedDetails.isOwnedBefore2012,
-                ownedBefore2012Value = updatedDetails.ownedBefore2012Value
+                isOwnedBeforePolicyYear = updatedDetails.isOwnedBeforePolicyYear,
+                ownedBeforePolicyYearValue = updatedDetails.ownedBeforePolicyYearValue
               ))
-            case None => Some(PropertyDetailsValue(isOwnedBefore2012 = updatedDetails.isOwnedBefore2012, ownedBefore2012Value = updatedDetails.ownedBefore2012Value))
+            case None => Some(PropertyDetailsValue(isOwnedBeforePolicyYear = updatedDetails.isOwnedBeforePolicyYear, ownedBeforePolicyYearValue = updatedDetails.ownedBeforePolicyYearValue))
           }
           foundPropertyDetails.copy(value = updatedValued, calculated = None)
       }

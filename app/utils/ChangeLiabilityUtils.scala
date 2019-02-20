@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,7 @@ object ChangeLiabilityUtils extends ReliefConstants {
   private def getChangeLiabilityValuationDate(changeLiability: PropertyDetails, acquisitionDateToUse: Option[LocalDate]): Option[LocalDate] = {
     changeLiability.value.flatMap(_.hasValueChanged ) match {
       case Some(false) => changeLiability.formBundleReturn.flatMap(_.dateOfAcquisition)
-      case Some(true)  => getValuationDate(changeLiability.value, acquisitionDateToUse)
+      case Some(true)  => getValuationDate(changeLiability.value, acquisitionDateToUse, changeLiability.periodKey)
       case _ => None
     }
   }
@@ -122,7 +122,7 @@ object ChangeLiabilityUtils extends ReliefConstants {
     changeLiability.value.flatMap(_.hasValueChanged ) match {
       case Some(false) => getEarliestValue(changeLiability.formBundleReturn.map(_.lineItem))
       case Some(true) =>
-          PropertyDetailsUtils.getInitialValueForSubmission(changeLiability.value)
+          PropertyDetailsUtils.getInitialValueForSubmission(changeLiability.value, changeLiability.periodKey)
       case _ => None
     }
   }
@@ -132,7 +132,7 @@ object ChangeLiabilityUtils extends ReliefConstants {
       case None => (None, None)
       case Some(value) =>
         value.hasValueChanged match {
-          case Some(true) => PropertyDetailsUtils.getAcquisitionValueAndDate(value)
+          case Some(true) => PropertyDetailsUtils.getAcquisitionValueAndDate(value, changeLiability.periodKey)
           case Some(false) => (changeLiability.formBundleReturn.flatMap(_.valueAtAcquisition), changeLiability.formBundleReturn.flatMap(_.dateOfAcquisition))
           case None => (None, None)
         }

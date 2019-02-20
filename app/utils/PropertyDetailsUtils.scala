@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,9 @@ import uk.gov.hmrc.http.InternalServerException
 
 object PropertyDetailsUtils extends ReliefConstants {
 
+  val _2012ValuationPolicyDate = Some(new LocalDate("2012-04-01"))
+  val _2017ValuationPolicyDate = Some(new LocalDate("2017-04-01"))
+
   def propertyDetailsCalculated(propertyDetails: PropertyDetails): PropertyDetailsCalculated = {
 
     def getProfessionalValuation(propertyDetails: PropertyDetails): Option[Boolean] = {
@@ -32,14 +35,14 @@ object PropertyDetailsUtils extends ReliefConstants {
       }
     }
 
-    val valueToUse = getInitialValueForSubmission(propertyDetails.value)
-    val (acquistionValueToUse, acquistionDateToUse) = getAcquisitionData(propertyDetails.value)
+    val valueToUse = getInitialValueForSubmission(propertyDetails.value, propertyDetails.periodKey)
+    val (acquistionValueToUse, acquistionDateToUse) = getAcquisitionData(propertyDetails.value, propertyDetails.periodKey)
     val (lineItemValue, lineItemUpdateTuple) = getLineItemValues(propertyDetails.value, valueToUse)
 
     PropertyDetailsCalculated(
       liabilityPeriods = createLiabilityPeriods(propertyDetails.periodKey, propertyDetails.period, lineItemValue, lineItemUpdateTuple),
       reliefPeriods = createReliefPeriods(propertyDetails.period, lineItemValue, lineItemUpdateTuple),
-      valuationDateToUse = getValuationDate(propertyDetails.value, acquistionDateToUse),
+      valuationDateToUse = getValuationDate(propertyDetails.value, acquistionDateToUse, propertyDetails.periodKey),
       acquistionValueToUse = acquistionValueToUse,
       acquistionDateToUse = acquistionDateToUse,
       professionalValuation = getProfessionalValuation(propertyDetails)
@@ -47,7 +50,7 @@ object PropertyDetailsUtils extends ReliefConstants {
 
   }
 
-  def createLiabilityPeriods(periodKey: Int, propertyDetailsPeriod: Option[PropertyDetailsPeriod], initialValue: BigDecimal, updateValue : Option[(LocalDate, BigDecimal)] = None): Seq[CalculatedPeriod] = {
+  def createLiabilityPeriods(periodKey: Int, propertyDetailsPeriod: Option[PropertyDetailsPeriod], initialValue: BigDecimal, updateValue: Option[(LocalDate, BigDecimal)] = None): Seq[CalculatedPeriod] = {
     propertyDetailsPeriod.map { periodVal =>
       val totalPeriods = periodVal.liabilityPeriods.size + periodVal.reliefPeriods.size
       if (periodVal.isFullPeriod == Some(true) && totalPeriods == 0) {
@@ -62,27 +65,27 @@ object PropertyDetailsUtils extends ReliefConstants {
 
   }
 
-  def createReliefPeriods(propertyDetailsPeriod: Option[PropertyDetailsPeriod], initialValue: BigDecimal, updateValue : Option[(LocalDate, BigDecimal)] = None): Seq[CalculatedPeriod] = {
+  def createReliefPeriods(propertyDetailsPeriod: Option[PropertyDetailsPeriod], initialValue: BigDecimal, updateValue: Option[(LocalDate, BigDecimal)] = None): Seq[CalculatedPeriod] = {
     propertyDetailsPeriod.map { periodVal =>
       periodVal.reliefPeriods.flatMap(createCalculatedPeriod(_, initialValue, updateValue))
     }.getOrElse(Nil)
 
   }
 
-  private def createCalculatedPeriod(lineItem : LineItem, initialValue: BigDecimal, updateValue : Option[(LocalDate, BigDecimal)] = None) = {
+  private def createCalculatedPeriod(lineItem: LineItem, initialValue: BigDecimal, updateValue: Option[(LocalDate, BigDecimal)] = None) = {
     updateValue match {
       case Some((valueDate, value)) if (!lineItem.startDate.isBefore(valueDate)) =>
-        List (
-          CalculatedPeriod(value, lineItem.startDate, lineItem.endDate, lineItem.lineItemType, lineItem.description )
+        List(
+          CalculatedPeriod(value, lineItem.startDate, lineItem.endDate, lineItem.lineItemType, lineItem.description)
         )
       case Some((valueDate, value)) if (lineItem.startDate.isBefore(valueDate) && lineItem.endDate.isAfter(valueDate)) => {
-        List (
+        List(
           CalculatedPeriod(initialValue, lineItem.startDate, valueDate.plusDays(-1), lineItem.lineItemType, lineItem.description),
           CalculatedPeriod(value, valueDate, lineItem.endDate, lineItem.lineItemType, lineItem.description)
         )
       }
       case _ =>
-        List (
+        List(
           CalculatedPeriod(initialValue, lineItem.startDate, lineItem.endDate, lineItem.lineItemType, lineItem.description)
         )
     }
@@ -105,42 +108,46 @@ object PropertyDetailsUtils extends ReliefConstants {
     (firstDate, secondDate) match {
       case (Some(x), None) => Some(x)
       case (None, Some(y)) => Some(y)
-      case (Some(x), Some(y)) if (x.isBefore(y)) => Some(y)
-      case (Some(x), Some(y)) if (!x.isBefore(y)) => Some(x)
+      case (Some(x), Some(y)) if x.isBefore(y) => Some(y)
+      case (Some(x), Some(y)) if !x.isBefore(y) => Some(x)
       case _ => None
     }
   }
 
-  def getValuationDate(propertyDetailsValue: Option[PropertyDetailsValue], acquistionDateToUse: Option[LocalDate]): Option[LocalDate] = {
+  def getValuationDate(propertyDetailsValue: Option[PropertyDetailsValue], acquistionDateToUse: Option[LocalDate], periodKey: Int): Option[LocalDate] = {
 
     def getBasicValuationDate(value: PropertyDetailsValue): Option[LocalDate] = {
-      (value.isOwnedBefore2012, value.isNewBuild) match {
-        case (Some(true), _) => Some(new LocalDate("2012-04-01"))
-        case (Some(false), Some(true)) => calculateEarliestDate(value.newBuildDate, value.localAuthRegDate)
-        case (Some(false), Some(false)) => value.notNewBuildDate
+      val ownedBeforeData = PropertyDetailsOwnedBefore(value.isOwnedBeforePolicyYear, value.ownedBeforePolicyYearValue)
+      (ownedBeforeData.policyYear(periodKey), value.isNewBuild) match {
+        case (IsOwnedBefore2012, _) => _2012ValuationPolicyDate
+        case (IsOwnedBefore2017, _) => _2017ValuationPolicyDate
+        case (NotOwnedBeforePolicyYear, Some(true)) => calculateEarliestDate(value.newBuildDate, value.localAuthRegDate)
+        case (NotOwnedBeforePolicyYear, Some(false)) => value.notNewBuildDate
         case _ => None
       }
     }
+
     propertyDetailsValue match {
       case None => None
       case Some(value) =>
         (value.isValuedByAgent, value.anAcquisition, value.isPropertyRevalued) match {
-          case (Some(true), Some(true), Some(true)) =>  getLatestDate(acquistionDateToUse, value.revaluedDate)
-          case (Some(true), _, _) =>  acquistionDateToUse
+          case (Some(true), Some(true), Some(true)) => getLatestDate(acquistionDateToUse, value.revaluedDate)
+          case (Some(true), _, _) => acquistionDateToUse
           case (_, Some(true), Some(true)) => value.revaluedDate
-          case _ =>  getBasicValuationDate(value)
+          case _ => getBasicValuationDate(value)
         }
     }
   }
 
-  def getInitialValueForSubmission(propertyDetailsValue: Option[PropertyDetailsValue]): Option[BigDecimal] = {
+  def getInitialValueForSubmission(propertyDetailsValue: Option[PropertyDetailsValue], periodKey: Int): Option[BigDecimal] = {
     propertyDetailsValue match {
       case None => None
       case Some(value) =>
-        (value.isOwnedBefore2012, value.isNewBuild, value.isPropertyRevalued) match {
-          case (Some(true), _, _) => value.ownedBefore2012Value
-          case (Some(false), Some(true), _) => value.newBuildValue
-          case (Some(false), Some(false), _) => value.notNewBuildValue
+        val ownedBefore = PropertyDetailsOwnedBefore(value.isOwnedBeforePolicyYear, value.ownedBeforePolicyYearValue)
+        (ownedBefore.policyYear(periodKey), value.isNewBuild, value.isPropertyRevalued) match {
+          case (IsOwnedBefore2012 | IsOwnedBefore2017, _, _) => value.ownedBeforePolicyYearValue
+          case (NotOwnedBeforePolicyYear, Some(true), _) => value.newBuildValue
+          case (NotOwnedBeforePolicyYear, Some(false), _) => value.notNewBuildValue
           case (_, _, Some(true)) => value.revaluedValue
           case (_, _, Some(false)) => value.revaluedValue
           case _ => None
@@ -149,37 +156,40 @@ object PropertyDetailsUtils extends ReliefConstants {
   }
 
 
-  def getAcquisitionValueAndDate(value: PropertyDetailsValue) : (Option[BigDecimal], Option[LocalDate]) = {
-    (value.isOwnedBefore2012, value.isNewBuild, value.isPropertyRevalued) match {
-      case (Some(true), _, _) => (value.ownedBefore2012Value, Some(new LocalDate("2012-04-01")))
-      case (Some(false), Some(true), _) => (value.newBuildValue, calculateEarliestDate(value.newBuildDate,
+  def getAcquisitionValueAndDate(value: PropertyDetailsValue, periodKey: Int): (Option[BigDecimal], Option[LocalDate]) = {
+    val ownedBefore = PropertyDetailsOwnedBefore(value.isOwnedBeforePolicyYear, value.ownedBeforePolicyYearValue)
+    (ownedBefore.policyYear(periodKey), value.isNewBuild, value.isPropertyRevalued) match {
+      case (IsOwnedBefore2012, _, _) => (value.ownedBeforePolicyYearValue, _2012ValuationPolicyDate)
+      case (IsOwnedBefore2017, _, _) => (value.ownedBeforePolicyYearValue, _2017ValuationPolicyDate)
+      case (NotOwnedBeforePolicyYear, Some(true), _) => (value.newBuildValue, calculateEarliestDate(value.newBuildDate,
         value.localAuthRegDate))
-      case (Some(false), Some(false), _) => (value.notNewBuildValue, value.notNewBuildDate)
+      case (NotOwnedBeforePolicyYear, Some(false), _) => (value.notNewBuildValue, value.notNewBuildDate)
       case (_, _, Some(true)) => (value.revaluedValue, value.partAcqDispDate)
       case (_, _, Some(false)) => (value.revaluedValue, value.partAcqDispDate)
       case _ => (None, None)
     }
   }
 
-  def getAcquisitionData(propertyDetailsValue: Option[PropertyDetailsValue]): (Option[BigDecimal], Option[LocalDate]) = {
+  def getAcquisitionData(propertyDetailsValue: Option[PropertyDetailsValue], periodKey: Int): (Option[BigDecimal], Option[LocalDate]) = {
     propertyDetailsValue match {
       case None => (None, None)
-      case Some(value) => getAcquisitionValueAndDate(value)
+      case Some(value) => getAcquisitionValueAndDate(value, periodKey)
     }
   }
 
   def getLineItemValues(propertyDetailsValue: Option[PropertyDetailsValue], initialValue: Option[BigDecimal]): (BigDecimal, Option[(LocalDate, BigDecimal)]) = {
     def getUpdateValue(initialValue: BigDecimal) = {
-      propertyDetailsValue.flatMap{
+      propertyDetailsValue.flatMap {
         value =>
           (value.isPropertyRevalued, value.revaluedValue, value.partAcqDispDate) match {
-            case (_, Some(revalue), _) if (revalue == initialValue) => None
+            case (_, Some(revalue), _) if revalue == initialValue => None
             case (Some(true), Some(revalue), Some(revaluedAcquiredDate)) =>
               Some(revaluedAcquiredDate, revalue)
             case _ => None
           }
       }
     }
+
     initialValue match {
       case Some(x) => (x, getUpdateValue(x))
       case _ => throw new InternalServerException("[PropertyDetailsUtils][getLineItemValues] - No Value Found")
@@ -241,12 +251,12 @@ object PropertyDetailsUtils extends ReliefConstants {
     }
   }
 
-  def disposeLineItems(periodKey: String, lineItems: Seq[FormBundleProperty], dateOfDisposal: Option[LocalDate]) :Seq[EtmpLineItems] = {
+  def disposeLineItems(periodKey: String, lineItems: Seq[FormBundleProperty], dateOfDisposal: Option[LocalDate]): Seq[EtmpLineItems] = {
     val disposalEndDate = new LocalDate(s"$periodKey-3-31").plusYears(1)
 
-    def createDisposeLineItem(item: FormBundleProperty) :Seq[EtmpLineItems] = {
+    def createDisposeLineItem(item: FormBundleProperty): Seq[EtmpLineItems] = {
       dateOfDisposal match {
-        case Some(x)  if (x.isAfter(disposalEndDate)) =>
+        case Some(x) if (x.isAfter(disposalEndDate)) =>
           throw new InternalServerException("[PropertyDetailsUtils][disposeLineItems] - Disposal Date is after the end of the period")
         case Some(x) if (x.equals(item.dateFrom)) => {
           List(EtmpLineItems(propertyValue = item.propertyValue,
@@ -277,15 +287,15 @@ object PropertyDetailsUtils extends ReliefConstants {
             `type` = item.`type`,
             reliefDescription = item.reliefDescription
           ))
-        }
+      }
     }
 
     lineItems.flatMap(createDisposeLineItem(_))
   }
 
   private def calculateEarliestDate(firstOccDate: Option[LocalDate], localAuthRegDate: Option[LocalDate]): Option[LocalDate] = {
-    (firstOccDate, localAuthRegDate)  match {
-      case (Some(a), Some(b)) if(a.isBefore(b) || a.isEqual(b)) => Some(a)
+    (firstOccDate, localAuthRegDate) match {
+      case (Some(a), Some(b)) if (a.isBefore(b) || a.isEqual(b)) => Some(a)
       case (Some(a), Some(b)) => Some(b)
       case _ => None
     }

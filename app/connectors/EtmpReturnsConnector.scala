@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,10 +165,10 @@ trait EtmpReturnsConnector extends ServicesConfig with RawResponseReads with Aud
           case Some(reliefReturns) => reliefReturns.map(x => x.reliefDescription).mkString(";")
           case None => ""
         }}",
-        "returns" -> s"$returns",
+        "requestBody" -> s"${Json.toJson(returns)}",
         "responseStatus" -> s"${response.status}",
         "responseBody" -> s"${response.body}",
-        "status" -> s"${eventType}"))
+        "status" -> s"$eventType"))
   }
 
 
@@ -201,10 +201,10 @@ trait EtmpReturnsConnector extends ServicesConfig with RawResponseReads with Aud
         "agentRefNo" -> s"${returns.agentReferenceNumber.getOrElse("")}",
         "liabilityReturns count" -> s"${returns.liabilityReturn.size}",
         "amended_further_changed_return" -> typeOfReturn,
-        "returns" -> s"$returns",
+        "requestBody" -> s"${Json.toJson(returns)}",
         "responseStatus" -> s"${response.status}",
         "responseBody" -> s"${response.body}",
-        "status" -> s"${eventType}"))
+        "status" -> s"$eventType"))
 
     auditLiabilityReturnsBankDetails(atedReferenceNo, returns, eventType, typeOfReturn)
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,8 @@ object PropertyDetailsBuilder  extends PlaySpec with OneServerPerSuite  {
       isPropertyRevalued = Some(true),
       revaluedValue = Some(BigDecimal(1111.11)),
       revaluedDate = Some(new LocalDate("1970-01-01")),
-      isOwnedBefore2012 = Some(true),
-      ownedBefore2012Value = Some(BigDecimal(1111.11)),
+      isOwnedBeforePolicyYear = Some(true),
+      ownedBeforePolicyYearValue = Some(BigDecimal(1111.11)),
       isNewBuild =  Some(true),
       newBuildValue = Some(BigDecimal(1111.11)),
       newBuildDate = Some(new LocalDate("1970-01-01")),
