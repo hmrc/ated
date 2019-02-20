@@ -52,7 +52,6 @@ trait EtmpReturnsConnector extends ServicesConfig with RawResponseReads with Aud
 
 
   def submitReturns(atedReferenceNo: String, submitReturns: SubmitEtmpReturnsRequest): Future[HttpResponse] = {
-    Logger.warn(s"=====SubmitEtmpReturnsRequest====:  ${Json.prettyPrint(Json.toJson(submitReturns))} ====")
     implicit val headerCarrier = createHeaderCarrier
     val postUrl = s"""$serviceUrl/$baseURI/$submitReturnsURI/$atedReferenceNo"""
 
