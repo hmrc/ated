@@ -18,7 +18,6 @@ package metrics
 
 import com.codahale.metrics.Timer
 import com.codahale.metrics.Timer.Context
-import com.kenshoo.play.metrics.MetricsRegistry
 import metrics.MetricsEnum.{MetricsEnum, Value}
 import uk.gov.hmrc.play.graphite.MicroserviceMetrics
 

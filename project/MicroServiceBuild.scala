@@ -11,22 +11,20 @@ private object AppDependencies {
   import play.sbt.PlayImport._
   import play.core.PlayVersion
 
-  private val microserviceBootstrapVersion = "8.3.0"
-  private val domainVersion = "5.2.0"
-  private val scalaTestVersion = "2.2.6"
+  private val microserviceBootstrapVersion = "10.4.0"
+  private val domainVersion = "5.3.0"
+  private val scalaTestVersion = "3.0.5"
   private val pegdownVersion = "1.6.0"
-  private val scalaTestPlusVersion = "1.5.1"
-  private val playReactivemongoVersion = "6.2.0"
-  private val reactivemongoTestVersion = "3.1.0"
-  private val jsonEncryptionVersion = "3.2.0"
+  private val scalaTestPlusVersion = "2.0.1"
+  private val simpleReactivemongoVersion = "7.12.0-play-25"
+  private val reactivemongoTestVersion = "4.7.0-play-25"
+  private val jsonEncryptionVersion = "4.1.0"
 
   val compile = Seq(
     ws,
     "uk.gov.hmrc" %% "microservice-bootstrap" % microserviceBootstrapVersion,
     "uk.gov.hmrc" %% "domain" % domainVersion,
-    "uk.gov.hmrc" %% "play-reactivemongo" % playReactivemongoVersion,
-    "com.kenshoo" %% "metrics-play" % "2.3.0_0.1.8",
-    "com.codahale.metrics" % "metrics-graphite" % "3.0.2",
+    "uk.gov.hmrc" %% "simple-reactivemongo" % simpleReactivemongoVersion,
     "uk.gov.hmrc" %% "json-encryption" % jsonEncryptionVersion
   )
 

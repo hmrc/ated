@@ -19,7 +19,7 @@ package controllers
 import audit.Auditable
 import config.MicroserviceAuditConnector
 import models._
-import play.api.Logger
+import play.api.{Logger, Play}
 import play.api.libs.json.Json
 import play.api.mvc.Action
 import services.PropertyDetailsValuesService
@@ -110,10 +110,12 @@ trait PropertyDetailsValuesController extends BaseController  {
 
 object PropertyDetailsValuesController extends PropertyDetailsValuesController {
 
+  val appName: String = AppName(Play.current.configuration).appName
+
   val propertyDetailsService = PropertyDetailsValuesService
 
-  val audit: Audit = new Audit(s"ATED:${AppName.appName}", MicroserviceAuditConnector)
+  val audit: Audit = new Audit(s"ATED:${appName}", MicroserviceAuditConnector)
 
-  val appName: String = AppName.appName
+
 
 }

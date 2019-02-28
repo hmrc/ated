@@ -20,7 +20,8 @@ import audit.Auditable
 import config.{MicroserviceAuditConnector, WSHttp}
 import metrics.{Metrics, MetricsEnum}
 import models._
-import play.api.Logger
+import play.api.Mode.Mode
+import play.api.{Configuration, Logger, Play}
 import play.api.http.Status._
 import play.api.libs.json.Json
 import uk.gov.hmrc.http._
@@ -192,16 +193,19 @@ object EtmpDetailsConnector extends EtmpDetailsConnector {
 
   val serviceUrl = baseUrl("etmp-hod")
 
+  val appName: String = AppName(Play.current.configuration).appName
+
   val urlHeaderEnvironment: String = config("etmp-hod").getString("environment").fold("")(x => x)
 
   val urlHeaderAuthorization: String = s"Bearer ${config("etmp-hod").getString("authorization-token").fold("")(x => x)}"
 
   val http: CoreGet with CorePost with CorePut = WSHttp
 
-  val audit: Audit = new Audit(AppName.appName, MicroserviceAuditConnector)
-
-  val appName: String = AppName.appName
+  val audit: Audit = new Audit(appName, MicroserviceAuditConnector)
 
   val metrics = Metrics
 
+  override protected def mode: Mode = Play.current.mode
+
+  override protected def runModeConfiguration: Configuration = Play.current.configuration
 }

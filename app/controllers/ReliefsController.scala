@@ -20,7 +20,7 @@ import audit.Auditable
 import config.MicroserviceAuditConnector
 import connectors.AuthConnector
 import models.ReliefsTaxAvoidance
-import play.api.Logger
+import play.api.{Logger, Play}
 import play.api.libs.json.Json
 import play.api.mvc.Action
 import services.ReliefsService
@@ -144,12 +144,12 @@ trait ReliefsController extends BaseController with Auditable {
 
 object ReliefsController extends ReliefsController {
 
+  val appName: String = AppName(Play.current.configuration).appName
+
   val reliefsService = ReliefsService
 
   val authConnector = AuthConnector
 
-  val audit: Audit = new Audit(s"ATED:${AppName.appName}", MicroserviceAuditConnector)
-
-  val appName: String = AppName.appName
+  val audit: Audit = new Audit(s"ATED:${appName}", MicroserviceAuditConnector)
 
 }
