@@ -70,10 +70,8 @@ object PropertyDetailsValue {
       (JsPath \ "revaluedValue").readNullable[BigDecimal] and
       (JsPath \ "revaluedDate").readNullable[LocalDate] and
       (JsPath \ "partAcqDispDate").readNullable[LocalDate] and
-      (JsPath \ "isOwnedBeforePolicyYear").readNullable[Boolean] and
-      (JsPath \ "isOwnedBefore2012").readNullable[Boolean] and
-      (JsPath \ "ownedBeforePolicyYearValue").readNullable[BigDecimal] and
-      (JsPath \ "ownedBefore2012Value").readNullable[BigDecimal] and
+      (JsPath \ "isOwnedBeforePolicyYear").read[Boolean].map[Option[Boolean]](Some.apply).orElse((JsPath \ "isOwnedBefore2012").readNullable[Boolean]) and
+      (JsPath \ "ownedBeforePolicyYearValue").read[BigDecimal].map[Option[BigDecimal]](Some.apply).orElse((JsPath \ "ownedBefore2012Value").readNullable[BigDecimal]) and
       (JsPath \ "isNewBuild").readNullable[Boolean] and
       (JsPath \ "newBuildValue").readNullable[BigDecimal] and
       (JsPath \ "newBuildDate").readNullable[LocalDate] and
@@ -82,27 +80,9 @@ object PropertyDetailsValue {
       (JsPath \ "notNewBuildDate").readNullable[LocalDate] and
       (JsPath \ "isValuedByAgent").readNullable[Boolean] and
       (JsPath \ "hasValueChanged").readNullable[Boolean]
-    ).tupled.map(v => PropertyDetailsValue.apply(v._1, v._2, v._3, v._4, v._5, v._6.orElse(v._7), v._8.orElse(v._9),v._10,v._11,v._12,v._13,v._14,v._15,v._16,v._17))
+    )(PropertyDetailsValue.apply _)
 
-  implicit val propertyDetailsValueWrites: OWrites[PropertyDetailsValue] = (
-    (JsPath \ "anAcquisition").writeNullable[Boolean] and
-      (JsPath \ "isPropertyRevalued").writeNullable[Boolean] and
-      (JsPath \ "revaluedValue").writeNullable[BigDecimal] and
-      (JsPath \ "revaluedDate").writeNullable[LocalDate] and
-      (JsPath \ "partAcqDispDate").writeNullable[LocalDate] and
-      (JsPath \ "isOwnedBeforePolicyYear").writeNullable[Boolean] and
-      (JsPath \ "ownedBeforePolicyYearValue").writeNullable[BigDecimal] and
-      (JsPath \ "isNewBuild").writeNullable[Boolean] and
-      (JsPath \ "newBuildValue").writeNullable[BigDecimal] and
-      (JsPath \ "newBuildDate").writeNullable[LocalDate] and
-      (JsPath \ "localAuthRegDate").writeNullable[LocalDate] and
-      (JsPath \ "notNewBuildValue").writeNullable[BigDecimal] and
-      (JsPath \ "notNewBuildDate").writeNullable[LocalDate] and
-      (JsPath \ "isValuedByAgent").writeNullable[Boolean] and
-      (JsPath \ "hasValueChanged").writeNullable[Boolean]
-    )(unlift(PropertyDetailsValue.unapply _))
-
-  implicit val formats = OFormat(propertyDetailsValueReads, propertyDetailsValueWrites)
+  implicit val propertyDetailsValueWrites: OWrites[PropertyDetailsValue]=Json.writes[PropertyDetailsValue]
 }
 
 case class PropertyDetailsAcquisition(anAcquisition: Option[Boolean] = None)
