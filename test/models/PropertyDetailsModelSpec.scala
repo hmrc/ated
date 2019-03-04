@@ -17,6 +17,7 @@
 package models
 
 import org.scalatestplus.play.PlaySpec
+import play.api.libs.json.Json
 
 class PropertyDetailsModelSpec extends PlaySpec {
 
@@ -64,5 +65,136 @@ class PropertyDetailsModelSpec extends PlaySpec {
   }
 
   val model = PropertyDetailsOwnedBefore(Some(true), Some(1000000))
+
+  "PropertyDetailsValue Request" should {
+    "read the value from isOwnedBeforePolicyYear for propertyDetailsValueReads" in {
+      val existingDraftInMongo =
+        """{ "anAcquisition": true,
+          |  "isPropertyRevalued": true,
+          |  "revaluedValue": "32432423",
+          |  "revaluedDate": "2014-05-25",
+          |  "partAcqDispDate": "12345678",
+          |  "isOwnedBeforePolicyYear": true,
+          |  "ownedBeforePolicyYearValue": "1599999",
+          |  "isNewBuild": true,
+          |  "newBuildValue": "12345678",
+          |  "newBuildDate": "2014-05-25",
+          |  "localAuthRegDate": "2014-10-25",
+          |  "notNewBuildValue": "4646465",
+          |  "notNewBuildDate": "12345678",
+          |  "isValuedByAgent": true,
+          |  "hasValueChanged": true
+          |}""".stripMargin
+      val exampleJson = Json.parse(existingDraftInMongo)
+      val propertyDetailsValue = exampleJson.as[PropertyDetailsValue]
+      propertyDetailsValue.isOwnedBeforePolicyYear must be (Some(true))
+      propertyDetailsValue.ownedBeforePolicyYearValue must be (Some(1599999))
+    }
+  }
+
+  "PropertyDetailsValue Request" should {
+    "read the value from isOwnedBefore2012 for propertyDetailsValueReads" in {
+      val existingDraftInMongo =
+        """{ "anAcquisition": true,
+          |  "isPropertyRevalued": true,
+          |  "revaluedValue": "32432423",
+          |  "revaluedDate": "2014-05-25",
+          |  "partAcqDispDate": "12345678",
+          |  "isOwnedBefore2012": true,
+          |  "ownedBefore2012Value": "1599999",
+          |  "isNewBuild": true,
+          |  "newBuildValue": "12345678",
+          |  "newBuildDate": "2014-05-25",
+          |  "localAuthRegDate": "2014-10-25",
+          |  "notNewBuildValue": "4646465",
+          |  "notNewBuildDate": "12345678",
+          |  "isValuedByAgent": true,
+          |  "hasValueChanged": true
+          |}""".stripMargin
+      val exampleJson = Json.parse(existingDraftInMongo)
+      val propertyDetailsValue = exampleJson.as[PropertyDetailsValue]
+      propertyDetailsValue.isOwnedBeforePolicyYear must be (Some(true))
+      propertyDetailsValue.ownedBeforePolicyYearValue must be (Some(1599999))
+    }
+  }
+
+  "PropertyDetailsValue Request" should {
+    "read the value from isOwnedBeforePolicyYear and ownedBefore2012Value for propertyDetailsValueReads" in {
+      val existingDraftInMongo =
+        """{ "anAcquisition": true,
+          |  "isPropertyRevalued": true,
+          |  "revaluedValue": "32432423",
+          |  "revaluedDate": "2014-05-25",
+          |  "partAcqDispDate": "12345678",
+          |  "isOwnedBeforePolicyYear": true,
+          |  "ownedBefore2012Value": "1599999",
+          |  "isNewBuild": true,
+          |  "newBuildValue": "12345678",
+          |  "newBuildDate": "2014-05-25",
+          |  "localAuthRegDate": "2014-10-25",
+          |  "notNewBuildValue": "4646465",
+          |  "notNewBuildDate": "12345678",
+          |  "isValuedByAgent": true,
+          |  "hasValueChanged": true
+          |}""".stripMargin
+      val exampleJson = Json.parse(existingDraftInMongo)
+      val propertyDetailsValue = exampleJson.as[PropertyDetailsValue]
+      propertyDetailsValue.isOwnedBeforePolicyYear must be (Some(true))
+      propertyDetailsValue.ownedBeforePolicyYearValue must be (Some(1599999))
+    }
+  }
+
+  "PropertyDetailsValue Request" should {
+    "read the value as None for propertyDetailsValueReads" in {
+      val existingDraftInMongo =
+        """{ "anAcquisition": true,
+          |  "isPropertyRevalued": true,
+          |  "revaluedValue": "32432423",
+          |  "revaluedDate": "2014-05-25",
+          |  "partAcqDispDate": "12345678",
+          |  "isNewBuild": true,
+          |  "newBuildValue": "12345678",
+          |  "newBuildDate": "2014-05-25",
+          |  "localAuthRegDate": "2014-10-25",
+          |  "notNewBuildValue": "4646465",
+          |  "notNewBuildDate": "12345678",
+          |  "isValuedByAgent": true,
+          |  "hasValueChanged": true
+          |}""".stripMargin
+      val exampleJson = Json.parse(existingDraftInMongo)
+      val propertyDetailsValue = exampleJson.as[PropertyDetailsValue]
+      propertyDetailsValue.isOwnedBeforePolicyYear must be (None)
+      propertyDetailsValue.ownedBeforePolicyYearValue must be (None)
+    }
+  }
+
+  "PropertyDetailsValue Request" should {
+    "read the value from isOwnedBeforePolicyYear instead of isOwnedBefore2012 for propertyDetailsValueReads" in {
+      val existingDraftInMongo =
+        """{ "anAcquisition": true,
+          |  "isPropertyRevalued": true,
+          |  "revaluedValue": "32432423",
+          |  "revaluedDate": "2014-05-25",
+          |  "partAcqDispDate": "12345678",
+          |  "isOwnedBeforePolicyYear": true,
+          |  "ownedBeforePolicyYearValue": "1599999",
+          |  "isOwnedBefore2012": false,
+          |  "ownedBefore2012Value": "1500000",
+          |  "isNewBuild": true,
+          |  "newBuildValue": "12345678",
+          |  "newBuildDate": "2014-05-25",
+          |  "localAuthRegDate": "2014-10-25",
+          |  "notNewBuildValue": "4646465",
+          |  "notNewBuildDate": "12345678",
+          |  "isValuedByAgent": true,
+          |  "hasValueChanged": true
+          |}""".stripMargin
+      val exampleJson = Json.parse(existingDraftInMongo)
+      val propertyDetailsValue = exampleJson.as[PropertyDetailsValue]
+      propertyDetailsValue.isOwnedBeforePolicyYear must be (Some(true))
+      propertyDetailsValue.ownedBeforePolicyYearValue must be (Some(1599999))
+    }
+  }
+
 
 }

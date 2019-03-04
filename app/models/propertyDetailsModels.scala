@@ -70,8 +70,8 @@ object PropertyDetailsValue {
       (JsPath \ "revaluedValue").readNullable[BigDecimal] and
       (JsPath \ "revaluedDate").readNullable[LocalDate] and
       (JsPath \ "partAcqDispDate").readNullable[LocalDate] and
-      (JsPath \ "isOwnedBeforePolicyYear").readNullable[Boolean].orElse((JsPath \ "isOwnedBefore2012").readNullable[Boolean]) and
-      (JsPath \ "ownedBeforePolicyYearValue").readNullable[BigDecimal].orElse((JsPath \ "ownedBefore2012Value").readNullable[BigDecimal]) and
+      (JsPath \ "isOwnedBeforePolicyYear").read[Boolean].map(Option(_)).orElse((JsPath \ "isOwnedBefore2012").readNullable[Boolean]) and
+      (JsPath \ "ownedBeforePolicyYearValue").read[BigDecimal].map(Option(_)).orElse((JsPath \ "ownedBefore2012Value").readNullable[BigDecimal]) and
       (JsPath \ "isNewBuild").readNullable[Boolean] and
       (JsPath \ "newBuildValue").readNullable[BigDecimal] and
       (JsPath \ "newBuildDate").readNullable[LocalDate] and
@@ -82,25 +82,7 @@ object PropertyDetailsValue {
       (JsPath \ "hasValueChanged").readNullable[Boolean]
     )(PropertyDetailsValue.apply _)
 
-  implicit val propertyDetailsValueWrites: OWrites[PropertyDetailsValue] = (
-    (JsPath \ "anAcquisition").writeNullable[Boolean] and
-      (JsPath \ "isPropertyRevalued").writeNullable[Boolean] and
-      (JsPath \ "revaluedValue").writeNullable[BigDecimal] and
-      (JsPath \ "revaluedDate").writeNullable[LocalDate] and
-      (JsPath \ "partAcqDispDate").writeNullable[LocalDate] and
-      (JsPath \ "isOwnedBeforePolicyYear").writeNullable[Boolean] and
-      (JsPath \ "ownedBeforePolicyYearValue").writeNullable[BigDecimal] and
-      (JsPath \ "isNewBuild").writeNullable[Boolean] and
-      (JsPath \ "newBuildValue").writeNullable[BigDecimal] and
-      (JsPath \ "newBuildDate").writeNullable[LocalDate] and
-      (JsPath \ "localAuthRegDate").writeNullable[LocalDate] and
-      (JsPath \ "notNewBuildValue").writeNullable[BigDecimal] and
-      (JsPath \ "notNewBuildDate").writeNullable[LocalDate] and
-      (JsPath \ "isValuedByAgent").writeNullable[Boolean] and
-      (JsPath \ "hasValueChanged").writeNullable[Boolean]
-    )(unlift(PropertyDetailsValue.unapply _))
-
-  implicit val formats = OFormat(propertyDetailsValueReads, propertyDetailsValueWrites)
+  implicit val propertyDetailsValueWrites: OWrites[PropertyDetailsValue]=Json.writes[PropertyDetailsValue]
 }
 
 case class PropertyDetailsAcquisition(anAcquisition: Option[Boolean] = None)
