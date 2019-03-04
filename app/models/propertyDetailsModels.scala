@@ -70,8 +70,8 @@ object PropertyDetailsValue {
       (JsPath \ "revaluedValue").readNullable[BigDecimal] and
       (JsPath \ "revaluedDate").readNullable[LocalDate] and
       (JsPath \ "partAcqDispDate").readNullable[LocalDate] and
-      (JsPath \ "isOwnedBeforePolicyYear").read[Boolean].map[Option[Boolean]](Some.apply).orElse((JsPath \ "isOwnedBefore2012").readNullable[Boolean]) and
-      (JsPath \ "ownedBeforePolicyYearValue").read[BigDecimal].map[Option[BigDecimal]](Some.apply).orElse((JsPath \ "ownedBefore2012Value").readNullable[BigDecimal]) and
+      (JsPath \ "isOwnedBeforePolicyYear").read[Boolean].map(Option(_)).orElse((JsPath \ "isOwnedBefore2012").readNullable[Boolean]) and
+      (JsPath \ "ownedBeforePolicyYearValue").read[BigDecimal].map(Option(_)).orElse((JsPath \ "ownedBefore2012Value").readNullable[BigDecimal]) and
       (JsPath \ "isNewBuild").readNullable[Boolean] and
       (JsPath \ "newBuildValue").readNullable[BigDecimal] and
       (JsPath \ "newBuildDate").readNullable[LocalDate] and
