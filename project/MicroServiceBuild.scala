@@ -24,7 +24,8 @@ private object AppDependencies {
     ws,
     "uk.gov.hmrc" %% "microservice-bootstrap" % microserviceBootstrapVersion,
     "uk.gov.hmrc" %% "domain" % domainVersion,
-    "uk.gov.hmrc" %% "simple-reactivemongo" % simpleReactivemongoVersion,
+    // "uk.gov.hmrc" %% "simple-reactivemongo" % simpleReactivemongoVersion,
+    "org.mongodb.scala" %% "mongo-scala-driver" % "2.6.0",
     "uk.gov.hmrc" %% "json-encryption" % jsonEncryptionVersion
   )
 
@@ -48,4 +49,3 @@ private object AppDependencies {
 
   def apply() = compile ++ Test()
 }
-

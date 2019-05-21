@@ -18,7 +18,6 @@ package models
 
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
 import play.api.libs.json._
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import play.api.libs.functional.syntax._
 
 
@@ -267,7 +266,7 @@ case class PropertyDetails(atedRefNo: String,
                            timeStamp: DateTime = DateTime.now(DateTimeZone.UTC))
 
 object PropertyDetails {
-  implicit val dateFormat = ReactiveMongoFormats.dateTimeFormats
-  implicit val idFormat = ReactiveMongoFormats.objectIdFormats
+  implicit val dtf = mongo.json.ReactiveMongoFormats.dateTimeFormats
+  implicit val oif = mongo.json.ReactiveMongoFormats.objectIdFormats
   implicit val formats = Json.format[PropertyDetails]
 }

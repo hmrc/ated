@@ -20,7 +20,7 @@ import metrics.{Metrics, MetricsEnum}
 import models.DisposeLiabilityReturn
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.Logger
-import play.modules.reactivemongo.MongoDbConnection
+/*import play.modules.reactivemongo.MongoDbConnection
 import reactivemongo.api.DB
 import reactivemongo.api.Cursor.FailOnError
 import reactivemongo.api.indexes.{Index, IndexType}
@@ -28,7 +28,9 @@ import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.mongo.ReactiveRepository
-
+*/
+import mongo.ReactiveRepository
+import org.mongodb.scala.bson.BsonObjectId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -41,7 +43,7 @@ sealed trait DisposeLiabilityReturnDelete
 case object DisposeLiabilityReturnDeleted extends DisposeLiabilityReturnDelete
 case object DisposeLiabilityReturnDeleteError extends DisposeLiabilityReturnDelete
 
-trait DisposeLiabilityReturnMongoRepository extends ReactiveRepository[DisposeLiabilityReturn, BSONObjectID] {
+trait DisposeLiabilityReturnMongoRepository extends ReactiveRepository[DisposeLiabilityReturn, BsonObjectId] {
 
   def cacheDisposeLiabilityReturns(disposeLiabilityReturn: DisposeLiabilityReturn): Future[DisposeLiabilityReturnCache]
 
@@ -62,7 +64,7 @@ object DisposeLiabilityReturnMongoRepository extends MongoDbConnection {
 }
 
 class DisposeLiabilityReturnReactiveMongoRepository(implicit mongo: () => DB)
-  extends ReactiveRepository[DisposeLiabilityReturn, BSONObjectID]("disposeLiabilityReturns", mongo, DisposeLiabilityReturn.formats, ReactiveMongoFormats.objectIdFormats)
+  extends ReactiveRepository[DisposeLiabilityReturn, BsonObjectId]("disposeLiabilityReturns", mongo, DisposeLiabilityReturn.formats, ReactiveMongoFormats.objectIdFormats)
     with DisposeLiabilityReturnMongoRepository {
 
   val metrics: Metrics = Metrics

@@ -17,8 +17,10 @@
 package models
 
 import play.api.libs.json._
-import reactivemongo.bson.BSONObjectID
-import uk.gov.hmrc.mongo.CreationAndLastModifiedDetail
+import org.mongodb.scala.bson.BsonObjectId
+import mongo.CreationAndLastModifiedDetail
+import org.mongodb.scala.{Document, MongoClient, MongoDatabase, MongoCollection}
+import org.mongodb.scala.model.{Filters, Updates, UpdateOptions}
 
 import scala.collection.Set
 
@@ -46,12 +48,12 @@ object Id {
 
 case class Cache(id: Id, data: Option[JsValue] = None,
                  modifiedDetails: CreationAndLastModifiedDetail = CreationAndLastModifiedDetail(),
-                 atomicId: Option[BSONObjectID] = None) extends Cacheable {
+                 atomicId: Option[BsonObjectId] = None) extends Cacheable {
 }
 
 object Cache {
 
-  import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+  import mongo.json.ReactiveMongoFormats
 
   final val DataAttributeName = "data"
 

@@ -20,14 +20,16 @@ import metrics.{Metrics, MetricsEnum}
 import models.{DisposeLiabilityReturn, ReliefsTaxAvoidance}
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.Logger
-import play.modules.reactivemongo.MongoDbConnection
+/*import play.modules.reactivemongo.MongoDbConnection
 import reactivemongo.api.Cursor.FailOnError
 import reactivemongo.api.DB
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.mongo.ReactiveRepository
+import uk.gov.hmrc.mongo.ReactiveRepository*/
+import mongo.ReactiveRepository
+import org.mongodb.scala.bson.BsonObjectId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -40,7 +42,7 @@ sealed trait ReliefDelete
 case object ReliefDeleted extends ReliefDelete
 case object ReliefDeletedError extends ReliefDelete
 
-trait ReliefsMongoRepository extends ReactiveRepository[ReliefsTaxAvoidance, BSONObjectID] {
+trait ReliefsMongoRepository extends ReactiveRepository[ReliefsTaxAvoidance, BsonObjectId] {
 
   def cacheRelief(reliefs: ReliefsTaxAvoidance): Future[ReliefCached]
 
