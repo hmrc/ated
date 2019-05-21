@@ -21,21 +21,22 @@ import models.DisposeLiabilityReturn
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
-import reactivemongo.api.DB
-import uk.gov.hmrc.mongo.{Awaiting, MongoSpecSupport}
+//import reactivemongo.api.DB
+//import uk.gov.hmrc.mongo.{Awaiting, MongoSpecSupport}
+import utils.Awaiting
 
 class DisposeLiabilityReturnMongoRepositorySpec extends PlaySpec
   with OneServerPerSuite
-  with MongoSpecSupport
+  // with MongoSpecSupport
   with Awaiting
   with MockitoSugar
   with BeforeAndAfterEach {
 
+  lazy val repository = new DisposeLiabilityReturnReactiveMongoRepository()
+
   override def beforeEach(): Unit = {
     await(repository.drop)
   }
-
-  def repository(implicit mongo: () => DB) = new DisposeLiabilityReturnReactiveMongoRepository()
 
   "DisposeLiabilityReturnRepository" must {
 
@@ -54,40 +55,35 @@ class DisposeLiabilityReturnMongoRepositorySpec extends PlaySpec
       "does not save the next disposeLiabilityReturns into mongo, if same id are passed for next document" in {
         await(repository.cacheDisposeLiabilityReturns(disposeLiability1))
         await(repository.cacheDisposeLiabilityReturns(disposeLiability2.copy(id = "123456789012")))
-        await(repository.fetchDisposeLiabilityReturns("ated-ref-123")).isEmpty must be(false)
+        await(repository.fetchDisposeLiabilityReturns(disposeLiability1.atedRefNo)).isEmpty must be(false)
       }
     }
 
     "fetchDisposeLiabilityReturns" must {
       "if data doesn't exist, should return empty list" in {
-        await(repository.fetchDisposeLiabilityReturns("ated-ref-123")).isEmpty must be(true)
+        await(repository.fetchDisposeLiabilityReturns(disposeLiability1.atedRefNo)).isEmpty must be(true)
       }
       "if data does exist, should return that in list" in {
         await(repository.cacheDisposeLiabilityReturns(disposeLiability1))
         await(repository.cacheDisposeLiabilityReturns(disposeLiability2))
-        await(repository.fetchDisposeLiabilityReturns("ated-ref-123")).isEmpty must be(false)
-        await(repository.fetchDisposeLiabilityReturns("ated-ref-456")).isEmpty must be(false)
+        await(repository.fetchDisposeLiabilityReturns(disposeLiability1.atedRefNo)).isEmpty must be(false)
+        await(repository.fetchDisposeLiabilityReturns(disposeLiability2.atedRefNo)).isEmpty must be(false)
       }
     }
 
     "deleteDisposeLiabilityReturns" must {
       "delete data from mongo" in {
-
         await(repository.cacheDisposeLiabilityReturns(disposeLiability1))
         await(repository.cacheDisposeLiabilityReturns(disposeLiability2))
 
-        await(repository.fetchDisposeLiabilityReturns("ated-ref-123")).isEmpty must be(false)
-        await(repository.fetchDisposeLiabilityReturns("ated-ref-456")).isEmpty must be(false)
+        await(repository.fetchDisposeLiabilityReturns(disposeLiability1.atedRefNo)).isEmpty must be(false)
+        await(repository.fetchDisposeLiabilityReturns(disposeLiability2.atedRefNo)).isEmpty must be(false)
 
+        await(repository.deleteDisposeLiabilityReturns(disposeLiability1.atedRefNo))
 
-        await(repository.deleteDisposeLiabilityReturns("ated-ref-123"))
-
-        await(repository.fetchDisposeLiabilityReturns("ated-ref-123")).isEmpty must be(true)
-        await(repository.fetchDisposeLiabilityReturns("ated-ref-456")).isEmpty must be(false)
-
+        await(repository.fetchDisposeLiabilityReturns(disposeLiability1.atedRefNo)).isEmpty must be(true)
+        await(repository.fetchDisposeLiabilityReturns(disposeLiability2.atedRefNo)).isEmpty must be(false)
       }
     }
-
   }
-
 }

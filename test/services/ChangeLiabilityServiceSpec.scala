@@ -28,9 +28,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
 import play.api.libs.json.Json
 import play.api.test.Helpers._
-import reactivemongo.api.commands.WriteResult
 import repository.{PropertyDetailsCached, PropertyDetailsMongoRepository}
-import uk.gov.hmrc.mongo.DatabaseUpdate
 
 import scala.concurrent.Future
 import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse, InternalServerException }
@@ -38,8 +36,6 @@ import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse, InternalServerException }
 class ChangeLiabilityServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
   val mockPropertyDetailsCache = mock[PropertyDetailsMongoRepository]
-  val mockWriteResult = mock[WriteResult]
-  val mockDatabaseUpdate = mock[DatabaseUpdate[Cache]]
   val mockEtmpConnector = mock[EtmpReturnsConnector]
   val mockAuthConnector = mock[AuthConnector]
   val mockSubscriptionDataService = mock[SubscriptionDataService]
@@ -52,8 +48,6 @@ class ChangeLiabilityServiceSpec extends PlaySpec with OneServerPerSuite with Mo
     override val subscriptionDataService = mockSubscriptionDataService
     override val emailConnector = mockEmailConnector
   }
-
-  val mockedDatabaseUpdate = mock[DatabaseUpdate[Cache]]
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
@@ -72,7 +66,6 @@ class ChangeLiabilityServiceSpec extends PlaySpec with OneServerPerSuite with Mo
     reset(mockSubscriptionDataService)
     reset(mockEmailConnector)
   }
-
 
   "ChangeLiabilityService" must {
 

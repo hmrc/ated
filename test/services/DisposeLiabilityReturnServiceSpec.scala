@@ -29,7 +29,6 @@ import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
 import play.api.libs.json.Json
 import play.api.test.Helpers._
 import repository.{DisposeLiabilityReturnCached, DisposeLiabilityReturnMongoRepository}
-import uk.gov.hmrc.mongo.DatabaseUpdate
 
 import scala.concurrent.Future
 import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse }
@@ -38,7 +37,6 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with OneServerPerSuite 
 
   val mockDisposeLiabilityReturnRepository: DisposeLiabilityReturnMongoRepository = mock[DisposeLiabilityReturnMongoRepository]
   val mockEtmpConnector: EtmpReturnsConnector = mock[EtmpReturnsConnector]
-  val mockedDatabaseUpdate = mock[DatabaseUpdate[Cache]]
   val mockAuthConnector = mock[AuthConnector]
   val mockSubscriptionDataService = mock[SubscriptionDataService]
   val mockEmailConnector = mock[EmailConnector]

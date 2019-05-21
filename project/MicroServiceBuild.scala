@@ -41,8 +41,8 @@ private object AppDependencies {
         "org.scalatestplus.play" %% "scalatestplus-play" % scalaTestPlusVersion % scope,
         "org.pegdown" % "pegdown" % pegdownVersion % scope,
         "org.mockito" % "mockito-all" % "1.10.19" % scope,
-        "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
-        "uk.gov.hmrc" %% "reactivemongo-test" % reactivemongoTestVersion % scope
+        "com.typesafe.play" %% "play-test" % PlayVersion.current % scope//,
+        //"uk.gov.hmrc" %% "reactivemongo-test" % reactivemongoTestVersion % scope
       )
     }.test
   }

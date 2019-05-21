@@ -16,24 +16,22 @@
 
 package repository
 
+import java.util.concurrent.TimeUnit
 import metrics.{Metrics, MetricsEnum}
-import models.DisposeLiabilityReturn
+import models.{DisposeLiabilityReturn, FormBundleAddress, FormBundleProperty, FormBundlePropertyDetails, FormBundleReturn, DisposeLiability, DisposeCalculated, BankDetailsModel}
+import mongo.{MongoCollection2, ReactiveRepository, CodecProviders}
+import mongo.json.ReactiveMongoFormats
+import org.bson.codecs.configuration.{CodecRegistry, CodecRegistries}
 import org.joda.time.{DateTime, DateTimeZone}
-import play.api.Logger
-/*import play.modules.reactivemongo.MongoDbConnection
-import reactivemongo.api.DB
-import reactivemongo.api.Cursor.FailOnError
-import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.{BSONDocument, BSONObjectID}
-import reactivemongo.play.json.ImplicitBSONHandlers._
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.mongo.ReactiveRepository
-*/
-import mongo.ReactiveRepository
+import org.mongodb.scala.{Document, MongoClient, MongoCollection, MongoDatabase}
 import org.mongodb.scala.bson.BsonObjectId
+import org.mongodb.scala.bson.codecs.{Macros, DEFAULT_CODEC_REGISTRY}
+import org.mongodb.scala.model.{Filters, Indexes, IndexModel, IndexOptions, Updates, UpdateOptions, FindOneAndReplaceOptions}
+import play.api.Logger
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.DurationInt
 
 sealed trait DisposeLiabilityReturnCache
 case object DisposeLiabilityReturnCached extends DisposeLiabilityReturnCache
@@ -43,7 +41,7 @@ sealed trait DisposeLiabilityReturnDelete
 case object DisposeLiabilityReturnDeleted extends DisposeLiabilityReturnDelete
 case object DisposeLiabilityReturnDeleteError extends DisposeLiabilityReturnDelete
 
-trait DisposeLiabilityReturnMongoRepository extends ReactiveRepository[DisposeLiabilityReturn, BsonObjectId] {
+trait DisposeLiabilityReturnMongoRepository {
 
   def cacheDisposeLiabilityReturns(disposeLiabilityReturn: DisposeLiabilityReturn): Future[DisposeLiabilityReturnCache]
 
@@ -51,84 +49,101 @@ trait DisposeLiabilityReturnMongoRepository extends ReactiveRepository[DisposeLi
 
   def deleteDisposeLiabilityReturns(atedRefNo: String): Future[DisposeLiabilityReturnDelete]
 
-  def metrics: Metrics
-
+  def drop: Future[Unit]
 }
 
-object DisposeLiabilityReturnMongoRepository extends MongoDbConnection {
-  // $COVERAGE-OFF$
-  private lazy val disposeLiabilityReturnRepository = new DisposeLiabilityReturnReactiveMongoRepository
-  // $COVERAGE-ON$
-  def apply(): DisposeLiabilityReturnMongoRepository = disposeLiabilityReturnRepository
-
+object DisposeLiabilityReturnMongoRepository {
+  private lazy val disposeLiabilityReturnMongoRepository = new DisposeLiabilityReturnReactiveMongoRepository
+  def apply(): DisposeLiabilityReturnMongoRepository = disposeLiabilityReturnMongoRepository
 }
 
-class DisposeLiabilityReturnReactiveMongoRepository(implicit mongo: () => DB)
-  extends ReactiveRepository[DisposeLiabilityReturn, BsonObjectId]("disposeLiabilityReturns", mongo, DisposeLiabilityReturn.formats, ReactiveMongoFormats.objectIdFormats)
-    with DisposeLiabilityReturnMongoRepository {
+class DisposeLiabilityReturnReactiveMongoRepository
+  extends DisposeLiabilityReturnMongoRepository
+     with WithTimer {
 
-  val metrics: Metrics = Metrics
+  val collection: MongoCollection[DisposeLiabilityReturn] =
+    MongoCollection2.collection("disposeLiabilityReturns",
+      CodecRegistries.fromProviders(
+          Macros.createCodecProvider[DisposeLiabilityReturn]()
+        , Macros.createCodecProvider[DisposeLiability]()
+        , Macros.createCodecProvider[DisposeCalculated]()
+        , Macros.createCodecProvider[FormBundleAddress]()
+        , Macros.createCodecProvider[FormBundleProperty]()
+        , Macros.createCodecProvider[FormBundlePropertyDetails]()
+        , Macros.createCodecProvider[FormBundleReturn]()
+        , Macros.createCodecProvider[BankDetailsModel]()
+        , CodecProviders.dateTimeCodecProvider
+        , CodecProviders.localDateCodecProvider
+        , CodecProviders.bigDecimalCodecProvider
+        ))
 
-  override def indexes: Seq[Index] = {
-    Seq(
-      Index(Seq("id" -> IndexType.Ascending), name = Some("idIndex"), unique = true, sparse = true),
-      Index(Seq("id" -> IndexType.Ascending, "periodKey" -> IndexType.Ascending, "atedRefNo" -> IndexType.Ascending), name = Some("idAndperiodKeyAndAtedRefIndex"), unique = true),
-      Index(Seq("atedRefNo" -> IndexType.Ascending), name = Some("atedRefIndex")),
-      Index(Seq("timestamp" -> IndexType.Ascending), Some("dispLiabilityDraftExpiry"), options = BSONDocument("expireAfterSeconds" -> 60 * 60 * 24 * 28), sparse = true, background = true)
-    )
-  }
+  Await.result(collection
+    .createIndexes(Seq(
+        IndexModel( Indexes.ascending("id")
+                  , IndexOptions().name("idIndex").unique(true).sparse(true)
+                  )
+      , IndexModel( Indexes.ascending("id", "periodKey", "atedRefNo")
+                  , IndexOptions().name("idAndperiodKeyAndAtedRefIndex").unique(true)
+                  )
+      , IndexModel( Indexes.ascending("atedRefNo")
+                  , IndexOptions().name("atedRefIndex")
+                  )
+      , IndexModel( Indexes.ascending("timestamp")
+                  , IndexOptions().name("dispLiabilityDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true)
+                  )
+      )).toFuture, 1.seconds)
 
-  // $COVERAGE-OFF$
-  def cacheDisposeLiabilityReturns(disposeLiabilityReturn: DisposeLiabilityReturn): Future[DisposeLiabilityReturnCache] = {
-    val timerContext = metrics.startTimer(MetricsEnum.RepositoryInsertDispLiability)
-    val query = BSONDocument("atedRefNo" -> disposeLiabilityReturn.atedRefNo, "id" -> disposeLiabilityReturn.id)
-    collection.update(query, disposeLiabilityReturn.copy(timeStamp = DateTime.now(DateTimeZone.UTC)), upsert = true, multi = false).map { writeResult =>
-      timerContext.stop()
-      writeResult.ok match {
-        case true => DisposeLiabilityReturnCached
-        case _ => DisposeLiabilityReturnCacheError
+  def cacheDisposeLiabilityReturns(disposeLiabilityReturn: DisposeLiabilityReturn): Future[DisposeLiabilityReturnCache] =
+    withTimer(MetricsEnum.RepositoryInsertDispLiability){
+    collection
+      .findOneAndReplace(
+          filter       = Document(
+                             "atedRefNo" -> disposeLiabilityReturn.atedRefNo
+                           , "id"        -> disposeLiabilityReturn.id
+                           )
+        , replacement = disposeLiabilityReturn
+                          .copy(timeStamp = DateTime.now(DateTimeZone.UTC))
+        , options     = FindOneAndReplaceOptions().upsert(true)
+        )
+      .toFuture
+      .map(_ => DisposeLiabilityReturnCached)
+      .recover { case e  => Logger.warn("Failed to cache dispose liability", e); DisposeLiabilityReturnCacheError }
+    }
+
+  def fetchDisposeLiabilityReturns(atedRefNo: String): Future[Seq[DisposeLiabilityReturn]] =
+    withTimer(MetricsEnum.RepositoryFetchDispLiability){
+      collection
+        .find(filter = Document("atedRefNo" -> atedRefNo))
+        .toFuture
+    }
+
+  def deleteDisposeLiabilityReturns(atedRefNo: String): Future[DisposeLiabilityReturnDelete] =
+    withTimer(MetricsEnum.RepositoryDeleteDispLiability){
+      collection
+        .deleteOne(filter = Document("atedRefNo" -> atedRefNo))
+        .toFuture
+        .map(_.getDeletedCount match {
+          case 1 => DisposeLiabilityReturnDeleted
+          case _ => DisposeLiabilityReturnDeleteError
+          })
+        .recover {
+          case e => Logger.warn("Failed to remove draft dispose liability", e); DisposeLiabilityReturnDeleteError
       }
-    }.recover {
-      // $COVERAGE-OFF$
-      case e => Logger.warn("Failed to remove draft dispose liability", e)
-        timerContext.stop()
-        DisposeLiabilityReturnCacheError
-      // $COVERAGE-ON$
     }
+
+  def drop: Future[Unit] =
+    collection
+      .drop()
+      .toFuture
+      .map(_ => ())
+}
+
+trait WithTimer {
+  val metrics = Metrics
+  def withTimer[R](metricsEnum: MetricsEnum.MetricsEnum)(f: => Future[R]): Future[R] = {
+    val timerContext = metrics.startTimer(metricsEnum)
+    val res = f
+    res.onComplete(_ => timerContext.stop())
+    res
   }
-  // $COVERAGE-ON$
-
-  // $COVERAGE-OFF$
-  def fetchDisposeLiabilityReturns(atedRefNo: String): Future[Seq[DisposeLiabilityReturn]] = {
-    val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchDispLiability)
-    val query = BSONDocument("atedRefNo" -> atedRefNo)
-
-    //TODO: Replace with find from ReactiveRepository
-    val result:Future[Seq[DisposeLiabilityReturn]] = collection.find(query).cursor[DisposeLiabilityReturn]().collect[Seq](maxDocs = -1, err = FailOnError[Seq[DisposeLiabilityReturn]]())
-
-    result onComplete {
-      _ => timerContext.stop()
-    }
-    result
-  }
-  // $COVERAGE-ON$
-  // $COVERAGE-OFF$
-  def deleteDisposeLiabilityReturns(atedRefNo: String): Future[DisposeLiabilityReturnDelete] = {
-    val timerContext = metrics.startTimer(MetricsEnum.RepositoryDeleteDispLiability)
-    val query = BSONDocument("atedRefNo" -> atedRefNo)
-    collection.remove(query).map { removeResult =>
-      removeResult.ok match {
-        case true => DisposeLiabilityReturnDeleted
-        case _ => DisposeLiabilityReturnDeleteError
-      }
-    }.recover {
-
-      case e => Logger.warn("Failed to remove draft dispose liability", e)
-        timerContext.stop()
-        DisposeLiabilityReturnDeleteError
-
-    }
-  }
-  // $COVERAGE-ON$
-
 }

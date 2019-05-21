@@ -29,9 +29,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
 import play.api.libs.json.Json
 import play.api.test.Helpers._
-import reactivemongo.api.commands.WriteResult
 import repository._
-import uk.gov.hmrc.mongo.DatabaseUpdate
 
 import scala.concurrent.Future
 import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier, HttpResponse, InternalServerException }
@@ -40,8 +38,6 @@ import uk.gov.hmrc.http.logging.SessionId
 class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
   val mockPropertyDetailsCache = mock[PropertyDetailsMongoRepository]
-  val mockWriteResult = mock[WriteResult]
-  val mockDatabaseUpdate = mock[DatabaseUpdate[Cache]]
   val mockEtmpConnector = mock[EtmpReturnsConnector]
   val mockAuthConnector = mock[AuthConnector]
   val mockSubscriptionDataService = mock[SubscriptionDataService]

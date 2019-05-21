@@ -20,18 +20,19 @@ import builders.PropertyDetailsBuilder
 import org.scalatest._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
-import reactivemongo.api.DB
-import uk.gov.hmrc.mongo.{Awaiting, MongoSpecSupport}
+//import reactivemongo.api.DB
+// import uk.gov.hmrc.mongo.{Awaiting, MongoSpecSupport}
+import utils.Awaiting
 
 class PropertyDetailsMongoRepositorySpec extends PlaySpec
   with OneServerPerSuite
-  with MongoSpecSupport
+  // with MongoSpecSupport
   with Awaiting
   with MockitoSugar
   with BeforeAndAfterEach {
 
 
-  def repository(implicit mongo: () => DB) = new PropertyDetailsReactiveMongoRepository
+  def repository = new PropertyDetailsReactiveMongoRepository
 
   override def beforeEach(): Unit = {
     await(repository.drop)

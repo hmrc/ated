@@ -16,37 +16,32 @@
 
 package repository
 
+import java.util.concurrent.TimeUnit
 import metrics.{Metrics, MetricsEnum}
-import models.{DisposeLiabilityReturn, PropertyDetails}
+import models.{CalculatedPeriod, PropertyDetails, PropertyDetailsAddress, PropertyDetailsCalculated, PropertyDetailsPeriod, PropertyDetailsTitle, PropertyDetailsValue}
+import mongo.{MongoCollection2, ReactiveRepository, CodecProviders}
+import mongo.json.ReactiveMongoFormats
 import org.joda.time.{DateTime, DateTimeZone}
-import play.api.Logger
-/*import play.modules.reactivemongo.MongoDbConnection
-import reactivemongo.api.Cursor.FailOnError
-import reactivemongo.api.DB
-import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.{BSONDocument, BSONObjectID}
-import reactivemongo.play.json.ImplicitBSONHandlers._
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.mongo.ReactiveRepository*/
-import mongo.ReactiveRepository
+import org.bson.codecs.configuration.CodecRegistries
+import org.mongodb.scala.{Document, MongoCollection, MongoDatabase}
+import org.mongodb.scala.model.{Filters, Indexes, IndexModel, IndexOptions, Updates, UpdateOptions, FindOneAndReplaceOptions}
 import org.mongodb.scala.bson.BsonObjectId
+import org.mongodb.scala.bson.codecs.Macros
+import play.api.Logger
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.DurationInt
 
 sealed trait PropertyDetailsCache
-
 case object PropertyDetailsCached extends PropertyDetailsCache
-
 case object PropertyDetailsCacheError extends PropertyDetailsCache
 
 sealed trait PropertyDetailsDelete
-
 case object PropertyDetailsDeleted extends PropertyDetailsDelete
-
 case object PropertyDetailsDeleteError extends PropertyDetailsDelete
 
-trait PropertyDetailsMongoRepository extends ReactiveRepository[PropertyDetails, BsonObjectId] {
+trait PropertyDetailsMongoRepository {
 
   def cachePropertyDetails(propertyDetails: PropertyDetails): Future[PropertyDetailsCache]
 
@@ -58,119 +53,113 @@ trait PropertyDetailsMongoRepository extends ReactiveRepository[PropertyDetails,
 
   def deletePropertyDetailsByfieldName(atedRefNo: String, id: String): Future[PropertyDetailsDelete]
 
-  def metrics: Metrics
-
+  def drop: Future[Unit]
 }
 
-object PropertyDetailsMongoRepository extends MongoDbConnection {
-
-  // $COVERAGE-OFF$
-  private lazy val propertyDetailsRepository = new PropertyDetailsReactiveMongoRepository
-  // $COVERAGE-ON$
-
-  def apply(): PropertyDetailsMongoRepository = propertyDetailsRepository
-
+object PropertyDetailsMongoRepository {
+  private lazy val propertyDetailsMongoRepository = new PropertyDetailsReactiveMongoRepository
+  def apply(): PropertyDetailsMongoRepository = propertyDetailsMongoRepository
 }
 
-class PropertyDetailsReactiveMongoRepository(implicit mongo: () => DB)
-  extends ReactiveRepository[PropertyDetails, BsonObjectId]("propertyDetails", mongo, PropertyDetails.formats, ReactiveMongoFormats.objectIdFormats)
-    with PropertyDetailsMongoRepository {
+class PropertyDetailsReactiveMongoRepository
+    extends PropertyDetailsMongoRepository
+       with WithTimer {
 
-  val metrics: Metrics = Metrics
+  val collection: MongoCollection[PropertyDetails] =
+    MongoCollection2.collection("propertyDetails",
+      CodecRegistries.fromProviders(
+          Macros.createCodecProvider[PropertyDetails]()
+        , Macros.createCodecProvider[PropertyDetailsAddress]()
+        , Macros.createCodecProvider[PropertyDetailsTitle]()
+        , Macros.createCodecProvider[PropertyDetailsValue]()
+        , Macros.createCodecProvider[PropertyDetailsPeriod]()
+        , Macros.createCodecProvider[PropertyDetailsCalculated]()
+        , Macros.createCodecProvider[CalculatedPeriod]()
+        , CodecProviders.bigDecimalCodecProvider
+        , CodecProviders.localDateCodecProvider
+        , CodecProviders.dateTimeCodecProvider
+        ))
 
-  override def indexes: Seq[Index] = {
-    Seq(
-      Index(Seq("id" -> IndexType.Ascending), name = Some("idIndex"), unique = true, sparse = true),
-      Index(Seq("id" -> IndexType.Ascending, "periodKey" -> IndexType.Ascending, "atedRefNo" -> IndexType.Ascending), name = Some("idAndperiodKeyAndAtedRefIndex"), unique = true),
-      Index(Seq("atedRefNo" -> IndexType.Ascending), name = Some("atedRefIndex")),
-      Index(Seq("timestamp" -> IndexType.Ascending), Some("propDetailsDraftExpiry"), options = BSONDocument("expireAfterSeconds" -> 60 * 60 * 24 * 28), sparse = true, background = true)
-    )
-  }
+  Await.result(collection
+    .createIndexes(Seq(
+        IndexModel( Indexes.ascending("id")
+                  , IndexOptions().name("idIndex").unique(true).sparse(true)
+                  )
+      , IndexModel( Indexes.ascending("id", "periodKey", "atedRefNo")
+                  , IndexOptions().name("idAndperiodKeyAndAtedRefIndex").unique(true)
+                  )
+      , IndexModel( Indexes.ascending("atedRefNo")
+                  , IndexOptions().name("atedRefIndex")
+                  )
+      , IndexModel( Indexes.ascending("timestamp")
+                  , IndexOptions().name("propDetailsDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true)
+                  )
+      )).toFuture, 1.seconds)
 
-  // $COVERAGE-OFF$
-  def cachePropertyDetails(propertyDetails: PropertyDetails): Future[PropertyDetailsCache] = {
-    val timerContext = metrics.startTimer(MetricsEnum.RepositoryInsertPropDetails)
-    val query = BSONDocument("periodKey" -> propertyDetails.periodKey, "atedRefNo" -> propertyDetails.atedRefNo, "id" -> propertyDetails.id)
-    collection.update(query, propertyDetails.copy(timeStamp = DateTime.now(DateTimeZone.UTC)), upsert = true, multi = false).map { writeResult =>
-      timerContext.stop()
-      writeResult.ok match {
-        case true => PropertyDetailsCached
-        case _ => PropertyDetailsCacheError
+
+  def cachePropertyDetails(propertyDetails: PropertyDetails): Future[PropertyDetailsCache] =
+    withTimer(MetricsEnum.RepositoryInsertDispLiability){
+    collection
+      .findOneAndReplace(
+          filter      = Document(
+                            "periodKey" -> propertyDetails.periodKey
+                          , "atedRefNo" -> propertyDetails.atedRefNo
+                          , "id"        -> propertyDetails.id
+                          )
+        , replacement = propertyDetails
+                          .copy(timeStamp = DateTime.now(DateTimeZone.UTC))
+        , options = FindOneAndReplaceOptions().upsert(true)
+        )
+      .toFuture
+      .map(_ => PropertyDetailsCached)
+      .recover { case e  => Logger.warn("Failed to update or insert property details", e); PropertyDetailsCacheError }
+    }
+
+  def fetchPropertyDetails(atedRefNo: String): Future[Seq[PropertyDetails]] =
+    withTimer(MetricsEnum.RepositoryFetchPropDetails){
+      collection
+        .find(filter = Document("atedRefNo" -> atedRefNo))
+        .toFuture
+    }
+
+  def fetchPropertyDetailsById(atedRefNo: String, id: String): Future[Seq[PropertyDetails]] =
+    withTimer(MetricsEnum.RepositoryFetchPropDetails){
+      collection
+        .find(filter = Document("atedRefNo" -> atedRefNo, "id" -> id))
+        .toFuture
+    }
+
+  def deletePropertyDetails(atedRefNo: String): Future[PropertyDetailsDelete] =
+    withTimer(MetricsEnum.RepositoryDeletePropDetails){
+      collection
+        .deleteMany(filter = Document("atedRefNo" -> atedRefNo))
+        .toFuture
+        .map(_.getDeletedCount match {
+          case 1 => PropertyDetailsDeleted
+          case _ => PropertyDetailsDeleteError
+          })
+        .recover {
+          case e => Logger.warn("Failed to remove property details", e); PropertyDetailsDeleteError
       }
-    }.recover {
-      // $COVERAGE-OFF$
-      case e => Logger.warn("Failed to update or insert property details", e)
-        timerContext.stop()
-        PropertyDetailsCacheError
-      // $COVERAGE-ON$
     }
-  }
 
-  // $COVERAGE-OFF$
-  def fetchPropertyDetails(atedRefNo: String): Future[Seq[PropertyDetails]] = {
-    val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchPropDetails)
-    val query = BSONDocument("atedRefNo" -> atedRefNo)
-
-    //TODO: Replace with find from ReactiveRepository
-    val result:Future[Seq[PropertyDetails]] = collection.find(query).cursor[PropertyDetails]().collect[Seq](maxDocs = -1, err = FailOnError[Seq[PropertyDetails]]())
-
-    result onComplete {
-      _ => timerContext.stop()
-    }
-    result
-  }
-  // $COVERAGE-ON$
-
-  // $COVERAGE-OFF$
-  def fetchPropertyDetailsById(atedRefNo: String, id: String): Future[Seq[PropertyDetails]] = {
-    val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchPropDetails)
-    val query = BSONDocument("atedRefNo" -> atedRefNo, "id" -> id)
-
-    //TODO: Replace with find from ReactiveRepository
-    val result:Future[Seq[PropertyDetails]] = collection.find(query).cursor[PropertyDetails]().collect[Seq](maxDocs = -1, err = FailOnError[Seq[PropertyDetails]]())
-
-    result onComplete {
-      _ => timerContext.stop()
-    }
-    result
-  }
-  // $COVERAGE-ON$
-
-  // $COVERAGE-OFF$
-  def deletePropertyDetails(atedRefNo: String): Future[PropertyDetailsDelete] = {
-    val timerContext = metrics.startTimer(MetricsEnum.RepositoryDeletePropDetails)
-    val query = BSONDocument("atedRefNo" -> atedRefNo)
-    collection.remove(query).map { removeResult =>
-      removeResult.ok match {
-        case true => PropertyDetailsDeleted
-        case _ => PropertyDetailsDeleteError
+  def deletePropertyDetailsByfieldName(atedRefNo: String, id: String): Future[PropertyDetailsDelete] =
+    withTimer(MetricsEnum.RepositoryDeletePropDetails){
+      collection
+        .deleteOne(filter = Document("atedRefNo" -> atedRefNo, "id" -> id))
+        .toFuture
+        .map(_.getDeletedCount match {
+          case 1 => PropertyDetailsDeleted
+          case _ => PropertyDetailsDeleteError
+          })
+        .recover {
+          case e => Logger.warn("Failed to remove property details", e); PropertyDetailsDeleteError
       }
-    }.recover {
-      // $COVERAGE-OFF$
-      case e => Logger.warn("Failed to remove property details", e)
-        timerContext.stop()
-        PropertyDetailsDeleteError
-      // $COVERAGE-ON$
     }
-  }
-  // $COVERAGE-ON$
 
-  // $COVERAGE-OFF$
-  def deletePropertyDetailsByfieldName(atedRefNo: String, id: String): Future[PropertyDetailsDelete] = {
-    val timerContext = metrics.startTimer(MetricsEnum.RepositoryDeletePropDetailsByFieldName)
-    val query = BSONDocument("atedRefNo" -> atedRefNo, "id" -> id)
-    collection.remove(query).map { removeResult =>
-      removeResult.ok match {
-        case true => PropertyDetailsDeleted
-        case _ => PropertyDetailsDeleteError
-      }
-    }.recover {
-      case e => Logger.warn("Failed to remove property details", e)
-        timerContext.stop()
-        PropertyDetailsDeleteError
-    }
-  }
-  // $COVERAGE-ON$
-
-
+  def drop: Future[Unit] =
+    collection
+      .drop()
+      .toFuture
+      .map(_ => ())
 }

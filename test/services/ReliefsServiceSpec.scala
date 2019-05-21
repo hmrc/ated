@@ -28,7 +28,6 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
 import play.api.libs.json.Json
 import play.api.test.Helpers._
-import reactivemongo.api.commands.WriteResult
 import repository.{ReliefCached, ReliefDeleted, ReliefsMongoRepository}
 
 import scala.concurrent.Future
@@ -39,7 +38,6 @@ class ReliefsServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSug
 
   val mockReliefsCache = mock[ReliefsMongoRepository]
   val mockEtmpConnector = mock[EtmpReturnsConnector]
-  val mockWriteResult = mock[WriteResult]
   val mockAuthConnector = mock[AuthConnector]
   val mockSubscriptionDataService = mock[SubscriptionDataService]
   val mockEmailConnector = mock[EmailConnector]
@@ -59,7 +57,6 @@ class ReliefsServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSug
   override def beforeEach = {
     reset(mockReliefsCache)
     reset(mockEtmpConnector)
-    reset(mockWriteResult)
     reset(mockAuthConnector)
     reset(mockEmailConnector)
     reset(mockSubscriptionDataService)
