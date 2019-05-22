@@ -21,21 +21,24 @@ import models.DisposeLiabilityReturn
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
-//import reactivemongo.api.DB
-//import uk.gov.hmrc.mongo.{Awaiting, MongoSpecSupport}
-import utils.Awaiting
+import org.scalatest.concurrent.ScalaFutures
+import mongo.{MongoSpecSupport, RepositoryPreparation}
+import scala.concurrent.ExecutionContext
 
 class DisposeLiabilityReturnMongoRepositorySpec extends PlaySpec
   with OneServerPerSuite
-  // with MongoSpecSupport
-  with Awaiting
+  with ScalaFutures
+  with MongoSpecSupport
+  with RepositoryPreparation
   with MockitoSugar
   with BeforeAndAfterEach {
+
+  import ExecutionContext.Implicits.global
 
   lazy val repository = new DisposeLiabilityReturnReactiveMongoRepository()
 
   override def beforeEach(): Unit = {
-    await(repository.drop)
+    prepare(repository)
   }
 
   "DisposeLiabilityReturnRepository" must {
@@ -49,40 +52,41 @@ class DisposeLiabilityReturnMongoRepositorySpec extends PlaySpec
     "cacheDisposeLiabilityReturns" must {
 
       "cache DisposeLiabilityReturn into mongo" in {
-        await(repository.cacheDisposeLiabilityReturns(disposeLiability1))
+        repository.cacheDisposeLiabilityReturns(disposeLiability1).futureValue
       }
 
       "does not save the next disposeLiabilityReturns into mongo, if same id are passed for next document" in {
-        await(repository.cacheDisposeLiabilityReturns(disposeLiability1))
-        await(repository.cacheDisposeLiabilityReturns(disposeLiability2.copy(id = "123456789012")))
-        await(repository.fetchDisposeLiabilityReturns(disposeLiability1.atedRefNo)).isEmpty must be(false)
+        repository.cacheDisposeLiabilityReturns(disposeLiability1).futureValue
+        repository.cacheDisposeLiabilityReturns(disposeLiability2.copy(id = "123456789012")).futureValue
+        repository.fetchDisposeLiabilityReturns(disposeLiability1.atedRefNo).futureValue.isEmpty must be(false)
+        repository.fetchDisposeLiabilityReturns(disposeLiability2.atedRefNo).futureValue.isEmpty must be(true)
       }
     }
 
     "fetchDisposeLiabilityReturns" must {
       "if data doesn't exist, should return empty list" in {
-        await(repository.fetchDisposeLiabilityReturns(disposeLiability1.atedRefNo)).isEmpty must be(true)
+        repository.fetchDisposeLiabilityReturns(disposeLiability1.atedRefNo).futureValue.isEmpty must be(true)
       }
       "if data does exist, should return that in list" in {
-        await(repository.cacheDisposeLiabilityReturns(disposeLiability1))
-        await(repository.cacheDisposeLiabilityReturns(disposeLiability2))
-        await(repository.fetchDisposeLiabilityReturns(disposeLiability1.atedRefNo)).isEmpty must be(false)
-        await(repository.fetchDisposeLiabilityReturns(disposeLiability2.atedRefNo)).isEmpty must be(false)
+        repository.cacheDisposeLiabilityReturns(disposeLiability1).futureValue
+        repository.cacheDisposeLiabilityReturns(disposeLiability2).futureValue
+        repository.fetchDisposeLiabilityReturns(disposeLiability1.atedRefNo).futureValue.isEmpty must be(false)
+        repository.fetchDisposeLiabilityReturns(disposeLiability2.atedRefNo).futureValue.isEmpty must be(false)
       }
     }
 
     "deleteDisposeLiabilityReturns" must {
       "delete data from mongo" in {
-        await(repository.cacheDisposeLiabilityReturns(disposeLiability1))
-        await(repository.cacheDisposeLiabilityReturns(disposeLiability2))
+        repository.cacheDisposeLiabilityReturns(disposeLiability1).futureValue
+        repository.cacheDisposeLiabilityReturns(disposeLiability2).futureValue
 
-        await(repository.fetchDisposeLiabilityReturns(disposeLiability1.atedRefNo)).isEmpty must be(false)
-        await(repository.fetchDisposeLiabilityReturns(disposeLiability2.atedRefNo)).isEmpty must be(false)
+        repository.fetchDisposeLiabilityReturns(disposeLiability1.atedRefNo).futureValue.isEmpty must be(false)
+        repository.fetchDisposeLiabilityReturns(disposeLiability2.atedRefNo).futureValue.isEmpty must be(false)
 
-        await(repository.deleteDisposeLiabilityReturns(disposeLiability1.atedRefNo))
+        repository.deleteDisposeLiabilityReturns(disposeLiability1.atedRefNo).futureValue
 
-        await(repository.fetchDisposeLiabilityReturns(disposeLiability1.atedRefNo)).isEmpty must be(true)
-        await(repository.fetchDisposeLiabilityReturns(disposeLiability2.atedRefNo)).isEmpty must be(false)
+        repository.fetchDisposeLiabilityReturns(disposeLiability1.atedRefNo).futureValue.isEmpty must be(true)
+        repository.fetchDisposeLiabilityReturns(disposeLiability2.atedRefNo).futureValue.isEmpty must be(false)
       }
     }
   }

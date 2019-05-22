@@ -18,15 +18,12 @@ package repository
 
 import java.util.concurrent.TimeUnit
 import metrics.{Metrics, MetricsEnum}
-import models.{DisposeLiabilityReturn, ReliefsTaxAvoidance, Reliefs, TaxAvoidance}
-import mongo.{MongoCollection2, CodecProviders}
-import mongo.json.ReactiveMongoFormats
-import org.bson.codecs.configuration.CodecRegistries
-import org.joda.time.{DateTime, DateTimeZone, LocalDate}
-import org.mongodb.scala.model.{Filters, Indexes, IndexModel, IndexOptions, Updates, UpdateOptions, FindOneAndReplaceOptions}
+import models.ReliefsTaxAvoidance
+import mongo.{MongoDbConnection, ReactiveRepository}
+import mongo.playjson.CollectionFactory
+import org.joda.time.{DateTime, DateTimeZone}
+import org.mongodb.scala.model.{Indexes, IndexModel, IndexOptions, FindOneAndReplaceOptions}
 import org.mongodb.scala.{Document, MongoCollection, MongoDatabase}
-import org.mongodb.scala.bson.BsonObjectId
-import org.mongodb.scala.bson.codecs.Macros
 import play.api.Logger
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -50,39 +47,40 @@ trait ReliefsMongoRepository  {
   def deleteReliefs(atedRefNo: String): Future[ReliefDelete]
 
   def deleteDraftReliefByYear(atedRefNo: String, periodKey: Int): Future[ReliefDelete]
-
-  def drop: Future[Unit]
 }
 
-object ReliefsMongoRepository {
+
+object ReliefsMongoRepository extends MongoDbConnection {
   private lazy val reliefsMongoRepository = new ReliefsReactiveMongoRepository
   def apply(): ReliefsMongoRepository = reliefsMongoRepository
 }
 
-class ReliefsReactiveMongoRepository
+class ReliefsReactiveMongoRepository(implicit db: MongoDatabase)
   extends ReliefsMongoRepository
+     with ReactiveRepository[ReliefsTaxAvoidance]
      with WithTimer {
 
-  val collection: MongoCollection[ReliefsTaxAvoidance] =
-    MongoCollection2.collection("reliefs", ReliefsTaxAvoidance.formats)
+  override val metrics = Metrics
 
+  override val collection: MongoCollection[ReliefsTaxAvoidance] =
+    CollectionFactory.collection(db, "reliefs", ReliefsTaxAvoidance.formats)
 
+  override val indices = Seq(
+      IndexModel( Indexes.ascending("id")
+                , IndexOptions().name("idIndex").unique(true).sparse(true)
+                )
+    , IndexModel( Indexes.ascending("periodKey", "atedRefNo")
+                , IndexOptions().name("periodKeyAndAtedRefIndex").unique(true)
+                )
+    , IndexModel( Indexes.ascending("atedRefNo")
+                , IndexOptions().name("atedRefIndex")
+                )
+    , IndexModel( Indexes.ascending("timestamp")
+                , IndexOptions().name("reliefDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true)
+                )
+    )
 
-  Await.result(collection
-    .createIndexes(Seq(
-        IndexModel( Indexes.ascending("id")
-                  , IndexOptions().name("idIndex").unique(true).sparse(true)
-                  )
-      , IndexModel( Indexes.ascending("periodKey", "atedRefNo")
-                  , IndexOptions().name("periodKeyAndAtedRefIndex").unique(true)
-                  )
-      , IndexModel( Indexes.ascending("atedRefNo")
-                  , IndexOptions().name("atedRefIndex")
-                  )
-      , IndexModel( Indexes.ascending("timestamp")
-                  , IndexOptions().name("reliefDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true)
-                  )
-      )).toFuture, 1.seconds)
+  Await.result(collection.createIndexes(indices).toFuture, 1.seconds)
 
 
   def cacheRelief(relief: ReliefsTaxAvoidance): Future[ReliefCached] =
@@ -137,10 +135,4 @@ class ReliefsReactiveMongoRepository
           })
         .recover { case e => Logger.warn("Failed to remove relief by year", e); ReliefDeletedError }
     }
-
-  def drop: Future[Unit] =
-    collection
-      .drop()
-      .toFuture
-      .map(_ => ())
 }

@@ -18,7 +18,7 @@ package models
 
 import play.api.libs.json._
 import org.mongodb.scala.bson.BsonObjectId
-import mongo.CreationAndLastModifiedDetail
+import mongo.playjson.CreationAndLastModifiedDetail
 import org.mongodb.scala.{Document, MongoClient, MongoDatabase, MongoCollection}
 import org.mongodb.scala.model.{Filters, Updates, UpdateOptions}
 
@@ -53,7 +53,7 @@ case class Cache(id: Id, data: Option[JsValue] = None,
 
 object Cache {
 
-  import mongo.json.ReactiveMongoFormats
+  import mongo.playjson.ReactiveMongoFormats
 
   final val DataAttributeName = "data"
 

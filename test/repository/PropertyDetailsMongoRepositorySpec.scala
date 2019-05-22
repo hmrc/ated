@@ -17,25 +17,27 @@
 package repository
 
 import builders.PropertyDetailsBuilder
+import mongo.{MongoSpecSupport, RepositoryPreparation}
 import org.scalatest._
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
-//import reactivemongo.api.DB
-// import uk.gov.hmrc.mongo.{Awaiting, MongoSpecSupport}
-import utils.Awaiting
+import scala.concurrent.ExecutionContext
 
 class PropertyDetailsMongoRepositorySpec extends PlaySpec
   with OneServerPerSuite
-  // with MongoSpecSupport
-  with Awaiting
+  with ScalaFutures
+  with MongoSpecSupport
+  with RepositoryPreparation
   with MockitoSugar
   with BeforeAndAfterEach {
 
+  import ExecutionContext.Implicits.global
 
-  def repository = new PropertyDetailsReactiveMongoRepository
+  lazy val repository = new PropertyDetailsReactiveMongoRepository
 
   override def beforeEach(): Unit = {
-    await(repository.drop)
+    prepare(repository)
   }
 
   lazy val propertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1")
@@ -47,44 +49,42 @@ class PropertyDetailsMongoRepositorySpec extends PlaySpec
     "Save stuff in mongo" should {
 
       "do it" in {
-        val created = await(repository.cachePropertyDetails(propertyDetails1))
+        val created = repository.cachePropertyDetails(propertyDetails1).futureValue
       }
 
       "overwrite old object" in {
-        await(repository.cachePropertyDetails(propertyDetails1))
-        await(repository.fetchPropertyDetails("ated-ref-1")).isEmpty must be(false)
+        repository.cachePropertyDetails(propertyDetails1).futureValue
+        repository.fetchPropertyDetails("ated-ref-1").futureValue.isEmpty must be(false)
       }
     }
 
     "retrieve stuff in mongo" should {
 
       "not find if something doesn't exist" in {
-        await(repository.fetchPropertyDetails("ated-ref-2")).isEmpty must be(true)
+        repository.fetchPropertyDetails("ated-ref-2").futureValue.isEmpty must be(true)
       }
     }
 
     "fetch the correct property details" in {
 
-      await(repository.cachePropertyDetails(propertyDetails1))
-      await(repository.cachePropertyDetails(propertyDetails2))
+      repository.cachePropertyDetails(propertyDetails1).futureValue
+      repository.cachePropertyDetails(propertyDetails2).futureValue
 
-      await(repository.fetchPropertyDetails("ated-ref-1")).isEmpty must be(false)
-      await(repository.fetchPropertyDetails("ated-ref-2")).isEmpty must be(false)
-
+      repository.fetchPropertyDetails("ated-ref-1").futureValue.isEmpty must be(false)
+      repository.fetchPropertyDetails("ated-ref-2").futureValue.isEmpty must be(false)
     }
 
     "retrieve stuff in mongo by property id" should {
 
       "not find if something doesn't exist" in {
-        await(repository.fetchPropertyDetailsById("ated-ref-1", "1")).isEmpty must be(true)
+        repository.fetchPropertyDetailsById("ated-ref-1", "1").futureValue.isEmpty must be(true)
       }
 
       "fetch the correct property details" in {
-        await(repository.cachePropertyDetails(propertyDetails1))
+        repository.cachePropertyDetails(propertyDetails1).futureValue
 
-        await(repository.fetchPropertyDetailsById("ated-ref-1", "1")).isEmpty must be(false)
-        await(repository.fetchPropertyDetails("ated-ref-2")).isEmpty must be(true)
-
+        repository.fetchPropertyDetailsById("ated-ref-1", "1").futureValue.isEmpty must be(false)
+        repository.fetchPropertyDetails("ated-ref-2").futureValue.isEmpty must be(true)
       }
     }
 
@@ -92,44 +92,42 @@ class PropertyDetailsMongoRepositorySpec extends PlaySpec
 
       "delete the correct property details" in {
 
-        await(repository.cachePropertyDetails(propertyDetails1))
-        await(repository.cachePropertyDetails(propertyDetails2))
+        repository.cachePropertyDetails(propertyDetails1).futureValue
+        repository.cachePropertyDetails(propertyDetails2).futureValue
 
-        await(repository.fetchPropertyDetails("ated-ref-1")).isEmpty must be(false)
-        await(repository.fetchPropertyDetails("ated-ref-2")).isEmpty must be(false)
+        repository.fetchPropertyDetails("ated-ref-1").futureValue.isEmpty must be(false)
+        repository.fetchPropertyDetails("ated-ref-2").futureValue.isEmpty must be(false)
 
-        await(repository.deletePropertyDetails("ated-ref-1"))
+        repository.deletePropertyDetails("ated-ref-1").futureValue
 
-        await(repository.fetchPropertyDetails("ated-ref-1")).isEmpty must be(true)
-        await(repository.fetchPropertyDetails("ated-ref-2")).isEmpty must be(false)
-
+        repository.fetchPropertyDetails("ated-ref-1").futureValue.isEmpty must be(true)
+        repository.fetchPropertyDetails("ated-ref-2").futureValue.isEmpty must be(false)
       }
     }
 
     "delete chargeable documents in mongo based on property id" in {
 
-      await(repository.cachePropertyDetails(propertyDetails1))
-      await(repository.cachePropertyDetails(propertyDetails2))
+      repository.cachePropertyDetails(propertyDetails1).futureValue
+      repository.cachePropertyDetails(propertyDetails2).futureValue
 
-      await(repository.fetchPropertyDetails("ated-ref-1")).isEmpty must be(false)
-      await(repository.fetchPropertyDetails("ated-ref-2")).isEmpty must be(false)
+      repository.fetchPropertyDetails("ated-ref-1").futureValue.isEmpty must be(false)
+      repository.fetchPropertyDetails("ated-ref-2").futureValue.isEmpty must be(false)
 
-      await(repository.deletePropertyDetailsByfieldName("ated-ref-1", "1"))
-      await(repository.deletePropertyDetailsByfieldName("ated-ref-1", "2"))
+      repository.deletePropertyDetailsByfieldName("ated-ref-1", "1").futureValue
+      repository.deletePropertyDetailsByfieldName("ated-ref-1", "2").futureValue
 
-      await(repository.fetchPropertyDetails("ated-ref-1")).isEmpty must be(true)
-      await(repository.fetchPropertyDetails("ated-ref-2")).isEmpty must be(false)
-
+      repository.fetchPropertyDetails("ated-ref-1").futureValue.isEmpty must be(true)
+      repository.fetchPropertyDetails("ated-ref-2").futureValue.isEmpty must be(false)
     }
 
     "update chargeable documents for an existing property id" in {
 
-      await(repository.cachePropertyDetails(propertyDetails1))
-      await(repository.cachePropertyDetails(propertyDetails2))
+      repository.cachePropertyDetails(propertyDetails1).futureValue
+      repository.cachePropertyDetails(propertyDetails2).futureValue
 
-      await(repository.deletePropertyDetailsByfieldName("ated-ref-1", "1"))
+      repository.deletePropertyDetailsByfieldName("ated-ref-1", "1").futureValue
 
-      await(repository.fetchPropertyDetails("ated-ref-1")).isEmpty must be(true)
+      repository.fetchPropertyDetails("ated-ref-1").futureValue.isEmpty must be(true)
     }
 
   }

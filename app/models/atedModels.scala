@@ -18,7 +18,7 @@ package models
 
 import play.api.libs.json.Json
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
-import mongo.json.ReactiveMongoFormats
+import mongo.playjson.ReactiveMongoFormats
 import play.api.libs.json.Format
 
 case class PendingClient(

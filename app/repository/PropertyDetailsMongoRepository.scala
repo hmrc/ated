@@ -18,15 +18,12 @@ package repository
 
 import java.util.concurrent.TimeUnit
 import metrics.{Metrics, MetricsEnum}
-import models.{CalculatedPeriod, PropertyDetails, PropertyDetailsAddress, PropertyDetailsCalculated, PropertyDetailsPeriod, PropertyDetailsTitle, PropertyDetailsValue}
-import mongo.{MongoCollection2, CodecProviders}
-import mongo.json.ReactiveMongoFormats
+import models.PropertyDetails
+import mongo.{MongoDbConnection, ReactiveRepository}
+import mongo.playjson.CollectionFactory
 import org.joda.time.{DateTime, DateTimeZone}
-import org.bson.codecs.configuration.CodecRegistries
 import org.mongodb.scala.{Document, MongoCollection, MongoDatabase}
-import org.mongodb.scala.model.{Filters, Indexes, IndexModel, IndexOptions, Updates, UpdateOptions, FindOneAndReplaceOptions}
-import org.mongodb.scala.bson.BsonObjectId
-import org.mongodb.scala.bson.codecs.Macros
+import org.mongodb.scala.model.{Indexes, IndexModel, IndexOptions, FindOneAndReplaceOptions}
 import play.api.Logger
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -52,24 +49,24 @@ trait PropertyDetailsMongoRepository {
   def deletePropertyDetails(atedRefNo: String): Future[PropertyDetailsDelete]
 
   def deletePropertyDetailsByfieldName(atedRefNo: String, id: String): Future[PropertyDetailsDelete]
-
-  def drop: Future[Unit]
 }
 
-object PropertyDetailsMongoRepository {
+object PropertyDetailsMongoRepository extends MongoDbConnection {
   private lazy val propertyDetailsMongoRepository = new PropertyDetailsReactiveMongoRepository
   def apply(): PropertyDetailsMongoRepository = propertyDetailsMongoRepository
 }
 
-class PropertyDetailsReactiveMongoRepository
+class PropertyDetailsReactiveMongoRepository(implicit db: MongoDatabase)
     extends PropertyDetailsMongoRepository
+       with ReactiveRepository[PropertyDetails]
        with WithTimer {
 
-  val collection: MongoCollection[PropertyDetails] =
-  MongoCollection2.collection("propertyDetails", PropertyDetails.formats)
+  override val metrics = Metrics
 
-  Await.result(collection
-    .createIndexes(Seq(
+  override val collection: MongoCollection[PropertyDetails] =
+    CollectionFactory.collection(db, "propertyDetails", PropertyDetails.formats)
+
+  override val indices = Seq(
         IndexModel( Indexes.ascending("id")
                   , IndexOptions().name("idIndex").unique(true).sparse(true)
                   )
@@ -82,7 +79,10 @@ class PropertyDetailsReactiveMongoRepository
       , IndexModel( Indexes.ascending("timestamp")
                   , IndexOptions().name("propDetailsDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true)
                   )
-      )).toFuture, 1.seconds)
+      )
+
+  Await.result(collection
+    .createIndexes(indices).toFuture, 1.seconds)
 
 
   def cachePropertyDetails(propertyDetails: PropertyDetails): Future[PropertyDetailsCache] =
@@ -144,10 +144,4 @@ class PropertyDetailsReactiveMongoRepository
           case e => Logger.warn("Failed to remove property details", e); PropertyDetailsDeleteError
       }
     }
-
-  def drop: Future[Unit] =
-    collection
-      .drop()
-      .toFuture
-      .map(_ => ())
 }

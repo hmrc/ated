@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package mongo.json
+package mongo.playjson
 
 import org.joda.time.{DateTime, DateTimeZone}
-import play.api.libs.json.{Format, Json, JsError, JsPath, JsValue, JsResult, JsSuccess, Reads, Writes, __}
 import org.mongodb.scala.bson.BsonObjectId
+import play.api.libs.json.{Format, Json, JsError, JsPath, JsValue, JsResult, JsSuccess, Reads, Writes, __}
 import scala.util.{Try, Success, Failure}
 
 trait ReactiveMongoFormats {

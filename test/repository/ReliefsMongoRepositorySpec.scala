@@ -19,24 +19,27 @@ package repository
 
 import builders.ReliefBuilder
 import models.{Reliefs, TaxAvoidance}
+import mongo.{MongoSpecSupport, RepositoryPreparation}
 import org.scalatest.BeforeAndAfterEach
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
-//import reactivemongo.api.DB
-// import uk.gov.hmrc.mongo.{Awaiting, MongoSpecSupport}
-import utils.Awaiting
+import scala.concurrent.ExecutionContext
 
 class ReliefsMongoRepositorySpec extends PlaySpec
   with OneServerPerSuite
-  // with MongoSpecSupport
-  with Awaiting
+  with ScalaFutures
+  with MongoSpecSupport
+  with RepositoryPreparation
   with MockitoSugar
   with BeforeAndAfterEach {
+
+  import ExecutionContext.Implicits.global
 
   def repository = new ReliefsReactiveMongoRepository
 
   override def beforeEach(): Unit = {
-    await(repository.drop)
+    prepare(repository)
   }
 
   val atedRefNo1 = "atedRef123"
@@ -49,31 +52,31 @@ class ReliefsMongoRepositorySpec extends PlaySpec
 
     "save relief draft" should {
       "save a new relief and then fetch" in {
-        await(repository.cacheRelief(relief1))
-        await(repository.fetchReliefs(atedRefNo1)).size must be(1)
+        repository.cacheRelief(relief1).futureValue
+        repository.fetchReliefs(atedRefNo1).futureValue.size must be(1)
       }
 
       "overwrite old relief when saving new one and fetch" in {
-        await(repository.cacheRelief(relief1))
-        await(repository.cacheRelief(relief2))
-        await(repository.fetchReliefs(atedRefNo1)).size must be(1)
-        await(repository.fetchReliefs(atedRefNo1)).head.reliefs.rentalBusiness must be(false)
-        await(repository.fetchReliefs(atedRefNo1)).head.reliefs.employeeOccupation must be(true)
+        repository.cacheRelief(relief1).futureValue
+        repository.cacheRelief(relief2).futureValue
+        repository.fetchReliefs(atedRefNo1).futureValue.size must be(1)
+        repository.fetchReliefs(atedRefNo1).futureValue.head.reliefs.rentalBusiness must be(false)
+        repository.fetchReliefs(atedRefNo1).futureValue.head.reliefs.employeeOccupation must be(true)
       }
     }
 
     "delete a relief" in {
-      await(repository.cacheRelief(relief1))
-      await(repository.deleteReliefs(atedRefNo1))
-      await(repository.fetchReliefs(atedRefNo1)).size must be(0)
+      repository.cacheRelief(relief1).futureValue
+      repository.deleteReliefs(atedRefNo1).futureValue
+      repository.fetchReliefs(atedRefNo1).futureValue.size must be(0)
     }
 
     "delete a relief by year" in {
-      await(repository.cacheRelief(relief1))
-      await(repository.cacheRelief(relief3))
-      await(repository.fetchReliefs(atedRefNo1)).size must be(2)
-      await(repository.deleteDraftReliefByYear(atedRefNo1, periodKey))
-      await(repository.fetchReliefs(atedRefNo1)).size must be(1)
+      repository.cacheRelief(relief1).futureValue
+      repository.cacheRelief(relief3).futureValue
+      repository.fetchReliefs(atedRefNo1).futureValue.size must be(2)
+      repository.deleteDraftReliefByYear(atedRefNo1, periodKey).futureValue
+      repository.fetchReliefs(atedRefNo1).futureValue.size must be(1)
     }
   }
 

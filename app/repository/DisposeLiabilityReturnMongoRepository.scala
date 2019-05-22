@@ -18,21 +18,17 @@ package repository
 
 import java.util.concurrent.TimeUnit
 import metrics.{Metrics, MetricsEnum}
-import models.{DisposeLiabilityReturn, FormBundleAddress, FormBundleProperty, FormBundlePropertyDetails, FormBundleReturn, DisposeLiability, DisposeCalculated, BankDetailsModel}
-import mongo.{MongoCollection2, CodecProviders}
-import mongo.json.ReactiveMongoFormats
-import org.bson.codecs.configuration.{CodecRegistry, CodecRegistries}
+import models.DisposeLiabilityReturn
+import mongo.{MongoDbConnection, ReactiveRepository}
+import mongo.playjson.CollectionFactory
 import org.joda.time.{DateTime, DateTimeZone}
-import org.mongodb.scala.{Document, MongoClient, MongoCollection, MongoDatabase}
-import org.mongodb.scala.bson.BsonObjectId
-import org.mongodb.scala.bson.codecs.{Macros, DEFAULT_CODEC_REGISTRY}
-import org.mongodb.scala.model.{Filters, Indexes, IndexModel, IndexOptions, Updates, UpdateOptions, FindOneAndReplaceOptions}
+import org.mongodb.scala.{Document, MongoCollection, MongoDatabase}
+import org.mongodb.scala.model.{Indexes, IndexModel, IndexOptions, FindOneAndReplaceOptions}
 import play.api.Logger
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
-import play.api.libs.json.Json
 
 sealed trait DisposeLiabilityReturnCache
 case object DisposeLiabilityReturnCached extends DisposeLiabilityReturnCache
@@ -49,37 +45,39 @@ trait DisposeLiabilityReturnMongoRepository {
   def fetchDisposeLiabilityReturns(atedRefNo: String): Future[Seq[DisposeLiabilityReturn]]
 
   def deleteDisposeLiabilityReturns(atedRefNo: String): Future[DisposeLiabilityReturnDelete]
-
-  def drop: Future[Unit]
 }
 
-object DisposeLiabilityReturnMongoRepository {
+object DisposeLiabilityReturnMongoRepository extends MongoDbConnection {
   private lazy val disposeLiabilityReturnMongoRepository = new DisposeLiabilityReturnReactiveMongoRepository
   def apply(): DisposeLiabilityReturnMongoRepository = disposeLiabilityReturnMongoRepository
 }
 
-class DisposeLiabilityReturnReactiveMongoRepository
+class DisposeLiabilityReturnReactiveMongoRepository(implicit db: MongoDatabase)
   extends DisposeLiabilityReturnMongoRepository
+     with ReactiveRepository[DisposeLiabilityReturn]
      with WithTimer {
 
-  val collection: MongoCollection[DisposeLiabilityReturn] =
-    MongoCollection2.collection("disposeLiabilityReturns", DisposeLiabilityReturn.formats)
+  override val metrics = Metrics
 
-  Await.result(collection
-    .createIndexes(Seq(
-        IndexModel( Indexes.ascending("id")
-                  , IndexOptions().name("idIndex").unique(true).sparse(true)
-                  )
-      , IndexModel( Indexes.ascending("id", "periodKey", "atedRefNo")
-                  , IndexOptions().name("idAndperiodKeyAndAtedRefIndex").unique(true)
-                  )
-      , IndexModel( Indexes.ascending("atedRefNo")
-                  , IndexOptions().name("atedRefIndex")
-                  )
-      , IndexModel( Indexes.ascending("timestamp")
-                  , IndexOptions().name("dispLiabilityDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true)
-                  )
-      )).toFuture, 1.seconds)
+  override val collection: MongoCollection[DisposeLiabilityReturn] =
+    CollectionFactory.collection(db, "disposeLiabilityReturns", DisposeLiabilityReturn.formats)
+
+  override val indices = Seq(
+      IndexModel( Indexes.ascending("id")
+                , IndexOptions().name("idIndex").unique(true).sparse(true)
+                )
+    , IndexModel( Indexes.ascending("id", "periodKey", "atedRefNo")
+                , IndexOptions().name("idAndperiodKeyAndAtedRefIndex").unique(true)
+                )
+    , IndexModel( Indexes.ascending("atedRefNo")
+                , IndexOptions().name("atedRefIndex")
+                )
+    , IndexModel( Indexes.ascending("timestamp")
+                , IndexOptions().name("dispLiabilityDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true)
+                )
+    )
+
+  Await.result(collection.createIndexes(indices).toFuture, 1.seconds)
 
   def cacheDisposeLiabilityReturns(disposeLiabilityReturn: DisposeLiabilityReturn): Future[DisposeLiabilityReturnCache] =
     withTimer(MetricsEnum.RepositoryInsertDispLiability){
@@ -118,16 +116,10 @@ class DisposeLiabilityReturnReactiveMongoRepository
           case e => Logger.warn("Failed to remove draft dispose liability", e); DisposeLiabilityReturnDeleteError
       }
     }
-
-  def drop: Future[Unit] =
-    collection
-      .drop()
-      .toFuture
-      .map(_ => ())
 }
 
 trait WithTimer {
-  val metrics = Metrics
+  def metrics: Metrics
   def withTimer[R](metricsEnum: MetricsEnum.MetricsEnum)(f: => Future[R]): Future[R] = {
     val timerContext = metrics.startTimer(metricsEnum)
     val res = f

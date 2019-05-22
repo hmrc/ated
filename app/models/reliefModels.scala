@@ -81,8 +81,8 @@ case class ReliefsTaxAvoidance(atedRefNo: String,
                                timeStamp: DateTime = DateTime.now(DateTimeZone.UTC))
 
 object ReliefsTaxAvoidance {
-  implicit val dateFormat = mongo.json.ReactiveMongoFormats.dateTimeFormats
-  implicit val idFormat = mongo.json.ReactiveMongoFormats.objectIdFormats
+  implicit val dateFormat = mongo.playjson.ReactiveMongoFormats.dateTimeFormats
+  implicit val idFormat = mongo.playjson.ReactiveMongoFormats.objectIdFormats
 
   val reliefTaxAvoidanceReads: Reads[ReliefsTaxAvoidance] = (
       (JsPath \ "periodKey").read[Int] and

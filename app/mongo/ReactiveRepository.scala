@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-package mongo.json
+package mongo
 
-object JsonExtensions {
+import org.mongodb.scala.MongoCollection
+import org.mongodb.scala.model.IndexModel
 
-  import play.api.libs.json.{JsPath, JsValue, __}
-
-  def copyKey(fromPath: JsPath, toPath: JsPath) =
-    __.json.update(toPath.json.copyFrom(fromPath.json.pick))
-
-  def moveKey(fromPath: JsPath, toPath: JsPath) =
-    (json: JsValue) => json.transform(copyKey(fromPath, toPath) andThen fromPath.json.prune).get
+trait ReactiveRepository[A] {
+  def collection: MongoCollection[A]
+  def indices: Seq[IndexModel]
 }

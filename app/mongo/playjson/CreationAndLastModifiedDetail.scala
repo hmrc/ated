@@ -14,26 +14,29 @@
  * limitations under the License.
  */
 
-package mongo
+package mongo.playjson
 
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.Json
 
 case class CreationAndLastModifiedDetail(
-  createdAt: DateTime   = DateTime.now.withZone(DateTimeZone.UTC),
-  lastUpdated: DateTime = DateTime.now.withZone(DateTimeZone.UTC)) {
+    createdAt: DateTime   = DateTime.now.withZone(DateTimeZone.UTC)
+  , lastUpdated: DateTime = DateTime.now.withZone(DateTimeZone.UTC)
+  ) {
 
-  def updated(updatedTime: DateTime) = copy(
-    lastUpdated = updatedTime
-  )
+  def updated(updatedTime: DateTime) =
+    copy(lastUpdated = updatedTime)
 }
 
 object CreationAndLastModifiedDetail {
-  implicit val dtf = json.ReactiveMongoFormats.dateTimeFormats
-  implicit val formats = Json.format[CreationAndLastModifiedDetail]
+  implicit val formats = {
+    implicit val dtf = ReactiveMongoFormats.dateTimeFormats
+    Json.format[CreationAndLastModifiedDetail]
+  }
 
-  def withTime(time: DateTime) = new CreationAndLastModifiedDetail(
-    createdAt   = time,
-    lastUpdated = time
-  )
+  def withTime(time: DateTime) =
+    new CreationAndLastModifiedDetail(
+      createdAt   = time
+    , lastUpdated = time
+    )
 }

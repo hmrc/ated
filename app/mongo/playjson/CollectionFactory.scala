@@ -14,23 +14,17 @@
  * limitations under the License.
  */
 
-package mongo
-import org.bson.codecs.configuration.{CodecProvider, CodecRegistry, CodecRegistries}
-import org.mongodb.scala.{MongoClient, MongoCollection, MongoDatabase}
-import org.mongodb.scala.bson.codecs.{Macros, DEFAULT_CODEC_REGISTRY}
-import scala.reflect.ClassTag
+package mongo.playjson
+
+import org.bson.codecs.configuration.CodecRegistries
+import org.mongodb.scala.{MongoCollection, MongoDatabase}
+import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import play.api.libs.json.Format
+import scala.reflect.ClassTag
 
-object MongoCollection2 {
-  def collection[A](collectionName: String, codecRegistry: CodecRegistry)(implicit ct: ClassTag[A]): MongoCollection[A] =
-    MongoClient(uri = "mongodb://localhost:27017")
-      .getDatabase(name = "ated")
-      .getCollection[A](collectionName)
-      .withCodecRegistry(CodecRegistries.fromRegistries(codecRegistry, DEFAULT_CODEC_REGISTRY))
-
-  def collection[A](collectionName: String, format: Format[A])(implicit ct: ClassTag[A]): MongoCollection[A] =
-    MongoClient(uri = "mongodb://localhost:27017")
-      .getDatabase(name = "ated")
+trait CollectionFactory {
+  def collection[A : ClassTag](db: MongoDatabase, collectionName: String, format: Format[A]): MongoCollection[A] =
+    db
       .getCollection[A](collectionName)
       .withCodecRegistry(CodecRegistries.fromRegistries(
           CodecRegistries.fromCodecs(Codecs.playFormatCodec(format))
@@ -38,3 +32,5 @@ object MongoCollection2 {
         ))
 
 }
+
+object CollectionFactory extends CollectionFactory
