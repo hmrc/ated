@@ -20,6 +20,10 @@ import org.bson.{BsonReader, BsonWriter}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
 import org.joda.time.{DateTime, LocalDate}
+import org.mongodb.scala.bson.collection.immutable.Document
+import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
+import org.mongodb.scala.MongoClient
+import play.api.libs.json.{Format, Json, JsValue, JsError, JsSuccess}
 import scala.reflect.ClassTag
 
 class LocalDateCodec extends Codec[LocalDate] {
@@ -56,6 +60,30 @@ class BigDecimalCodec extends Codec[BigDecimal] {
     BigDecimal.valueOf(reader.readDouble)
 }
 
+object Codecs {
+  def playFormatCodec[A](format: Format[A])(implicit ct: ClassTag[A]) = new Codec[A] {
+    private val documentCodec = DEFAULT_CODEC_REGISTRY.get(classOf[Document])
+
+    override def getEncoderClass(): Class[A] =
+      ct.runtimeClass.asInstanceOf[Class[A]]
+
+    override def encode(writer: BsonWriter, value: A, encoderContext: EncoderContext) = {
+      val json: JsValue = format.writes(value)
+      val document = Document(json.toString)
+      documentCodec.encode(writer, document, encoderContext)
+    }
+
+    override def decode(reader: BsonReader, decoderContext: DecoderContext): A = {
+      val document: Document = documentCodec.decode(reader, decoderContext)
+      val json = document.toJson
+      format.reads(Json.parse(json)) match {
+        case JsSuccess(v, _) => v
+        case JsError(errors) => sys.error(s"Failed to parse json as ${ct.runtimeClass.getName} '$json': $errors")
+      }
+    }
+  }
+}
+
 object CodecProviders {
 
   def createProvider[A](codec: Codec[A])(implicit ct: ClassTag[A]) = new CodecProvider {
@@ -65,9 +93,15 @@ object CodecProviders {
     }
   }
 
-  lazy val localDateCodecProvider = createProvider[LocalDate](new LocalDateCodec)
+  lazy val localDateCodecProvider =
+    createProvider[LocalDate](new LocalDateCodec)
 
-  lazy val dateTimeCodecProvider = createProvider[DateTime](new DateTimeCodec)
+  lazy val dateTimeCodecProvider =
+    createProvider[DateTime](new DateTimeCodec)
 
-  lazy val bigDecimalCodecProvider = createProvider[BigDecimal](new BigDecimalCodec)
+  lazy val bigDecimalCodecProvider =
+    createProvider[BigDecimal](new BigDecimalCodec)
+
+  def playFormatCodecProvider[A : ClassTag](format: Format[A]) =
+    createProvider[A](Codecs.playFormatCodec(format))
 }

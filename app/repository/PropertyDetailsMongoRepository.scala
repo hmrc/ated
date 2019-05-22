@@ -19,7 +19,7 @@ package repository
 import java.util.concurrent.TimeUnit
 import metrics.{Metrics, MetricsEnum}
 import models.{CalculatedPeriod, PropertyDetails, PropertyDetailsAddress, PropertyDetailsCalculated, PropertyDetailsPeriod, PropertyDetailsTitle, PropertyDetailsValue}
-import mongo.{MongoCollection2, ReactiveRepository, CodecProviders}
+import mongo.{MongoCollection2, CodecProviders}
 import mongo.json.ReactiveMongoFormats
 import org.joda.time.{DateTime, DateTimeZone}
 import org.bson.codecs.configuration.CodecRegistries
@@ -66,19 +66,7 @@ class PropertyDetailsReactiveMongoRepository
        with WithTimer {
 
   val collection: MongoCollection[PropertyDetails] =
-    MongoCollection2.collection("propertyDetails",
-      CodecRegistries.fromProviders(
-          Macros.createCodecProvider[PropertyDetails]()
-        , Macros.createCodecProvider[PropertyDetailsAddress]()
-        , Macros.createCodecProvider[PropertyDetailsTitle]()
-        , Macros.createCodecProvider[PropertyDetailsValue]()
-        , Macros.createCodecProvider[PropertyDetailsPeriod]()
-        , Macros.createCodecProvider[PropertyDetailsCalculated]()
-        , Macros.createCodecProvider[CalculatedPeriod]()
-        , CodecProviders.bigDecimalCodecProvider
-        , CodecProviders.localDateCodecProvider
-        , CodecProviders.dateTimeCodecProvider
-        ))
+  MongoCollection2.collection("propertyDetails", PropertyDetails.formats)
 
   Await.result(collection
     .createIndexes(Seq(
@@ -99,20 +87,20 @@ class PropertyDetailsReactiveMongoRepository
 
   def cachePropertyDetails(propertyDetails: PropertyDetails): Future[PropertyDetailsCache] =
     withTimer(MetricsEnum.RepositoryInsertDispLiability){
-    collection
-      .findOneAndReplace(
-          filter      = Document(
-                            "periodKey" -> propertyDetails.periodKey
-                          , "atedRefNo" -> propertyDetails.atedRefNo
-                          , "id"        -> propertyDetails.id
-                          )
-        , replacement = propertyDetails
-                          .copy(timeStamp = DateTime.now(DateTimeZone.UTC))
-        , options = FindOneAndReplaceOptions().upsert(true)
-        )
-      .toFuture
-      .map(_ => PropertyDetailsCached)
-      .recover { case e  => Logger.warn("Failed to update or insert property details", e); PropertyDetailsCacheError }
+      collection
+        .findOneAndReplace(
+            filter      = Document(
+                              "periodKey" -> propertyDetails.periodKey
+                            , "atedRefNo" -> propertyDetails.atedRefNo
+                            , "id"        -> propertyDetails.id
+                            )
+          , replacement = propertyDetails
+                            .copy(timeStamp = DateTime.now(DateTimeZone.UTC))
+          , options = FindOneAndReplaceOptions().upsert(true)
+          )
+        .toFuture
+        .map(_ => PropertyDetailsCached)
+        .recover { case e  => Logger.warn("Failed to update or insert property details", e); PropertyDetailsCacheError }
     }
 
   def fetchPropertyDetails(atedRefNo: String): Future[Seq[PropertyDetails]] =

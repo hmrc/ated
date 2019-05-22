@@ -19,7 +19,7 @@ package repository
 import java.util.concurrent.TimeUnit
 import metrics.{Metrics, MetricsEnum}
 import models.{DisposeLiabilityReturn, FormBundleAddress, FormBundleProperty, FormBundlePropertyDetails, FormBundleReturn, DisposeLiability, DisposeCalculated, BankDetailsModel}
-import mongo.{MongoCollection2, ReactiveRepository, CodecProviders}
+import mongo.{MongoCollection2, CodecProviders}
 import mongo.json.ReactiveMongoFormats
 import org.bson.codecs.configuration.{CodecRegistry, CodecRegistries}
 import org.joda.time.{DateTime, DateTimeZone}
@@ -32,6 +32,7 @@ import play.api.Logger
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
+import play.api.libs.json.Json
 
 sealed trait DisposeLiabilityReturnCache
 case object DisposeLiabilityReturnCached extends DisposeLiabilityReturnCache
@@ -62,20 +63,7 @@ class DisposeLiabilityReturnReactiveMongoRepository
      with WithTimer {
 
   val collection: MongoCollection[DisposeLiabilityReturn] =
-    MongoCollection2.collection("disposeLiabilityReturns",
-      CodecRegistries.fromProviders(
-          Macros.createCodecProvider[DisposeLiabilityReturn]()
-        , Macros.createCodecProvider[DisposeLiability]()
-        , Macros.createCodecProvider[DisposeCalculated]()
-        , Macros.createCodecProvider[FormBundleAddress]()
-        , Macros.createCodecProvider[FormBundleProperty]()
-        , Macros.createCodecProvider[FormBundlePropertyDetails]()
-        , Macros.createCodecProvider[FormBundleReturn]()
-        , Macros.createCodecProvider[BankDetailsModel]()
-        , CodecProviders.dateTimeCodecProvider
-        , CodecProviders.localDateCodecProvider
-        , CodecProviders.bigDecimalCodecProvider
-        ))
+    MongoCollection2.collection("disposeLiabilityReturns", DisposeLiabilityReturn.formats)
 
   Await.result(collection
     .createIndexes(Seq(
@@ -95,19 +83,19 @@ class DisposeLiabilityReturnReactiveMongoRepository
 
   def cacheDisposeLiabilityReturns(disposeLiabilityReturn: DisposeLiabilityReturn): Future[DisposeLiabilityReturnCache] =
     withTimer(MetricsEnum.RepositoryInsertDispLiability){
-    collection
-      .findOneAndReplace(
-          filter       = Document(
-                             "atedRefNo" -> disposeLiabilityReturn.atedRefNo
-                           , "id"        -> disposeLiabilityReturn.id
-                           )
-        , replacement = disposeLiabilityReturn
-                          .copy(timeStamp = DateTime.now(DateTimeZone.UTC))
-        , options     = FindOneAndReplaceOptions().upsert(true)
-        )
-      .toFuture
-      .map(_ => DisposeLiabilityReturnCached)
-      .recover { case e  => Logger.warn("Failed to cache dispose liability", e); DisposeLiabilityReturnCacheError }
+      collection
+        .findOneAndReplace(
+            filter       = Document(
+                              "atedRefNo" -> disposeLiabilityReturn.atedRefNo
+                            , "id"        -> disposeLiabilityReturn.id
+                            )
+          , replacement = disposeLiabilityReturn
+                            .copy(timeStamp = DateTime.now(DateTimeZone.UTC))
+          , options     = FindOneAndReplaceOptions().upsert(true)
+          )
+        .toFuture
+        .map(_ => DisposeLiabilityReturnCached)
+        .recover { case e  => Logger.warn("Failed to cache dispose liability", e); DisposeLiabilityReturnCacheError }
     }
 
   def fetchDisposeLiabilityReturns(atedRefNo: String): Future[Seq[DisposeLiabilityReturn]] =

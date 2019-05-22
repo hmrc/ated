@@ -60,7 +60,7 @@ trait ReactiveMongoFormats {
 
       def writes(o: A): JsValue = baseFormat.transform(moveKey(privateIdPath, publicIdPath)).writes(o)
     }
-}
+  }
 }
 
 object ReactiveMongoFormats extends ReactiveMongoFormats

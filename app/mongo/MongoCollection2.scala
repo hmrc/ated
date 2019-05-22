@@ -19,6 +19,7 @@ import org.bson.codecs.configuration.{CodecProvider, CodecRegistry, CodecRegistr
 import org.mongodb.scala.{MongoClient, MongoCollection, MongoDatabase}
 import org.mongodb.scala.bson.codecs.{Macros, DEFAULT_CODEC_REGISTRY}
 import scala.reflect.ClassTag
+import play.api.libs.json.Format
 
 object MongoCollection2 {
   def collection[A](collectionName: String, codecRegistry: CodecRegistry)(implicit ct: ClassTag[A]): MongoCollection[A] =
@@ -26,4 +27,14 @@ object MongoCollection2 {
       .getDatabase(name = "ated")
       .getCollection[A](collectionName)
       .withCodecRegistry(CodecRegistries.fromRegistries(codecRegistry, DEFAULT_CODEC_REGISTRY))
+
+  def collection[A](collectionName: String, format: Format[A])(implicit ct: ClassTag[A]): MongoCollection[A] =
+    MongoClient(uri = "mongodb://localhost:27017")
+      .getDatabase(name = "ated")
+      .getCollection[A](collectionName)
+      .withCodecRegistry(CodecRegistries.fromRegistries(
+          CodecRegistries.fromCodecs(Codecs.playFormatCodec(format))
+        , DEFAULT_CODEC_REGISTRY
+        ))
+
 }

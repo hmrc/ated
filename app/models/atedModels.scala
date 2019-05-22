@@ -18,6 +18,8 @@ package models
 
 import play.api.libs.json.Json
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
+import mongo.json.ReactiveMongoFormats
+import play.api.libs.json.Format
 
 case class PendingClient(
                           atedReferenceNo: String,
@@ -93,5 +95,8 @@ case class DisposeLiabilityReturn(atedRefNo: String,
                                   timeStamp: DateTime = DateTime.now(DateTimeZone.UTC))
 
 object DisposeLiabilityReturn {
-  implicit val formats = Json.format[DisposeLiabilityReturn]
+  implicit val formats = {
+    implicit val dateFormat = ReactiveMongoFormats.dateTimeFormats
+    Json.format[DisposeLiabilityReturn]
+  }
 }

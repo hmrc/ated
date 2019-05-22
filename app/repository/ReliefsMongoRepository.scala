@@ -19,7 +19,7 @@ package repository
 import java.util.concurrent.TimeUnit
 import metrics.{Metrics, MetricsEnum}
 import models.{DisposeLiabilityReturn, ReliefsTaxAvoidance, Reliefs, TaxAvoidance}
-import mongo.{MongoCollection2, ReactiveRepository, CodecProviders}
+import mongo.{MongoCollection2, CodecProviders}
 import mongo.json.ReactiveMongoFormats
 import org.bson.codecs.configuration.CodecRegistries
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
@@ -64,14 +64,7 @@ class ReliefsReactiveMongoRepository
      with WithTimer {
 
   val collection: MongoCollection[ReliefsTaxAvoidance] =
-    MongoCollection2.collection("reliefs",
-      CodecRegistries.fromProviders(
-          Macros.createCodecProvider[ReliefsTaxAvoidance]()
-        , Macros.createCodecProvider[Reliefs]()
-        , Macros.createCodecProvider[TaxAvoidance]()
-        , CodecProviders.localDateCodecProvider
-        , CodecProviders.dateTimeCodecProvider
-        ))
+    MongoCollection2.collection("reliefs", ReliefsTaxAvoidance.formats)
 
 
 
@@ -94,19 +87,19 @@ class ReliefsReactiveMongoRepository
 
   def cacheRelief(relief: ReliefsTaxAvoidance): Future[ReliefCached] =
     withTimer(MetricsEnum.RepositoryInsertRelief){
-    collection
-      .findOneAndReplace(
-          filter      = Document(
-                            "periodKey" -> relief.periodKey
-                          , "atedRefNo" -> relief.atedRefNo
-                          )
-        , replacement = relief
-                          .copy(timeStamp = DateTime.now(DateTimeZone.UTC))
-        , options = FindOneAndReplaceOptions().upsert(true)
-        )
-      .toFuture
-      .map(_ => ReliefCached)
-      .recover { case e => Logger.warn("Failed to update or insert relief", e); ReliefCachedError }
+      collection
+        .findOneAndReplace(
+            filter      = Document(
+                              "periodKey" -> relief.periodKey
+                            , "atedRefNo" -> relief.atedRefNo
+                            )
+          , replacement = relief
+                            .copy(timeStamp = DateTime.now(DateTimeZone.UTC))
+          , options = FindOneAndReplaceOptions().upsert(true)
+          )
+        .toFuture
+        .map(_ => ReliefCached)
+        .recover { case e => Logger.warn("Failed to update or insert relief", e); ReliefCachedError }
     }
 
 

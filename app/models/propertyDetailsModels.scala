@@ -250,7 +250,10 @@ case class PropertyDetailsCalculated(valuationDateToUse: Option[LocalDate] = Non
                                      timeStamp: DateTime = DateTime.now(DateTimeZone.UTC))
 
 object PropertyDetailsCalculated {
-  implicit val formats = Json.format[PropertyDetailsCalculated]
+  implicit val formats = {
+    implicit val dateFormat = mongo.json.ReactiveMongoFormats.dateTimeFormats
+    Json.format[PropertyDetailsCalculated]
+  }
 }
 
 case class PropertyDetails(atedRefNo: String,
@@ -266,7 +269,9 @@ case class PropertyDetails(atedRefNo: String,
                            timeStamp: DateTime = DateTime.now(DateTimeZone.UTC))
 
 object PropertyDetails {
-  implicit val dtf = mongo.json.ReactiveMongoFormats.dateTimeFormats
-  implicit val oif = mongo.json.ReactiveMongoFormats.objectIdFormats
-  implicit val formats = Json.format[PropertyDetails]
+  implicit val formats = {
+    implicit val dtf = mongo.json.ReactiveMongoFormats.dateTimeFormats
+    implicit val oif = mongo.json.ReactiveMongoFormats.objectIdFormats
+    Json.format[PropertyDetails]
+  }
 }
