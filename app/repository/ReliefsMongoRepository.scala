@@ -30,6 +30,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 
+// $COVERAGE-OFF$
+
 sealed trait ReliefCached
 case object ReliefCached extends ReliefCached
 case object ReliefCachedError extends ReliefCached
@@ -136,3 +138,5 @@ class ReliefsReactiveMongoRepository(implicit db: MongoDatabase)
         .recover { case e => Logger.warn("Failed to remove relief by year", e); ReliefDeletedError }
     }
 }
+
+// $COVERAGE-ON$

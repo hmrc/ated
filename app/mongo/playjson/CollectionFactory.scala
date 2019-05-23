@@ -22,6 +22,8 @@ import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import play.api.libs.json.Format
 import scala.reflect.ClassTag
 
+// $COVERAGE-OFF$
+
 trait CollectionFactory {
   def collection[A : ClassTag](db: MongoDatabase, collectionName: String, format: Format[A]): MongoCollection[A] =
     db
@@ -34,3 +36,5 @@ trait CollectionFactory {
 }
 
 object CollectionFactory extends CollectionFactory
+
+// $COVERAGE-ON$

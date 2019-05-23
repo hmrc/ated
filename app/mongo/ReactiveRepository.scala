@@ -19,7 +19,11 @@ package mongo
 import org.mongodb.scala.MongoCollection
 import org.mongodb.scala.model.IndexModel
 
+// $COVERAGE-OFF$
+
 trait ReactiveRepository[A] {
   def collection: MongoCollection[A]
   def indices: Seq[IndexModel]
 }
+
+// $COVERAGE-ON$

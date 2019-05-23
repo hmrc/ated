@@ -16,6 +16,8 @@
 
 package mongo.playjson
 
+// $COVERAGE-OFF$
+
 object JsonExtensions {
 
   import play.api.libs.json.{JsPath, JsValue, __}
@@ -26,3 +28,5 @@ object JsonExtensions {
   def moveKey(fromPath: JsPath, toPath: JsPath) =
     (json: JsValue) => json.transform(copyKey(fromPath, toPath) andThen fromPath.json.prune).get
 }
+
+// $COVERAGE-ON$

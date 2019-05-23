@@ -21,6 +21,8 @@ import org.mongodb.scala.bson.BsonObjectId
 import play.api.libs.json.{Format, Json, JsError, JsPath, JsValue, JsResult, JsSuccess, Reads, Writes, __}
 import scala.util.{Try, Success, Failure}
 
+// $COVERAGE-OFF$
+
 trait ReactiveMongoFormats {
   val dateTimeRead: Reads[DateTime] =
     (__ \ "$date").read[Long].map { dateTime =>
@@ -64,3 +66,5 @@ trait ReactiveMongoFormats {
 }
 
 object ReactiveMongoFormats extends ReactiveMongoFormats
+
+// $COVERAGE-ON$

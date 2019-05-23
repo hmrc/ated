@@ -21,6 +21,8 @@ import org.mongodb.scala.{MongoCollection, MongoDatabase}
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import scala.reflect.ClassTag
 
+// $COVERAGE-OFF$
+
 trait CollectionFactory {
   def collection[A : ClassTag](db: MongoDatabase, collectionName: String, codecRegistry: CodecRegistry): MongoCollection[A] =
     db
@@ -29,3 +31,5 @@ trait CollectionFactory {
 }
 
 object CollectionFactory extends CollectionFactory
+
+// $COVERAGE-ON$

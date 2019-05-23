@@ -19,6 +19,8 @@ package mongo.playjson
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.Json
 
+// $COVERAGE-OFF$
+
 case class CreationAndLastModifiedDetail(
     createdAt: DateTime   = DateTime.now.withZone(DateTimeZone.UTC)
   , lastUpdated: DateTime = DateTime.now.withZone(DateTimeZone.UTC)
@@ -40,3 +42,5 @@ object CreationAndLastModifiedDetail {
     , lastUpdated = time
     )
 }
+
+// $COVERAGE-ON$

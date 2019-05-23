@@ -30,6 +30,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 
+// $COVERAGE-OFF$
+
 sealed trait DisposeLiabilityReturnCache
 case object DisposeLiabilityReturnCached extends DisposeLiabilityReturnCache
 case object DisposeLiabilityReturnCacheError extends DisposeLiabilityReturnCache
@@ -127,3 +129,5 @@ trait WithTimer {
     res
   }
 }
+
+// $COVERAGE-ON$

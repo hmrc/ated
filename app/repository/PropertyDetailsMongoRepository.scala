@@ -30,6 +30,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 
+// $COVERAGE-OFF$
+
 sealed trait PropertyDetailsCache
 case object PropertyDetailsCached extends PropertyDetailsCache
 case object PropertyDetailsCacheError extends PropertyDetailsCache
@@ -145,3 +147,5 @@ class PropertyDetailsReactiveMongoRepository(implicit db: MongoDatabase)
       }
     }
 }
+
+// $COVERAGE-ON$

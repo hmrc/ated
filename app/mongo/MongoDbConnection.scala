@@ -23,6 +23,8 @@ import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import play.api.{Configuration, Play}
 import play.api.Mode.Mode
 
+// $COVERAGE-OFF$
+
 trait MongoDbConnection {
   private val configuration: Configuration = Play.current.configuration
   private val mode: play.api.Mode.Mode = Play.current.mode
@@ -49,3 +51,5 @@ trait MongoDbConnection {
       .getDatabase(name = connectionString.getDatabase)
   }
 }
+
+// $COVERAGE-ON$

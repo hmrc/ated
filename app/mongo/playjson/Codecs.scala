@@ -24,6 +24,8 @@ import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import play.api.libs.json.{Format, Json, JsValue, JsError, JsSuccess}
 import scala.reflect.ClassTag
 
+// $COVERAGE-OFF$
+
 trait Codecs {
   def playFormatCodec[A](format: Format[A])(implicit ct: ClassTag[A]) = new Codec[A] {
     private val documentCodec = DEFAULT_CODEC_REGISTRY.get(classOf[Document])
@@ -57,3 +59,5 @@ trait CodecProviders extends mongo.CodecProviders {
 }
 
 object CodecProviders extends CodecProviders
+
+// $COVERAGE-ON$

@@ -22,6 +22,8 @@ import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
 import org.joda.time.{DateTime, LocalDate}
 import scala.reflect.ClassTag
 
+// $COVERAGE-OFF$
+
 class LocalDateCodec extends Codec[LocalDate] {
   override def getEncoderClass(): Class[LocalDate] =
     classOf[LocalDate]
@@ -75,3 +77,5 @@ trait CodecProviders {
 }
 
 object CodecProviders extends CodecProviders
+
+// $COVERAGE-ON$
