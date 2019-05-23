@@ -37,6 +37,11 @@ class DisposeLiabilityReturnMongoRepositorySpec extends PlaySpec
 
   lazy val repository = new DisposeLiabilityReturnReactiveMongoRepository()
 
+  override implicit val patienceConfig = {
+    import org.scalatest.time.{Millis, Span, Seconds}
+    PatienceConfig(timeout = Span(5, Seconds), interval = Span(15, Millis))
+  }
+
   override def beforeEach(): Unit = {
     prepare(repository)
   }
@@ -55,7 +60,7 @@ class DisposeLiabilityReturnMongoRepositorySpec extends PlaySpec
         repository.cacheDisposeLiabilityReturns(disposeLiability1).futureValue
       }
 
-      "does not save the next disposeLiabilityReturns into mongo, if same id are passed for next document" in {
+      "not save the next disposeLiabilityReturns into mongo, if same id are passed for next document" in {
         repository.cacheDisposeLiabilityReturns(disposeLiability1).futureValue
         repository.cacheDisposeLiabilityReturns(disposeLiability2.copy(id = "123456789012")).futureValue
         repository.fetchDisposeLiabilityReturns(disposeLiability1.atedRefNo).futureValue.isEmpty must be(false)
