@@ -21,6 +21,7 @@ import com.mongodb.MongoClientSettings
 import org.mongodb.scala.MongoClient
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import play.api.{Configuration, Play}
+import play.api.Logger
 import play.api.Mode.Mode
 
 // $COVERAGE-OFF$
@@ -39,7 +40,9 @@ trait MongoDbConnection {
 
   implicit val db = {
     val connectionString =
-      new ConnectionString(uri)
+      new ConnectionString(uri.replace("sslEnabled", "ssl"))
+
+    Logger.info(s"Connecting to Mongo $connectionString")
 
     val mongoClientSettings =
       MongoClientSettings.builder
@@ -47,8 +50,12 @@ trait MongoDbConnection {
         .codecRegistry(DEFAULT_CODEC_REGISTRY)
         .build
 
-    MongoClient(mongoClientSettings)
+    val db = MongoClient(mongoClientSettings)
       .getDatabase(name = connectionString.getDatabase)
+
+    Logger.info(s"Connected to Mongo $connectionString")
+
+    db
   }
 }
 
