@@ -18,13 +18,34 @@ package mongo.playjson
 
 import org.joda.time.{DateTime, DateTimeZone, LocalDate, LocalDateTime}
 import org.mongodb.scala.bson.BsonObjectId
-import play.api.libs.json.{Format, Json, JsError, JsPath, JsValue, JsResult, JsSuccess, Reads, Writes, __}
+import play.api.libs.json.{Format, Json, JsError, JsPath, JsValue, JsResult, JsString, JsSuccess, Reads, Writes, __}
 import scala.util.{Try, Success, Failure}
 
 // $COVERAGE-OFF$
 
 trait ReactiveMongoFormats {
   outer =>
+
+  val localDateWritesAsString: Writes[LocalDate] =
+    new Writes[LocalDate] {
+      def writes(d: LocalDate): JsValue =
+        JsString(d.toString)
+    }
+
+  val localDateReadsAsString: Reads[LocalDate] =
+    new Reads[org.joda.time.LocalDate] {
+
+    def reads(json: JsValue): JsResult[LocalDate] = json match {
+      case JsString(s) => Try(LocalDate.parse(s)) match {
+        case Success(d) => JsSuccess(d)
+        case _ => JsError(__, "error.expected.jodadate.format")
+      }
+      case _ => JsError(__, "error.expected.date")
+    }
+  }
+
+  val localDateFormatsAsString =
+    Format(localDateReadsAsString, localDateWritesAsString)
 
   val localDateRead: Reads[LocalDate] =
     (__ \ "$date").read[Long]

@@ -20,6 +20,8 @@ import play.api.libs.json.Json
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
 import mongo.playjson.ReactiveMongoFormats
 import play.api.libs.json.Format
+import play.api.libs.json.Reads
+import play.api.libs.json.Writes
 
 case class PendingClient(
                           atedReferenceNo: String,
@@ -31,7 +33,7 @@ case class PendingClient(
 
 object PendingClient {
   implicit val formats = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormats
+    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
     Json.format[PendingClient]
   }
 }
@@ -81,7 +83,7 @@ case class DisposeLiability(dateOfDisposal: Option[LocalDate] = None, periodKey:
 
 object DisposeLiability {
   implicit val formats = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormats
+    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
     Json.format[DisposeLiability]
   }
 }

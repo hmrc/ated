@@ -63,8 +63,9 @@ case class PropertyDetailsValue(anAcquisition: Option[Boolean] = None,
 
 object PropertyDetailsValue {
 
-  implicit val propertyDetailsValueReads: Reads[PropertyDetailsValue] = (
-    (JsPath \ "anAcquisition").readNullable[Boolean] and
+  implicit val propertyDetailsValueReads: Reads[PropertyDetailsValue] = {
+    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
+    ( (JsPath \ "anAcquisition").readNullable[Boolean] and
       (JsPath \ "isPropertyRevalued").readNullable[Boolean] and
       (JsPath \ "revaluedValue").readNullable[BigDecimal] and
       (JsPath \ "revaluedDate").readNullable[LocalDate] and
@@ -80,8 +81,12 @@ object PropertyDetailsValue {
       (JsPath \ "isValuedByAgent").readNullable[Boolean] and
       (JsPath \ "hasValueChanged").readNullable[Boolean]
     )(PropertyDetailsValue.apply _)
+  }
 
-  implicit val propertyDetailsValueWrites: OWrites[PropertyDetailsValue] = Json.writes[PropertyDetailsValue]
+  implicit val propertyDetailsValueWrites: OWrites[PropertyDetailsValue] = {
+    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
+    Json.writes[PropertyDetailsValue]
+  }
 }
 
 case class PropertyDetailsAcquisition(anAcquisition: Option[Boolean] = None)
@@ -103,7 +108,7 @@ case class PropertyDetailsRevalued(isPropertyRevalued: Option[Boolean] = None,
 
 object PropertyDetailsRevalued {
   implicit val formats = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormats
+    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
     Json.format[PropertyDetailsRevalued]
   }
 }
@@ -150,7 +155,7 @@ case class PropertyDetailsNewBuild(
 
 object PropertyDetailsNewBuild {
   implicit val formats = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormats
+    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
     Json.format[PropertyDetailsNewBuild]
   }
 }
@@ -166,7 +171,10 @@ case class PropertyDetailsDatesLiable(startDate: LocalDate,
                                       endDate: LocalDate)
 
 object PropertyDetailsDatesLiable {
-  implicit val formats = Json.format[PropertyDetailsDatesLiable]
+  implicit val formats = {
+    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
+    Json.format[PropertyDetailsDatesLiable]
+  }
 }
 
 case class IsFullTaxPeriod(isFullPeriod: Boolean, datesLiable: Option[PropertyDetailsDatesLiable])
@@ -189,7 +197,7 @@ case class PropertyDetailsDatesInRelief(startDate: LocalDate,
 
 object PropertyDetailsDatesInRelief {
   implicit val formats = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormats
+    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
     Json.format[PropertyDetailsDatesInRelief]
   }
 }
@@ -222,7 +230,7 @@ case class LineItem(lineItemType: String, startDate: LocalDate, endDate: LocalDa
 
 object LineItem {
   implicit val formats = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormats
+    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
     Json.format[LineItem]
   }
 }
@@ -249,7 +257,7 @@ case class CalculatedPeriod(value: BigDecimal,
 
 object CalculatedPeriod {
   implicit val formats = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormats
+    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
     Json.format[CalculatedPeriod]
   }
 }
@@ -266,7 +274,7 @@ case class PropertyDetailsCalculated(valuationDateToUse: Option[LocalDate] = Non
 
 object PropertyDetailsCalculated {
   implicit val formats = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormats
+    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
     implicit val dtf = ReactiveMongoFormats.dateTimeFormats
     Json.format[PropertyDetailsCalculated]
   }
