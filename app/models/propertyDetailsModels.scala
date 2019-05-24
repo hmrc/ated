@@ -16,10 +16,10 @@
 
 package models
 
+import mongo.playjson.ReactiveMongoFormats
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
-
 
 
 case class PropertyDetailsAddress(line_1: String, line_2: String, line_3: Option[String], line_4: Option[String],
@@ -81,7 +81,7 @@ object PropertyDetailsValue {
       (JsPath \ "hasValueChanged").readNullable[Boolean]
     )(PropertyDetailsValue.apply _)
 
-  implicit val propertyDetailsValueWrites: OWrites[PropertyDetailsValue]=Json.writes[PropertyDetailsValue]
+  implicit val propertyDetailsValueWrites: OWrites[PropertyDetailsValue] = Json.writes[PropertyDetailsValue]
 }
 
 case class PropertyDetailsAcquisition(anAcquisition: Option[Boolean] = None)
@@ -102,7 +102,10 @@ case class PropertyDetailsRevalued(isPropertyRevalued: Option[Boolean] = None,
                                    partAcqDispDate: Option[LocalDate] = None)
 
 object PropertyDetailsRevalued {
-  implicit val formats = Json.format[PropertyDetailsRevalued]
+  implicit val formats = {
+    implicit val ldf = ReactiveMongoFormats.localDateFormats
+    Json.format[PropertyDetailsRevalued]
+  }
 }
 
 sealed trait OwnedBeforePolicyYear
@@ -146,7 +149,10 @@ case class PropertyDetailsNewBuild(
                                   )
 
 object PropertyDetailsNewBuild {
-  implicit val formats = Json.format[PropertyDetailsNewBuild]
+  implicit val formats = {
+    implicit val ldf = ReactiveMongoFormats.localDateFormats
+    Json.format[PropertyDetailsNewBuild]
+  }
 }
 
 case class PropertyDetailsFullTaxPeriod(isFullPeriod: Option[Boolean] = None)
@@ -182,7 +188,10 @@ case class PropertyDetailsDatesInRelief(startDate: LocalDate,
                                         description: Option[String] = None)
 
 object PropertyDetailsDatesInRelief {
-  implicit val formats = Json.format[PropertyDetailsDatesInRelief]
+  implicit val formats = {
+    implicit val ldf = ReactiveMongoFormats.localDateFormats
+    Json.format[PropertyDetailsDatesInRelief]
+  }
 }
 
 
@@ -212,7 +221,10 @@ object PropertyDetailsSupportingInfo {
 case class LineItem(lineItemType: String, startDate: LocalDate, endDate: LocalDate, description: Option[String] = None)
 
 object LineItem {
-  implicit val formats = Json.format[LineItem]
+  implicit val formats = {
+    implicit val ldf = ReactiveMongoFormats.localDateFormats
+    Json.format[LineItem]
+  }
 }
 
 case class PropertyDetailsPeriod(isFullPeriod: Option[Boolean] = None,
@@ -236,7 +248,10 @@ case class CalculatedPeriod(value: BigDecimal,
                            )
 
 object CalculatedPeriod {
-  implicit val formats = Json.format[CalculatedPeriod]
+  implicit val formats = {
+    implicit val ldf = ReactiveMongoFormats.localDateFormats
+    Json.format[CalculatedPeriod]
+  }
 }
 
 case class PropertyDetailsCalculated(valuationDateToUse: Option[LocalDate] = None,
@@ -251,7 +266,8 @@ case class PropertyDetailsCalculated(valuationDateToUse: Option[LocalDate] = Non
 
 object PropertyDetailsCalculated {
   implicit val formats = {
-    implicit val dateFormat = mongo.playjson.ReactiveMongoFormats.dateTimeFormats
+    implicit val ldf = ReactiveMongoFormats.localDateFormats
+    implicit val dtf = ReactiveMongoFormats.dateTimeFormats
     Json.format[PropertyDetailsCalculated]
   }
 }
@@ -270,8 +286,8 @@ case class PropertyDetails(atedRefNo: String,
 
 object PropertyDetails {
   implicit val formats = {
-    implicit val dtf = mongo.playjson.ReactiveMongoFormats.dateTimeFormats
-    implicit val oif = mongo.playjson.ReactiveMongoFormats.objectIdFormats
+    implicit val dtf = ReactiveMongoFormats.dateTimeFormats
+    implicit val oif = ReactiveMongoFormats.objectIdFormats
     Json.format[PropertyDetails]
   }
 }
