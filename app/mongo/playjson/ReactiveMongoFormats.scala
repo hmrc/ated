@@ -104,6 +104,8 @@ trait ReactiveMongoFormats {
     implicit val dateTimeFormats      = outer.dateTimeFormats
     implicit val objectIdFormats      = outer.objectIdFormats
   }
+
+  object Implicits extends Implicits
 }
 
 object ReactiveMongoFormats extends ReactiveMongoFormats
