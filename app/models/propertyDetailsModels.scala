@@ -64,7 +64,7 @@ case class PropertyDetailsValue(anAcquisition: Option[Boolean] = None,
 object PropertyDetailsValue {
 
   implicit val propertyDetailsValueReads: Reads[PropertyDetailsValue] = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
+    implicit val ldf = ReactiveMongoFormats.localDateAsStringFormats
     ( (JsPath \ "anAcquisition").readNullable[Boolean] and
       (JsPath \ "isPropertyRevalued").readNullable[Boolean] and
       (JsPath \ "revaluedValue").readNullable[BigDecimal] and
@@ -84,7 +84,7 @@ object PropertyDetailsValue {
   }
 
   implicit val propertyDetailsValueWrites: OWrites[PropertyDetailsValue] = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
+    implicit val ldf = ReactiveMongoFormats.localDateAsStringFormats
     Json.writes[PropertyDetailsValue]
   }
 }
@@ -108,7 +108,7 @@ case class PropertyDetailsRevalued(isPropertyRevalued: Option[Boolean] = None,
 
 object PropertyDetailsRevalued {
   implicit val formats = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
+    implicit val ldf = ReactiveMongoFormats.localDateAsStringFormats
     Json.format[PropertyDetailsRevalued]
   }
 }
@@ -155,7 +155,7 @@ case class PropertyDetailsNewBuild(
 
 object PropertyDetailsNewBuild {
   implicit val formats = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
+    implicit val ldf = ReactiveMongoFormats.localDateAsStringFormats
     Json.format[PropertyDetailsNewBuild]
   }
 }
@@ -172,7 +172,7 @@ case class PropertyDetailsDatesLiable(startDate: LocalDate,
 
 object PropertyDetailsDatesLiable {
   implicit val formats = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
+    implicit val ldf = ReactiveMongoFormats.localDateAsStringFormats
     Json.format[PropertyDetailsDatesLiable]
   }
 }
@@ -197,7 +197,7 @@ case class PropertyDetailsDatesInRelief(startDate: LocalDate,
 
 object PropertyDetailsDatesInRelief {
   implicit val formats = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
+    implicit val ldf = ReactiveMongoFormats.localDateAsStringFormats
     Json.format[PropertyDetailsDatesInRelief]
   }
 }
@@ -230,7 +230,7 @@ case class LineItem(lineItemType: String, startDate: LocalDate, endDate: LocalDa
 
 object LineItem {
   implicit val formats = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
+    implicit val ldf = ReactiveMongoFormats.localDateAsStringFormats
     Json.format[LineItem]
   }
 }
@@ -257,7 +257,7 @@ case class CalculatedPeriod(value: BigDecimal,
 
 object CalculatedPeriod {
   implicit val formats = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
+    implicit val ldf = ReactiveMongoFormats.localDateAsStringFormats
     Json.format[CalculatedPeriod]
   }
 }
@@ -274,8 +274,8 @@ case class PropertyDetailsCalculated(valuationDateToUse: Option[LocalDate] = Non
 
 object PropertyDetailsCalculated {
   implicit val formats = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
-    implicit val dtf = ReactiveMongoFormats.dateTimeFormats
+    implicit val ldf = ReactiveMongoFormats.localDateAsStringFormats
+    implicit val dtf = ReactiveMongoFormats.dateTimeAsNumberFormats
     Json.format[PropertyDetailsCalculated]
   }
 }

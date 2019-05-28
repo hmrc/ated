@@ -33,7 +33,7 @@ case class PendingClient(
 
 object PendingClient {
   implicit val formats = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
+    implicit val ldf = ReactiveMongoFormats.localDateAsStringFormats
     Json.format[PendingClient]
   }
 }
@@ -83,7 +83,7 @@ case class DisposeLiability(dateOfDisposal: Option[LocalDate] = None, periodKey:
 
 object DisposeLiability {
   implicit val formats = {
-    implicit val ldf = ReactiveMongoFormats.localDateFormatsAsString
+    implicit val ldf = ReactiveMongoFormats.localDateAsStringFormats
     Json.format[DisposeLiability]
   }
 }
@@ -104,7 +104,7 @@ case class DisposeLiabilityReturn(atedRefNo: String,
 
 object DisposeLiabilityReturn {
   implicit val formats = {
-    implicit val df = ReactiveMongoFormats.dateTimeFormats
+    implicit val df = ReactiveMongoFormats.dateTimeAsNumberFormats
     Json.format[DisposeLiabilityReturn]
   }
 }

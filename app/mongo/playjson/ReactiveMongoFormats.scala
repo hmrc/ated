@@ -18,7 +18,7 @@ package mongo.playjson
 
 import org.joda.time.{DateTime, DateTimeZone, LocalDate, LocalDateTime}
 import org.mongodb.scala.bson.BsonObjectId
-import play.api.libs.json.{Format, Json, JsError, JsPath, JsValue, JsResult, JsString, JsSuccess, Reads, Writes, __}
+import play.api.libs.json.{Format, Json, JsError, JsNumber, JsPath, JsValue, JsResult, JsString, JsSuccess, Reads, Writes, __}
 import scala.util.{Try, Success, Failure}
 
 // $COVERAGE-OFF$
@@ -26,13 +26,13 @@ import scala.util.{Try, Success, Failure}
 trait ReactiveMongoFormats {
   outer =>
 
-  val localDateWritesAsString: Writes[LocalDate] =
+  val localDateAsStringWrites: Writes[LocalDate] =
     new Writes[LocalDate] {
       def writes(d: LocalDate): JsValue =
         JsString(d.toString)
     }
 
-  val localDateReadsAsString: Reads[LocalDate] =
+  val localDateAsStringReads: Reads[LocalDate] =
     new Reads[org.joda.time.LocalDate] {
 
     def reads(json: JsValue): JsResult[LocalDate] = json match {
@@ -44,8 +44,8 @@ trait ReactiveMongoFormats {
     }
   }
 
-  val localDateFormatsAsString =
-    Format(localDateReadsAsString, localDateWritesAsString)
+  val localDateAsStringFormats =
+    Format(localDateAsStringReads, localDateAsStringWrites)
 
   val localDateRead: Reads[LocalDate] =
     (__ \ "$date").read[Long]
@@ -85,6 +85,21 @@ trait ReactiveMongoFormats {
 
   val dateTimeFormats =
     Format(dateTimeRead, dateTimeWrite)
+
+  // TODO rewrite the following symetrically
+  val dateTimeAsNumberRead: Reads[DateTime] =
+    (__ \ "$numberLong").read[String]
+      .map { dateTime => new DateTime(dateTime.toLong, DateTimeZone.UTC) } // TODO toLong may fail
+
+  val dateTimeAsNumberWrite: Writes[DateTime] =
+    new Writes[DateTime] {
+      def writes(d: DateTime): JsValue =
+        JsNumber(d.getMillis)
+    }
+
+
+  val dateTimeAsNumberFormats =
+    Format(dateTimeAsNumberRead, dateTimeAsNumberWrite)
 
   val objectIdRead: Reads[BsonObjectId] =
     Reads[BsonObjectId] { json =>
