@@ -85,6 +85,9 @@ trait EtmpDetailsConnector extends ServicesConfig with RawResponseReads with Aud
     val getUrl = s"""$serviceUrl/$atedBaseURI/$retrieveSubscriptionData/$atedReferenceNo"""
 
     val timerContext = metrics.startTimer(MetricsEnum.EtmpGetSubscriptionData)
+    println(Console.BLUE + Console.BOLD + "###############################################################" +
+      s"PRE SUBMISSION URL : ${getUrl}" +
+      "################################################################" + Console.RESET)
     http.GET[HttpResponse](getUrl).map { response =>
       timerContext.stop()
       response.status match {

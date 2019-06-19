@@ -185,16 +185,16 @@ object ChangeLiabilityUtils extends ReliefConstants {
   def createPreCalculationRequest(propertyDetails: PropertyDetails, agentRefNo: Option[String] = None) =
     createChangeLiabilityReturnRequest(propertyDetails, PreCalculation, agentRefNo)
 
-  def createPostRequest(propertyDetails: PropertyDetails, agentRefNo: Option[String] = None) =
-    createChangeLiabilityReturnRequest(propertyDetails, Post, agentRefNo)
+  def createPostRequest(propertyDetails: PropertyDetails, agentRefNo: Option[String] = None, oldFormBundleNumber: String) =
+    createChangeLiabilityReturnRequest(propertyDetails, Post, agentRefNo, Some(oldFormBundleNumber))
 
-  def createChangeLiabilityReturnRequest(propertyDetails: PropertyDetails, mode: String, agentRefNo: Option[String] = None)
+  def createChangeLiabilityReturnRequest(propertyDetails: PropertyDetails, mode: String, agentRefNo: Option[String] = None, oldFormBundleNumber: Option[String] = None)
   : Option[EditLiabilityReturnsRequestModel] = {
       propertyDetails.calculated match {
         case Some(c) =>
           (c.valuationDateToUse, c.professionalValuation) match {
             case (Some(dateOfVal), Some(professionallyValued)) =>
-              val liabilityReturns = createLiabilityReturns(propertyDetails, c, mode, agentRefNo, dateOfVal, professionallyValued)
+              val liabilityReturns = createLiabilityReturns(propertyDetails, c, mode, agentRefNo, dateOfVal, professionallyValued, oldFormBundleNumber)
               Some(EditLiabilityReturnsRequestModel(SessionUtils.getUniqueAckNo, agentRefNo, liabilityReturns))
             case _ => None
           }
@@ -205,10 +205,11 @@ object ChangeLiabilityUtils extends ReliefConstants {
   private def createLiabilityReturns(a: PropertyDetails, c: PropertyDetailsCalculated,
                                      mode: String, agentRefNo: Option[String] = None,
                                      valuationDateToUse : LocalDate,
-                                     professionallyValued : Boolean) = {
+                                     professionallyValued : Boolean,
+                                     oldFormBundleNumber: Option[String]) = {
 
     val liabilityReturn = EditLiabilityReturnsRequest(
-      oldFormBundleNumber = a.id,
+      oldFormBundleNumber = oldFormBundleNumber.getOrElse(a.id),
       mode = mode,
       periodKey = "" + a.periodKey,
       propertyDetails = getEtmpPropertyDetails(a),

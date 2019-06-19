@@ -49,6 +49,13 @@ trait MicroService {
       retrieveManaged := true,
       routesGenerator := StaticRoutesGenerator
     )
+    .configs(IntegrationTest)
+    .settings(inConfig(IntegrationTest)(Defaults.itSettings): _*)
+    .settings(
+      Keys.fork in IntegrationTest := false,
+      unmanagedSourceDirectories in IntegrationTest <<= (baseDirectory in IntegrationTest)(base => Seq(base / "it")),
+      addTestReportOption(IntegrationTest, "int-test-reports"),
+      parallelExecution in IntegrationTest := false)
 
     .settings(
       resolvers := Seq(

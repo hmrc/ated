@@ -127,6 +127,9 @@ trait EtmpReturnsConnector extends ServicesConfig with RawResponseReads with Aud
     val jsonData = Json.toJson(editedLiabilityReturns)
     val timerContext = metrics.startTimer(MetricsEnum.EtmpSubmitEditedLiabilityReturns)
     http.PUT[JsValue, HttpResponse](putUrl, jsonData).map { response =>
+      println(Console.BLUE + Console.BOLD + "###############################################################" +
+        s"REQUEST SUBMITTED: ${jsonData}" +
+        " ################################################################" + Console.RESET)
       timerContext.stop()
       auditSubmitEditedLiabilityReturns(atedReferenceNo, editedLiabilityReturns, response, disposal)
       response.status match {

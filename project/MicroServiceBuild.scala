@@ -41,11 +41,27 @@ private object AppDependencies {
         "org.pegdown" % "pegdown" % pegdownVersion % scope,
         "org.mockito" % "mockito-all" % "1.10.19" % scope,
         "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
-        "uk.gov.hmrc" %% "reactivemongo-test" % reactivemongoTestVersion % scope
+        "uk.gov.hmrc" %% "reactivemongo-test" % reactivemongoTestVersion % scope,
+        "com.github.tomakehurst" % "wiremock" % "2.5.1" % scope
       )
     }.test
   }
 
-  def apply() = compile ++ Test()
+  object IntegrationTest {
+    def apply() = new TestDependencies {
+      override lazy val test = Seq(
+        "org.scalatest" %% "scalatest" % scalaTestVersion % scope,
+        "org.scalatestplus.play" %% "scalatestplus-play" % scalaTestPlusVersion % scope,
+        "org.pegdown" % "pegdown" % pegdownVersion % scope,
+        "org.mockito" % "mockito-all" % "1.10.19" % scope,
+        "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
+        "uk.gov.hmrc" %% "reactivemongo-test" % reactivemongoTestVersion % scope,
+        "com.github.tomakehurst" % "wiremock" % "2.5.1" % scope
+      )
+      override lazy val scope: String = "it"
+    }.test
+  }
+
+  def apply() = compile ++ Test() ++ IntegrationTest()
 }
 

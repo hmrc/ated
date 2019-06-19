@@ -132,6 +132,9 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
   }
 
   def emailTemplate(data: JsValue, oldFormBundleNumber: String): String = {
+    println(Console.BLUE + Console.BOLD + "###############################################################" +
+      s"DATA: $data" +
+      "################################################################" + Console.RESET)
     val response = data.as[EditLiabilityReturnsResponseModel]
     val returnFound = response.liabilityReturnResponse.find(_.oldFormBundleNumber == oldFormBundleNumber)
     returnFound.map(_.amountDueOrRefund) match {
@@ -150,7 +153,7 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
       submitStatus: HttpResponse <- {
         changeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
           case Some(x) =>
-            val editLiabilityRequest = ChangeLiabilityUtils.createPostRequest(x, agentRefNo)
+            val editLiabilityRequest = ChangeLiabilityUtils.createPostRequest(x, agentRefNo, oldFormBundleNo)
             editLiabilityRequest match {
               case Some(a) => etmpConnector.submitEditedLiabilityReturns(atedRefNo, a)
               case None => Future.successful(HttpResponse(NOT_FOUND, None))
