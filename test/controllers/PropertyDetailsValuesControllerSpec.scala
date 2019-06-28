@@ -16,210 +16,212 @@
 
 package controllers
 
-import builders.{PropertyDetailsBuilder, TestAudit}
+import builders.PropertyDetailsBuilder
 import models._
-import org.mockito.Matchers
+import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.Json
+import play.api.mvc.ControllerComponents
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.PropertyDetailsValuesService
-import uk.gov.hmrc.play.audit.model.Audit
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class PropertyDetailsValuesControllerSpec extends PlaySpec with OneServerPerSuite with MockitoSugar {
 
   val mockPropertyDetailsService: PropertyDetailsValuesService = mock[PropertyDetailsValuesService]
 
-  object TestPropertyDetailsController extends PropertyDetailsValuesController {
-    val propertyDetailsService = mockPropertyDetailsService
+  trait Setup {
+    val cc: ControllerComponents = app.injector.instanceOf[ControllerComponents]
+
+    class TestPropertyDetailsController extends BackendController(cc) with PropertyDetailsValuesController {
+      val propertyDetailsService = mockPropertyDetailsService
+    }
+
+    val controller = new TestPropertyDetailsController()
   }
 
   "PropertyDetailsValuesController" must {
 
-    "use the correct Service" in {
-      PropertyDetailsValuesController.propertyDetailsService must be(PropertyDetailsValuesService)
-    }
-
-
     "saveDraftHasValueChanged" must {
 
-      "respond with OK and a list of cached Property Details if this all works" in {
+      "respond with OK and a list of cached Property Details if this all works" in new Setup {
         val testAccountRef = "ATED1223123"
         val updated = true
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
-        when(mockPropertyDetailsService.cacheDraftHasValueChanged(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(updated))(org.mockito.Matchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+        when(mockPropertyDetailsService.cacheDraftHasValueChanged(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))(any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(updated))
-        val result = TestPropertyDetailsController.saveDraftHasValueChanged(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftHasValueChanged(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(OK)
 
       }
 
-      "respond with BAD_REQUEST and if this failed" in {
+      "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
         val updated = true
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsSupportingInfo("")
-        when(mockPropertyDetailsService.cacheDraftHasValueChanged(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(updated))(org.mockito.Matchers.any())).thenReturn(Future.successful(None))
+        when(mockPropertyDetailsService.cacheDraftHasValueChanged(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))(any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(updated))
-        val result = TestPropertyDetailsController.saveDraftHasValueChanged(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftHasValueChanged(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(BAD_REQUEST)
       }
     }
     "saveDraftPropertyDetailsAcquisition" must {
 
-      "respond with OK and a list of cached Property Details if this all works" in {
+      "respond with OK and a list of cached Property Details if this all works" in new Setup {
         val testAccountRef = "ATED1223123"
 
         val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val updated = true
-        when(mockPropertyDetailsService.cacheDraftPropertyDetailsAcquisition(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(updated))(org.mockito.Matchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsAcquisition(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))(any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(updated))
-        val result = TestPropertyDetailsController.saveDraftPropertyDetailsAcquisition(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftPropertyDetailsAcquisition(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(OK)
 
       }
 
-      "respond with BAD_REQUEST and if this failed" in {
+      "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
         val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val updated = true
-        when(mockPropertyDetailsService.cacheDraftPropertyDetailsAcquisition(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(updated))(org.mockito.Matchers.any())).thenReturn(Future.successful(None))
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsAcquisition(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))(any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(updated))
-        val result = TestPropertyDetailsController.saveDraftPropertyDetailsAcquisition(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftPropertyDetailsAcquisition(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(BAD_REQUEST)
       }
     }
 
     "saveDraftPropertyDetailsRevalued" must {
 
-      "respond with OK and a list of cached Property Details if this all works" in {
+      "respond with OK and a list of cached Property Details if this all works" in new Setup {
         val testAccountRef = "ATED1223123"
 
         val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val updated = new PropertyDetailsRevalued()
-        when(mockPropertyDetailsService.cacheDraftPropertyDetailsRevalued(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(updated))(org.mockito.Matchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsRevalued(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))(any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(updated))
-        val result = TestPropertyDetailsController.saveDraftPropertyDetailsRevalued(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftPropertyDetailsRevalued(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(OK)
 
       }
 
-      "respond with BAD_REQUEST and if this failed" in {
+      "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
         val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val updated = new PropertyDetailsRevalued()
-        when(mockPropertyDetailsService.cacheDraftPropertyDetailsRevalued(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(updated))(org.mockito.Matchers.any())).thenReturn(Future.successful(None))
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsRevalued(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))(any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(updated))
-        val result = TestPropertyDetailsController.saveDraftPropertyDetailsRevalued(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftPropertyDetailsRevalued(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(BAD_REQUEST)
       }
     }
 
     "saveDraftPropertyDetailsOwnedBefore" must {
 
-      "respond with OK and a list of cached Property Details if this all works" in {
+      "respond with OK and a list of cached Property Details if this all works" in new Setup {
         val testAccountRef = "ATED1223123"
 
         val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val updated = PropertyDetailsOwnedBefore()
-        when(mockPropertyDetailsService.cacheDraftPropertyDetailsOwnedBefore(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(updated))(org.mockito.Matchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsOwnedBefore(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))(any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(updated))
-        val result = TestPropertyDetailsController.saveDraftPropertyDetailsOwnedBefore(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftPropertyDetailsOwnedBefore(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(OK)
 
       }
 
-      "respond with BAD_REQUEST and if this failed" in {
+      "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
         val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val updated = new PropertyDetailsOwnedBefore()
-        when(mockPropertyDetailsService.cacheDraftPropertyDetailsOwnedBefore(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(updated))(org.mockito.Matchers.any())).thenReturn(Future.successful(None))
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsOwnedBefore(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))(any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(updated))
-        val result = TestPropertyDetailsController.saveDraftPropertyDetailsOwnedBefore(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftPropertyDetailsOwnedBefore(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(BAD_REQUEST)
       }
     }
 
     "saveDraftPropertyDetailsNewBuild" must {
 
-      "respond with OK and a list of cached Property Details if this all works" in {
+      "respond with OK and a list of cached Property Details if this all works" in new Setup {
         val testAccountRef = "ATED1223123"
 
         val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val updated = PropertyDetailsNewBuild()
-        when(mockPropertyDetailsService.cacheDraftPropertyDetailsNewBuild(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(updated))(org.mockito.Matchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsNewBuild(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))(any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(updated))
-        val result = TestPropertyDetailsController.saveDraftPropertyDetailsNewBuild(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftPropertyDetailsNewBuild(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(OK)
 
       }
 
-      "respond with BAD_REQUEST and if this failed" in {
+      "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
         val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val updated = new PropertyDetailsNewBuild()
-        when(mockPropertyDetailsService.cacheDraftPropertyDetailsNewBuild(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(updated))(org.mockito.Matchers.any())).thenReturn(Future.successful(None))
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsNewBuild(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))(any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(updated))
-        val result = TestPropertyDetailsController.saveDraftPropertyDetailsNewBuild(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftPropertyDetailsNewBuild(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(BAD_REQUEST)
       }
     }
 
     "saveDraftPropertyDetailsProfessionallyValued" must {
 
-      "respond with OK and a list of cached Property Details if this all works" in {
+      "respond with OK and a list of cached Property Details if this all works" in new Setup {
         val testAccountRef = "ATED1223123"
 
         val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val updated = new PropertyDetailsProfessionallyValued()
-        when(mockPropertyDetailsService.cacheDraftPropertyDetailsProfessionallyValued(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(updated))(org.mockito.Matchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsProfessionallyValued(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))(any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(updated))
-        val result = TestPropertyDetailsController.saveDraftPropertyDetailsProfessionallyValued(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftPropertyDetailsProfessionallyValued(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(OK)
 
       }
 
-      "respond with BAD_REQUEST and if this failed" in {
+      "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
         val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val updated = new PropertyDetailsProfessionallyValued()
-        when(mockPropertyDetailsService.cacheDraftPropertyDetailsProfessionallyValued(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(updated))(org.mockito.Matchers.any())).thenReturn(Future.successful(None))
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsProfessionallyValued(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))(any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(updated))
-        val result = TestPropertyDetailsController.saveDraftPropertyDetailsProfessionallyValued(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftPropertyDetailsProfessionallyValued(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(BAD_REQUEST)
       }
     }

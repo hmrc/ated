@@ -16,92 +16,102 @@
 
 package controllers
 
-import builders.{PropertyDetailsBuilder, TestAudit}
+import builders.PropertyDetailsBuilder
 import models._
 import org.joda.time.LocalDate
-import org.mockito.Matchers
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.JodaWrites._
+import play.api.libs.json.{Json, OFormat}
+import play.api.mvc.ControllerComponents
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.PropertyDetailsPeriodService
-import uk.gov.hmrc.play.audit.model.Audit
+import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+
 
 class PropertyDetailsPeriodControllerSpec extends PlaySpec with OneServerPerSuite with MockitoSugar {
 
   val mockPropertyDetailsService: PropertyDetailsPeriodService = mock[PropertyDetailsPeriodService]
 
-  object TestPropertyDetailsController extends PropertyDetailsPeriodController {
-    val propertyDetailsService = mockPropertyDetailsService
+  implicit lazy val compositeSymmetricCrypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
+  implicit lazy val crypto: CryptoWithKeysFromConfig = compositeSymmetricCrypto.JsonCrypto
+  implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
+
+  trait Setup {
+    val cc: ControllerComponents = app.injector.instanceOf[ControllerComponents]
+
+    class TestPropertyDetailsController extends BackendController(cc) with PropertyDetailsPeriodController {
+      val propertyDetailsService = mockPropertyDetailsService
+      override implicit val crypto: ApplicationCrypto = compositeSymmetricCrypto
+    }
+
+    val controller = new TestPropertyDetailsController()
   }
 
   "PropertyDetailsPeriodController" must {
 
-    "use the correct Service" in {
-      PropertyDetailsPeriodController.propertyDetailsService must be(PropertyDetailsPeriodService)
-    }
-
     "saveDraftFullTaxPeriod" must {
 
-      "respond with OK and a list of cached Property Details if this all works" in {
+      "respond with OK and a list of cached Property Details if this all works" in new Setup {
         val testAccountRef = "ATED1223123"
 
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsDatesLiable = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
         lazy val testPropertyDetailsPeriod = IsFullTaxPeriod(true, Some(testPropertyDetailsDatesLiable))
-        when(mockPropertyDetailsService.cacheDraftFullTaxPeriod(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(testPropertyDetailsPeriod))(org.mockito.Matchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+        when(mockPropertyDetailsService.cacheDraftFullTaxPeriod(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
-        val result = TestPropertyDetailsController.saveDraftFullTaxPeriod(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftFullTaxPeriod(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(OK)
 
       }
 
-      "respond with BAD_REQUEST and if this failed" in {
+      "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = IsFullTaxPeriod(true, None)
-        when(mockPropertyDetailsService.cacheDraftFullTaxPeriod(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(testPropertyDetailsPeriod))(org.mockito.Matchers.any())).thenReturn(Future.successful(None))
+        when(mockPropertyDetailsService.cacheDraftFullTaxPeriod(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
-        val result = TestPropertyDetailsController.saveDraftFullTaxPeriod(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftFullTaxPeriod(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(BAD_REQUEST)
       }
     }
 
     "saveDraftInRelief" must {
 
-      "respond with OK and a list of cached Property Details if this all works" in {
+      "respond with OK and a list of cached Property Details if this all works" in new Setup {
         val testAccountRef = "ATED1223123"
 
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsInRelief()
-        when(mockPropertyDetailsService.cacheDraftInRelief(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(testPropertyDetailsPeriod))(org.mockito.Matchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+        when(mockPropertyDetailsService.cacheDraftInRelief(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
-        val result = TestPropertyDetailsController.saveDraftInRelief(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftInRelief(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(OK)
       }
 
-      "respond with BAD_REQUEST and if this failed" in {
+      "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsInRelief()
-        when(mockPropertyDetailsService.cacheDraftInRelief(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(testPropertyDetailsPeriod))(org.mockito.Matchers.any())).thenReturn(Future.successful(None))
+        when(mockPropertyDetailsService.cacheDraftInRelief(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
-        val result = TestPropertyDetailsController.saveDraftInRelief(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftInRelief(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(BAD_REQUEST)
       }
     }
@@ -110,120 +120,120 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with OneServerPerSuit
 
     "saveDraftDatesLiable" must {
 
-      "respond with OK and a list of cached Property Details if this all works" in {
+      "respond with OK and a list of cached Property Details if this all works" in new Setup {
         val testAccountRef = "ATED1223123"
 
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
-        when(mockPropertyDetailsService.cacheDraftDatesLiable(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(testPropertyDetailsPeriod))(org.mockito.Matchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+        when(mockPropertyDetailsService.cacheDraftDatesLiable(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
-        val result = TestPropertyDetailsController.saveDraftDatesLiable(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftDatesLiable(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(OK)
 
       }
 
-      "respond with BAD_REQUEST and if this failed" in {
+      "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
-        when(mockPropertyDetailsService.cacheDraftDatesLiable(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(testPropertyDetailsPeriod))(org.mockito.Matchers.any())).thenReturn(Future.successful(None))
+        when(mockPropertyDetailsService.cacheDraftDatesLiable(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
-        val result = TestPropertyDetailsController.saveDraftDatesLiable(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftDatesLiable(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(BAD_REQUEST)
       }
     }
 
     "addDraftDatesLiable" must {
 
-      "respond with OK and a list of cached Property Details if this all works" in {
+      "respond with OK and a list of cached Property Details if this all works" in new Setup {
         val testAccountRef = "ATED1223123"
 
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
-        when(mockPropertyDetailsService.addDraftDatesLiable(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(testPropertyDetailsPeriod))(org.mockito.Matchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+        when(mockPropertyDetailsService.addDraftDatesLiable(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
-        val result = TestPropertyDetailsController.addDraftDatesLiable(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.addDraftDatesLiable(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(OK)
 
       }
 
-      "respond with BAD_REQUEST and if this failed" in {
+      "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
-        when(mockPropertyDetailsService.addDraftDatesLiable(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(testPropertyDetailsPeriod))(org.mockito.Matchers.any())).thenReturn(Future.successful(None))
+        when(mockPropertyDetailsService.addDraftDatesLiable(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
-        val result = TestPropertyDetailsController.addDraftDatesLiable(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.addDraftDatesLiable(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(BAD_REQUEST)
       }
     }
 
     "addDraftInRelief" must {
 
-      "respond with OK and a list of cached Property Details if this all works" in {
+      "respond with OK and a list of cached Property Details if this all works" in new Setup {
         val testAccountRef = "ATED1223123"
 
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsDatesInRelief(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
-        when(mockPropertyDetailsService.addDraftDatesInRelief(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(testPropertyDetailsPeriod))(org.mockito.Matchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+        when(mockPropertyDetailsService.addDraftDatesInRelief(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
-        val result = TestPropertyDetailsController.addDraftDatesInRelief(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.addDraftDatesInRelief(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(OK)
 
       }
 
-      "respond with BAD_REQUEST and if this failed" in {
+      "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsDatesInRelief(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
-        when(mockPropertyDetailsService.addDraftDatesInRelief(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(testPropertyDetailsPeriod))(org.mockito.Matchers.any())).thenReturn(Future.successful(None))
+        when(mockPropertyDetailsService.addDraftDatesInRelief(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
-        val result = TestPropertyDetailsController.addDraftDatesInRelief(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.addDraftDatesInRelief(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(BAD_REQUEST)
       }
     }
 
     "deleteDraftPeriod" must {
 
-      "respond with OK and a list of cached Property Details if this all works" in {
+      "respond with OK and a list of cached Property Details if this all works" in new Setup {
         val testAccountRef = "ATED1223123"
 
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = new LocalDate("1970-01-01")
-        when(mockPropertyDetailsService.deleteDraftPeriod(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(testPropertyDetailsPeriod))(org.mockito.Matchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+        when(mockPropertyDetailsService.deleteDraftPeriod(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
-        val result = TestPropertyDetailsController.deleteDraftPeriod(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.deleteDraftPeriod(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(OK)
 
       }
 
-      "respond with BAD_REQUEST and if this failed" in {
+      "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = new LocalDate("1970-01-01")
-        when(mockPropertyDetailsService.deleteDraftPeriod(Matchers.eq(testAccountRef),
-          Matchers.eq("1"), Matchers.eq(testPropertyDetailsPeriod))(org.mockito.Matchers.any())).thenReturn(Future.successful(None))
+        when(mockPropertyDetailsService.deleteDraftPeriod(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
-        val result = TestPropertyDetailsController.deleteDraftPeriod(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.deleteDraftPeriod(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(BAD_REQUEST)
       }
     }

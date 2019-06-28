@@ -17,7 +17,7 @@
 package services
 
 import connectors.EtmpReturnsConnector
-import org.mockito.Matchers
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
@@ -39,20 +39,19 @@ class FormBundleServiceSpec extends PlaySpec with OneServerPerSuite with Mockito
     reset(mockEtmpConnector)
   }
 
-  object TestFormBundleService extends FormBundleService {
-    override val etmpReturnsConnector = mockEtmpConnector
+  trait Setup {
+    class TestFormBundleService extends FormBundleService {
+      override val etmpReturnsConnector = mockEtmpConnector
+    }
+
+    val testFormBundleService = new TestFormBundleService()
   }
 
   "FormBundleService" must {
-    "use the correct Etmpconnector" in {
-      FormBundleService.etmpReturnsConnector must be(EtmpReturnsConnector)
-    }
-
-
     "getFormBundleReturns" must {
-      "return response from connector" in {
-        when(mockEtmpConnector.getFormBundleReturns(Matchers.eq(atedRefNo), Matchers.eq(formBundle))).thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(successResponseJson))))
-        val response = TestFormBundleService.getFormBundleReturns(atedRefNo, formBundle)
+      "return response from connector" in new Setup {
+        when(mockEtmpConnector.getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle))).thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(successResponseJson))))
+        val response = testFormBundleService.getFormBundleReturns(atedRefNo, formBundle)
         await(response).status must be(OK)
       }
     }

@@ -53,7 +53,7 @@ object PropertyDetailsUtils extends ReliefConstants {
   def createLiabilityPeriods(periodKey: Int, propertyDetailsPeriod: Option[PropertyDetailsPeriod], initialValue: BigDecimal, updateValue: Option[(LocalDate, BigDecimal)] = None): Seq[CalculatedPeriod] = {
     propertyDetailsPeriod.map { periodVal =>
       val totalPeriods = periodVal.liabilityPeriods.size + periodVal.reliefPeriods.size
-      if (periodVal.isFullPeriod == Some(true) && totalPeriods == 0) {
+      if (periodVal.isFullPeriod.contains(true) && totalPeriods == 0) {
         val startDate = new LocalDate(s"${periodKey}-04-01")
         val endDate = new LocalDate(s"${periodKey}-04-01").plusYears(1).minusDays(1)
         val period = LineItem(TypeLiability, startDate, endDate)
@@ -74,16 +74,15 @@ object PropertyDetailsUtils extends ReliefConstants {
 
   private def createCalculatedPeriod(lineItem: LineItem, initialValue: BigDecimal, updateValue: Option[(LocalDate, BigDecimal)] = None) = {
     updateValue match {
-      case Some((valueDate, value)) if (!lineItem.startDate.isBefore(valueDate)) =>
+      case Some((valueDate, value)) if !lineItem.startDate.isBefore(valueDate) =>
         List(
           CalculatedPeriod(value, lineItem.startDate, lineItem.endDate, lineItem.lineItemType, lineItem.description)
         )
-      case Some((valueDate, value)) if (lineItem.startDate.isBefore(valueDate) && lineItem.endDate.isAfter(valueDate)) => {
+      case Some((valueDate, value)) if lineItem.startDate.isBefore(valueDate) && lineItem.endDate.isAfter(valueDate) =>
         List(
           CalculatedPeriod(initialValue, lineItem.startDate, valueDate.plusDays(-1), lineItem.lineItemType, lineItem.description),
           CalculatedPeriod(value, valueDate, lineItem.endDate, lineItem.lineItemType, lineItem.description)
         )
-      }
       case _ =>
         List(
           CalculatedPeriod(initialValue, lineItem.startDate, lineItem.endDate, lineItem.lineItemType, lineItem.description)
@@ -92,7 +91,7 @@ object PropertyDetailsUtils extends ReliefConstants {
   }
 
 
-  def getEtmpPropertyDetails(property: PropertyDetails) = {
+  def getEtmpPropertyDetails(property: PropertyDetails): EtmpPropertyDetails = {
     val propertyDetailsAddress = EtmpAddress(addressLine1 = property.addressProperty.line_1,
       addressLine2 = property.addressProperty.line_2,
       addressLine3 = property.addressProperty.line_3,
@@ -104,7 +103,7 @@ object PropertyDetailsUtils extends ReliefConstants {
       additionalDetails = getAdditionalDetails(property))
   }
 
-  def getLatestDate(firstDate: Option[LocalDate], secondDate: Option[LocalDate]) = {
+  def getLatestDate(firstDate: Option[LocalDate], secondDate: Option[LocalDate]): Option[LocalDate] = {
     (firstDate, secondDate) match {
       case (Some(x), None) => Some(x)
       case (None, Some(y)) => Some(y)

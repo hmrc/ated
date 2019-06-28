@@ -17,20 +17,25 @@
 package services
 
 import connectors.{AuthConnector, EtmpReturnsConnector}
+import javax.inject.Inject
 import models._
-import repository.PropertyDetailsMongoRepository
+import repository.{PropertyDetailsMongoWrapper, PropertyDetailsMongoRepository}
 import utils.ReliefConstants
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import uk.gov.hmrc.http.HeaderCarrier
 
+class PropertyDetailsValuesServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnector,
+                                                 val authConnector: AuthConnector,
+                                                 val propertyDetails: PropertyDetailsMongoWrapper) extends PropertyDetailsValuesService {
+  val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetails()
+}
+
 trait PropertyDetailsValuesService extends ReliefConstants {
 
   def etmpConnector: EtmpReturnsConnector
-
   def authConnector: AuthConnector
-
   def propertyDetailsCache: PropertyDetailsMongoRepository
 
   def cacheDraftPropertyDetailsOwnedBefore(atedRefNo: String, id: String, updatedDetails: PropertyDetailsOwnedBefore)
@@ -61,7 +66,7 @@ trait PropertyDetailsValuesService extends ReliefConstants {
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
         foundPropertyDetails =>
-          if (foundPropertyDetails.value.flatMap(_.hasValueChanged) == Some(newValue))
+          if (foundPropertyDetails.value.flatMap(_.hasValueChanged).contains(newValue))
             foundPropertyDetails
           else {
             val updatedValue = foundPropertyDetails.value.map(_.copy(hasValueChanged = Some(newValue)))
@@ -80,9 +85,9 @@ trait PropertyDetailsValuesService extends ReliefConstants {
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
         foundPropertyDetails =>
-          if (foundPropertyDetails.value.flatMap(_.anAcquisition) == Some(newValue))
+          if (foundPropertyDetails.value.flatMap(_.anAcquisition).contains(newValue)) {
             foundPropertyDetails
-          else {
+          } else {
             val updatedvalues = foundPropertyDetails.value.map(_.copy(
               anAcquisition = Some(newValue),
               isPropertyRevalued = None,
@@ -193,10 +198,4 @@ trait PropertyDetailsValuesService extends ReliefConstants {
     } yield cacheResponse
   }
 
-}
-
-object PropertyDetailsValuesService extends PropertyDetailsValuesService {
-  val propertyDetailsCache: PropertyDetailsMongoRepository = PropertyDetailsMongoRepository()
-  val etmpConnector: EtmpReturnsConnector = EtmpReturnsConnector
-  val authConnector: AuthConnector = AuthConnector
 }

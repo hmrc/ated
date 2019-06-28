@@ -17,17 +17,26 @@
 package services
 
 import connectors.{AuthConnector, EmailConnector, EtmpReturnsConnector}
+import javax.inject.Inject
 import models._
 import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json.{JsValue, Json}
-import repository.PropertyDetailsMongoRepository
+import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
 import utils._
 import utils.AtedUtils._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse, InternalServerException }
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, InternalServerException}
+
+class ChangeLiabilityServiceImpl @Inject()(val propertyDetailsMongoWrapper: PropertyDetailsMongoWrapper,
+                                           val etmpConnector: EtmpReturnsConnector,
+                                           val authConnector: AuthConnector,
+                                           val subscriptionDataService: SubscriptionDataService,
+                                           val emailConnector: EmailConnector) extends ChangeLiabilityService {
+  val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetailsMongoWrapper()
+}
 
 trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConstants with NotificationService {
 
@@ -41,41 +50,42 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
           case Some(x) if fromSelectedPrevReturn.isEmpty | fromSelectedPrevReturn.contains(false) => Future.successful(Option(x))
           case _ =>
             etmpConnector.getFormBundleReturns(atedRefNo, oldFormBundleNo.toString) map {
-              response => response.status match {
-                case OK =>
-                  val liabilityReturn = response.json.as[FormBundleReturn]
-                  val address = ChangeLiabilityUtils.generateAddressFromLiabilityReturn(liabilityReturn)
-                  val title = ChangeLiabilityUtils.generateTitleFromLiabilityReturn(liabilityReturn)
-                  val periodData = ChangeLiabilityUtils.generatePeriodFromLiabilityReturn(liabilityReturn)
-                  val changeLiability = PropertyDetails(atedRefNo,
-                    id = fromSelectedPrevReturn match {
-                      case Some(true) => createPropertyKey
-                      case _ => oldFormBundleNo
-                    },
-                    periodKey = fromSelectedPrevReturn match {
-                      case Some(true) => period.get
-                      case _ => liabilityReturn.periodKey.trim.toInt
-                    },
-                    address,
-                    title,
-                    period = fromSelectedPrevReturn match {
-                      case Some(true) => None
-                      case _ => Some(periodData)
-                    },
-                    value = Some(PropertyDetailsValue(isValuedByAgent = Some(liabilityReturn.professionalValuation),
-                      isPropertyRevalued = Some(false),
-                      partAcqDispDate = liabilityReturn.dateOfAcquisition,
-                      revaluedValue = liabilityReturn.valueAtAcquisition)),
-                    formBundleReturn = Some(liabilityReturn)
-                  )
-                  retrieveDraftPropertyDetails(atedRefNo) map {
-                    list =>
-                      val updatedList = list :+ changeLiability
-                      updatedList.map(updateProp => propertyDetailsCache.cachePropertyDetails(updateProp))
-                  }
-                  Some(changeLiability)
-                case status => None
-              }
+              response =>
+                response.status match {
+                  case OK =>
+                    val liabilityReturn = response.json.as[FormBundleReturn]
+                    val address = ChangeLiabilityUtils.generateAddressFromLiabilityReturn(liabilityReturn)
+                    val title = ChangeLiabilityUtils.generateTitleFromLiabilityReturn(liabilityReturn)
+                    val periodData = ChangeLiabilityUtils.generatePeriodFromLiabilityReturn(liabilityReturn)
+                    val changeLiability = PropertyDetails(atedRefNo,
+                      id = fromSelectedPrevReturn match {
+                        case Some(true) => createPropertyKey
+                        case _ => oldFormBundleNo
+                      },
+                      periodKey = fromSelectedPrevReturn match {
+                        case Some(true) => period.get
+                        case _ => liabilityReturn.periodKey.trim.toInt
+                      },
+                      address,
+                      title,
+                      period = fromSelectedPrevReturn match {
+                        case Some(true) => None
+                        case _ => Some(periodData)
+                      },
+                      value = Some(PropertyDetailsValue(isValuedByAgent = Some(liabilityReturn.professionalValuation),
+                        isPropertyRevalued = Some(false),
+                        partAcqDispDate = liabilityReturn.dateOfAcquisition,
+                        revaluedValue = liabilityReturn.valueAtAcquisition)),
+                      formBundleReturn = Some(liabilityReturn)
+                    )
+                    retrieveDraftPropertyDetails(atedRefNo) map {
+                      list =>
+                        val updatedList = list :+ changeLiability
+                        updatedList.map(updateProp => propertyDetailsCache.cachePropertyDetails(updateProp))
+                    }
+                    Some(changeLiability)
+                  case status => None
+                }
             }
         }
       }
@@ -97,9 +107,9 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
       case Some(requestModel) => etmpConnector.submitEditedLiabilityReturns(atedRefNo, requestModel) map {
         response =>
           response.status match {
-          case OK => getLiabilityAmount(response.json)
-          case status => throw new InternalServerException("[ChangeLiabilityService][getAmountDueOrRefund] No Liability Amount Found")
-        }
+            case OK => getLiabilityAmount(response.json)
+            case status => throw new InternalServerException("[ChangeLiabilityService][getAmountDueOrRefund] No Liability Amount Found")
+          }
       }
       case None => throw new InternalServerException("[ChangeLiabilityService][getAmountDueOrRefund] Invalid Data for the request")
     }
@@ -128,6 +138,7 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
         case _ => Future.successful(propertyDetailsOpt)
       }
     }
+
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
 
@@ -176,12 +187,4 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
       }
     }
   }
-}
-
-object ChangeLiabilityService extends ChangeLiabilityService {
-  val propertyDetailsCache: PropertyDetailsMongoRepository = PropertyDetailsMongoRepository()
-  val etmpConnector: EtmpReturnsConnector = EtmpReturnsConnector
-  val authConnector: AuthConnector = AuthConnector
-  val subscriptionDataService: SubscriptionDataService = SubscriptionDataService
-  val emailConnector: EmailConnector = EmailConnector
 }

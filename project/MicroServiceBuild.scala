@@ -11,37 +11,29 @@ private object AppDependencies {
   import play.sbt.PlayImport._
   import play.core.PlayVersion
 
-  private val microserviceBootstrapVersion = "10.4.0"
-  private val domainVersion = "5.3.0"
-  private val scalaTestVersion = "3.0.5"
-  private val pegdownVersion = "1.6.0"
-  private val scalaTestPlusVersion = "2.0.1"
-  private val simpleReactivemongoVersion = "7.12.0-play-25"
-  private val reactivemongoTestVersion = "4.7.0-play-25"
-  private val jsonEncryptionVersion = "4.1.0"
-
-  val compile = Seq(
+  val compile: Seq[ModuleID] = Seq(
     ws,
-    "uk.gov.hmrc" %% "microservice-bootstrap" % microserviceBootstrapVersion,
-    "uk.gov.hmrc" %% "domain" % domainVersion,
-    "uk.gov.hmrc" %% "simple-reactivemongo" % simpleReactivemongoVersion,
-    "uk.gov.hmrc" %% "json-encryption" % jsonEncryptionVersion
+    "uk.gov.hmrc"       %% "bootstrap-play-26"    % "0.39.0",
+    "uk.gov.hmrc"       %% "domain"               % "5.6.0-play-26",
+    "uk.gov.hmrc"       %% "simple-reactivemongo" % "7.20.0-play-26",
+    "uk.gov.hmrc"       %% "json-encryption"      % "4.4.0-play-26",
+    "com.typesafe.play" %% "play-json-joda"       % "2.6.10"
   )
 
   trait TestDependencies {
-    lazy val scope: String = "test"
+    lazy val scope: String = "it,test"
     lazy val test: Seq[ModuleID] = ???
   }
 
   object Test {
     def apply() = new TestDependencies {
-      override lazy val test = Seq(
-        "org.scalatest" %% "scalatest" % scalaTestVersion % scope,
-        "org.scalatestplus.play" %% "scalatestplus-play" % scalaTestPlusVersion % scope,
-        "org.pegdown" % "pegdown" % pegdownVersion % scope,
-        "org.mockito" % "mockito-all" % "1.10.19" % scope,
-        "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
-        "uk.gov.hmrc" %% "reactivemongo-test" % reactivemongoTestVersion % scope
+      override lazy val test: Seq[ModuleID] = Seq(
+        "org.scalatest"           %% "scalatest"          % "3.0.5"             % scope,
+        "org.scalatestplus.play"  %% "scalatestplus-play" % "3.1.2"             % scope,
+        "org.pegdown"              % "pegdown"            % "1.6.0"             % scope,
+        "org.mockito"              % "mockito-core"       % "2.24.5"            % scope,
+        "com.typesafe.play"       %% "play-test"          % PlayVersion.current % scope,
+        "uk.gov.hmrc"             %% "reactivemongo-test" % "4.14.0-play-26"    % scope
       )
     }.test
   }

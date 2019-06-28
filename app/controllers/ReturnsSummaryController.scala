@@ -16,32 +16,33 @@
 
 package controllers
 
+import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
-import play.api.mvc.Action
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.ReturnSummaryService
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-trait ReturnsSummaryController extends BaseController {
+@Singleton
+class ReturnsSummaryControllerImpl @Inject()(
+                                              val returnSummaryService: ReturnSummaryService,
+                                              val cc: ControllerComponents
+                                            ) extends BackendController(cc) with ReturnsSummaryController
+
+trait ReturnsSummaryController extends BackendController {
 
   def returnSummaryService: ReturnSummaryService
 
-  def getFullSummaryReturn(atedRef: String) = Action.async { implicit request =>
+  def getFullSummaryReturn(atedRef: String): Action[AnyContent] = Action.async { implicit request =>
     returnSummaryService.getFullSummaryReturns(atedRef) map {
       fullSummaryReturn => Ok(Json.toJson(fullSummaryReturn))
     }
   }
 
-  def getPartialSummaryReturn(atedRef: String) = Action.async { implicit request =>
+  def getPartialSummaryReturn(atedRef: String): Action[AnyContent] = Action.async { implicit request =>
     returnSummaryService.getPartialSummaryReturn(atedRef) map {
       partSummaryReturn => Ok(Json.toJson(partSummaryReturn))
     }
   }
-}
-
-object ReturnsSummaryController extends ReturnsSummaryController {
-
-  val returnSummaryService: ReturnSummaryService = ReturnSummaryService
-
 }

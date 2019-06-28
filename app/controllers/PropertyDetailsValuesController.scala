@@ -16,20 +16,26 @@
 
 package controllers
 
-import audit.Auditable
-import config.MicroserviceAuditConnector
+import javax.inject.{Inject, Named, Singleton}
 import models._
-import play.api.{Logger, Play}
-import play.api.libs.json.Json
-import play.api.mvc.Action
+import play.api.mvc.ControllerComponents
 import services.PropertyDetailsValuesService
-import uk.gov.hmrc.play.audit.model.{Audit, EventTypes}
-import uk.gov.hmrc.play.config.AppName
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.model.Audit
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-trait PropertyDetailsValuesController extends BaseController  {
+@Singleton
+class PropertyDetailsValuesControllerImpl @Inject()(val cc: ControllerComponents,
+                                                    val propertyDetailsService: PropertyDetailsValuesService,
+                                                    val auditConnector: AuditConnector,
+                                                    @Named("appName") val appName: String
+                                                   ) extends BackendController(cc) with PropertyDetailsValuesController {
+  val audit: Audit = new Audit(s"ATED:$appName", auditConnector)
+}
+
+trait PropertyDetailsValuesController extends BackendController  {
 
   def propertyDetailsService: PropertyDetailsValuesService
 
@@ -106,16 +112,4 @@ trait PropertyDetailsValuesController extends BaseController  {
         }
       }
   }
-}
-
-object PropertyDetailsValuesController extends PropertyDetailsValuesController {
-
-  val appName: String = AppName(Play.current.configuration).appName
-
-  val propertyDetailsService = PropertyDetailsValuesService
-
-  val audit: Audit = new Audit(s"ATED:${appName}", MicroserviceAuditConnector)
-
-
-
 }

@@ -16,18 +16,19 @@
 
 package repository
 
-import metrics.{Metrics, MetricsEnum}
-import models.{DisposeLiabilityReturn, ReliefsTaxAvoidance}
+import javax.inject.Inject
+import metrics.{MetricsEnum, ServiceMetrics}
+import models.ReliefsTaxAvoidance
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.Logger
-import play.modules.reactivemongo.MongoDbConnection
+import play.modules.reactivemongo.{MongoDbConnection, ReactiveMongoComponent}
 import reactivemongo.api.Cursor.FailOnError
 import reactivemongo.api.DB
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.mongo.ReactiveRepository
+import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -40,33 +41,28 @@ sealed trait ReliefDelete
 case object ReliefDeleted extends ReliefDelete
 case object ReliefDeletedError extends ReliefDelete
 
-trait ReliefsMongoRepository extends ReactiveRepository[ReliefsTaxAvoidance, BSONObjectID] {
+class ReliefsMongoWrapperImpl @Inject()(val mongo: ReactiveMongoComponent,
+                                        val serviceMetrics: ServiceMetrics) extends ReliefsMongoWrapper
 
-  def cacheRelief(reliefs: ReliefsTaxAvoidance): Future[ReliefCached]
+trait ReliefsMongoWrapper {
+  val mongo: ReactiveMongoComponent
+  val serviceMetrics: ServiceMetrics
 
-  def fetchReliefs(atedRefNo: String): Future[Seq[ReliefsTaxAvoidance]]
-
-  def deleteReliefs(atedRefNo: String): Future[ReliefDelete]
-
-  def deleteDraftReliefByYear(atedRefNo: String, periodKey: Int): Future[ReliefDelete]
-
-  def metrics: Metrics
-}
-
-object ReliefsMongoRepository extends MongoDbConnection {
-
-  // $COVERAGE-OFF$
-  private lazy val reliefsRepository = new ReliefsReactiveMongoRepository
-  // $COVERAGE-ON$
-
+  private lazy val reliefsRepository = new ReliefsReactiveMongoRepository(mongo.mongoConnector.db, serviceMetrics)
   def apply(): ReliefsMongoRepository = reliefsRepository
 }
 
-class ReliefsReactiveMongoRepository(implicit mongo: () => DB)
+trait ReliefsMongoRepository extends ReactiveRepository[ReliefsTaxAvoidance, BSONObjectID] {
+  def cacheRelief(reliefs: ReliefsTaxAvoidance): Future[ReliefCached]
+  def fetchReliefs(atedRefNo: String): Future[Seq[ReliefsTaxAvoidance]]
+  def deleteReliefs(atedRefNo: String): Future[ReliefDelete]
+  def deleteDraftReliefByYear(atedRefNo: String, periodKey: Int): Future[ReliefDelete]
+  def metrics: ServiceMetrics
+}
+
+class ReliefsReactiveMongoRepository(mongo: () => DB, val metrics: ServiceMetrics)
   extends ReactiveRepository[ReliefsTaxAvoidance, BSONObjectID]("reliefs", mongo, ReliefsTaxAvoidance.formats, ReactiveMongoFormats.objectIdFormats)
     with ReliefsMongoRepository {
-
-  val metrics: Metrics = Metrics
 
   override def indexes: Seq[Index] = {
     Seq(
@@ -76,27 +72,26 @@ class ReliefsReactiveMongoRepository(implicit mongo: () => DB)
       Index(Seq("timestamp" -> IndexType.Ascending), Some("reliefDraftExpiry"), options = BSONDocument("expireAfterSeconds" -> 60 * 60 * 24 * 28), sparse = true, background = true)
     )
   }
-  // $COVERAGE-OFF$
+
   def cacheRelief(relief: ReliefsTaxAvoidance): Future[ReliefCached] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryInsertRelief)
     val query = BSONDocument("periodKey" -> relief.periodKey, "atedRefNo" -> relief.atedRefNo)
     collection.update(query, relief.copy(timeStamp = DateTime.now(DateTimeZone.UTC)), upsert = true, multi = false).map { writeResult =>
       timerContext.stop()
-      writeResult.ok match {
-        case true => ReliefCached
-        case _ => ReliefCachedError
+      if (writeResult.ok) {
+        ReliefCached
+      } else {
+        ReliefCachedError
       }
     }.recover {
-      // $COVERAGE-OFF$
+
       case e => Logger.warn("Failed to update or insert relief", e)
         timerContext.stop()
         ReliefCachedError
-      // $COVERAGE-ON$
+
     }
   }
-  // $COVERAGE-ON$
 
-  // $COVERAGE-OFF$
   def fetchReliefs(atedRefNo: String): Future[Seq[ReliefsTaxAvoidance]] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchRelief)
     val query = BSONDocument("atedRefNo" -> atedRefNo)
@@ -108,46 +103,41 @@ class ReliefsReactiveMongoRepository(implicit mongo: () => DB)
     }
     result
   }
-  // $COVERAGE-ON$
 
-  // $COVERAGE-OFF$
   def deleteReliefs(atedRefNo: String): Future[ReliefDelete] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryDeleteRelief)
     val query = BSONDocument("atedRefNo" -> atedRefNo)
 
     collection.remove(query).map { removeResult =>
-      removeResult.ok match {
-        case true => ReliefDeleted
-        case _ => ReliefDeletedError
+      if (removeResult.ok) {
+        ReliefDeleted
+      } else {
+        ReliefDeletedError
       }
     }.recover {
-      // $COVERAGE-OFF$
+
       case e => Logger.warn("Failed to remove relief", e)
         timerContext.stop()
         ReliefDeletedError
-      // $COVERAGE-ON$
+
     }
   }
-  // $COVERAGE-ON$
 
-  // $COVERAGE-OFF$
   def deleteDraftReliefByYear(atedRefNo: String, periodKey: Int):Future[ReliefDelete] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryDeleteReliefByYear)
     val query = BSONDocument("atedRefNo" -> atedRefNo, "periodKey" -> periodKey)
 
     collection.remove(query).map { removeResult =>
-      removeResult.ok match {
-        case true => ReliefDeleted
-        case _ => ReliefDeletedError
+      if (removeResult.ok) {
+        ReliefDeleted
+      } else {
+        ReliefDeletedError
       }
     }.recover {
-      // $COVERAGE-OFF$
       case e => Logger.warn("Failed to remove relief by year", e)
         timerContext.stop()
         ReliefDeletedError
-      // $COVERAGE-ON$
     }
   }
-  // $COVERAGE-ON$
 
 }

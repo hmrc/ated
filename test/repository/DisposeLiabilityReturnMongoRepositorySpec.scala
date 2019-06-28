@@ -17,11 +17,13 @@
 package repository
 
 import builders.ChangeLiabilityReturnBuilder
+import metrics.ServiceMetrics
 import models.DisposeLiabilityReturn
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
 import reactivemongo.api.DB
+import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto}
 import uk.gov.hmrc.mongo.{Awaiting, MongoSpecSupport}
 
 class DisposeLiabilityReturnMongoRepositorySpec extends PlaySpec
@@ -35,7 +37,11 @@ class DisposeLiabilityReturnMongoRepositorySpec extends PlaySpec
     await(repository.drop)
   }
 
-  def repository(implicit mongo: () => DB) = new DisposeLiabilityReturnReactiveMongoRepository()
+  lazy val serviceMetrics: ServiceMetrics = app.injector.instanceOf[ServiceMetrics]
+
+  def repository(implicit mongo: () => DB) = {
+    new DisposeLiabilityReturnReactiveMongoRepository(mongo, serviceMetrics)(app.injector.instanceOf[ApplicationCrypto].JsonCrypto)
+  }
 
   "DisposeLiabilityReturnRepository" must {
 

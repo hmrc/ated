@@ -16,20 +16,28 @@
 
 package controllers
 
-import audit.Auditable
-import config.MicroserviceAuditConnector
+import javax.inject.{Inject, Singleton}
 import models._
 import play.api.Logger
-import play.api.libs.json.Json
-import play.api.mvc.Action
+import play.api.libs.json.{Json, OFormat}
+import play.api.mvc.ControllerComponents
 import services.PropertyDetailsService
-import uk.gov.hmrc.play.audit.model.{Audit, EventTypes}
-import uk.gov.hmrc.play.config.AppName
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import play.api.libs.json.JodaWrites._
+import play.api.libs.json.JodaReads._
+import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-trait PropertyDetailsController extends BaseController {
+@Singleton
+class PropertyDetailsControllerImpl @Inject()(val propertyDetailsService: PropertyDetailsService,
+                                              val cc: ControllerComponents,
+                                              implicit val crypto: ApplicationCrypto) extends BackendController(cc) with PropertyDetailsController
+
+trait PropertyDetailsController extends BackendController {
+  val crypto: ApplicationCrypto
+  implicit lazy val compositeCrypto: CryptoWithKeysFromConfig = crypto.JsonCrypto
+  implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
 
   def propertyDetailsService: PropertyDetailsService
 
@@ -144,12 +152,5 @@ trait PropertyDetailsController extends BaseController {
         InternalServerError(Json.toJson(a))
     }
   }
-
-}
-
-object PropertyDetailsController extends PropertyDetailsController {
-
-  val propertyDetailsService = PropertyDetailsService
-
 
 }

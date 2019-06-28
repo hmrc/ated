@@ -17,7 +17,8 @@
 package models
 
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
-import play.api.libs.json.Json
+import play.api.libs.json.{JsPath, JsSuccess, Json}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig, PlainText, Protected}
 
 class BankDetailModelsSpec extends PlaySpec with OneServerPerSuite {
 
@@ -69,6 +70,35 @@ class BankDetailModelsSpec extends PlaySpec with OneServerPerSuite {
     "accept valid Ibans" in {
       val validIban = "x" * 34
       Iban(validIban).toString must be (validIban)
+    }
+  }
+
+  "BankDetailsModel" must {
+    "read" when {
+      "when there are protected bank details" in {
+        val crypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
+        implicit val jsonCrypto: CryptoWithKeysFromConfig = crypto.JsonCrypto
+
+        val json =
+          s"""
+            |{
+            | "hasBankDetails": false,
+            |  "protectedBankDetails" : {
+            |      "hasUKBankAccount" : "N3aBb38antBm3t1jI4zlhg==",
+            |      "accountName" : "AgRrB7hjGHSPCP/tOoC4e1PkDrL+/GWL0fk3OSrFFg0=",
+            |      "accountNumber" : "KB+g5/qReFmvl+V+YJlO4A==",
+            |      "sortCode" : "F0vOiYU8dp8L7M7oHJ2lRaSekYjhPwCa0Dyu8Tw9bh7WiT1SveRojOCco4aPD/d9b7JjylAOv+GPowsmDoaRiQ==",
+            |      "bicSwiftCode" : "+ZKJ7XVtuMrxNikqKNfLyQ==",
+            |      "iban" : "+ZKJ7XVtuMrxNikqKNfLyQ=="
+            |  }
+            |}
+          """.stripMargin
+
+        val JsSuccess(success, JsPath(List())) = BankDetailsModel.format.reads(Json.parse(json))
+        success.hasBankDetails mustBe false
+        success.protectedBankDetails.get.hasUKBankAccount mustBe Protected(Some(true))
+        success.protectedBankDetails.get.accountName mustBe Protected(Some("ATED Tax Payer"))
+      }
     }
   }
 }

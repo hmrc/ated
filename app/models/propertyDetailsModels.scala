@@ -20,8 +20,8 @@ import org.joda.time.{DateTime, DateTimeZone, LocalDate}
 import play.api.libs.json._
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import play.api.libs.functional.syntax._
-
-
+import play.api.libs.json.JodaWrites._
+import play.api.libs.json.JodaReads._
 
 case class PropertyDetailsAddress(line_1: String, line_2: String, line_3: Option[String], line_4: Option[String],
                                   postcode: Option[String] = None) {
@@ -252,22 +252,4 @@ case class PropertyDetailsCalculated(valuationDateToUse: Option[LocalDate] = Non
 
 object PropertyDetailsCalculated {
   implicit val formats = Json.format[PropertyDetailsCalculated]
-}
-
-case class PropertyDetails(atedRefNo: String,
-                           id: String,
-                           periodKey: Int,
-                           addressProperty: PropertyDetailsAddress,
-                           title: Option[PropertyDetailsTitle] = None,
-                           value: Option[PropertyDetailsValue] = None,
-                           period: Option[PropertyDetailsPeriod] = None,
-                           calculated: Option[PropertyDetailsCalculated] = None,
-                           formBundleReturn: Option[FormBundleReturn] = None,
-                           bankDetails: Option[BankDetailsModel] = None,
-                           timeStamp: DateTime = DateTime.now(DateTimeZone.UTC))
-
-object PropertyDetails {
-  implicit val dateFormat = ReactiveMongoFormats.dateTimeFormats
-  implicit val idFormat = ReactiveMongoFormats.objectIdFormats
-  implicit val formats = Json.format[PropertyDetails]
 }

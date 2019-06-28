@@ -17,6 +17,8 @@
 package models
 
 import org.joda.time.LocalDate
+import play.api.libs.json.JodaWrites._
+import play.api.libs.json.JodaReads._
 
 case class PeriodSummaryReturn(returnType: String, description: String, status: String, fromDate: Option[LocalDate],
                                toDate: Option[LocalDate], charge: Option[BigDecimal]=None, formBundleId: Option[String]=None)

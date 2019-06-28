@@ -18,32 +18,31 @@ package connectors
 
 import java.util.UUID
 
-import org.mockito.Matchers
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfter
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
-import play.api.Mode.Mode
-import play.api.{Configuration, Play}
 import play.api.libs.json.Json
 import play.api.test.Helpers._
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging.SessionId
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.Future
 
 class AuthConnectorSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfter {
 
-  trait MockedVerbs extends CoreGet with CorePost
-  val mockWSHttp: CoreGet with CorePost = mock[MockedVerbs]
+  val mockWSHttp: HttpClient = mock[HttpClient]
 
-  object TestAuthConnector extends AuthConnector {
-    val serviceUrl = "auth"
-    val authorityUri = ""
-    val http: CoreGet with CorePost = mockWSHttp
-    override protected def mode: Mode = Play.current.mode
+  trait Setup {
+    class TestAuthConnector extends AuthConnector {
+      val serviceUrl = "auth"
+      val authorityUri = ""
+      val http: HttpClient = mockWSHttp
+    }
 
-    override protected def runModeConfiguration: Configuration = Play.current.configuration
+    val connector: TestAuthConnector = new TestAuthConnector()
   }
 
   before {
@@ -52,62 +51,58 @@ class AuthConnectorSpec extends PlaySpec with OneServerPerSuite with MockitoSuga
 
   "AuthConnector" must {
 
-    "have a service url" in {
-      AuthConnector.serviceUrl == "auth"
-    }
-
     "agentReferenceNo" must {
-      "Check that this returns the agent reference number if we have one" in {
+      "Check that this returns the agent reference number if we have one" in new Setup {
         val successResponseJson = Json.parse( """{"accounts": {"agent": {"agentCode":"AGENT-123", "agentBusinessUtr":"JARN1234567"}}}""")
         implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-        when(mockWSHttp.GET[HttpResponse](Matchers.any())(Matchers.any(), Matchers.any(), Matchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
+        when(mockWSHttp.GET[HttpResponse](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
 
-        val result = TestAuthConnector.agentReferenceNo
+        val result = connector.agentReferenceNo
         val agentRefCode = await(result)
 
         agentRefCode must be(Some("JARN1234567"))
       }
 
-      "Check that this returns None if we don't have one" in {
+      "Check that this returns None if we don't have one" in new Setup {
         val successResponseJson = Json.parse( """{"accounts": {"agent": {"payeReference":"PAYE-123"}}}""")
         implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-        when(mockWSHttp.GET[HttpResponse](Matchers.any())(Matchers.any(), Matchers.any(), Matchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
+        when(mockWSHttp.GET[HttpResponse](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
 
-        val result = TestAuthConnector.agentReferenceNo
+        val result = connector.agentReferenceNo
         val agentRefCode = await(result)
         agentRefCode.isDefined must be(false)
       }
-      "Check that this returns None if the agent is also a client" in {
+      "Check that this returns None if the agent is also a client" in new Setup {
         val successResponseJson = Json.parse( """{"uri":"/auth/oid/57ee34b44800004800d0b292","confidenceLevel":50,"credentialStrength":"weak","userDetailsLink":"http://localhost:9978/user-details/id/5835790e2000006a00f3c888","legacyOid":"57ee34b44800004800d0b292","new-session":"/auth/oid/57ee34b44800004800d0b292/session","ids":"/auth/oid/57ee34b44800004800d0b292/ids","credentials":{"gatewayId":"cred-id-2345235235"},"accounts":{"ated":{"utr":"XN1200000100001","link":"/ated/XN1200000100001"},"org":{"org":"9tuPYSf-1gqhPLtuqKZhFC2YNiI","link":"/org/9tuPYSf-1gqhPLtuqKZhFC2YNiI"}},"lastUpdated":"2017-05-10T15:19:03.602Z","loggedInAt":"2017-05-10T15:19:03.602Z","previouslyLoggedInAt":"2017-05-08T13:46:26.269Z","levelOfAssurance":"1","enrolments":"/auth/oid/57ee34b44800004800d0b292/enrolments","affinityGroup":"Organisation","correlationId":"fbd19f1b8c8d8d3d326f37f9202843fed0dc91ffcaa5a2ba49f24acc1dbd22f9","credId":"cred-id-2345235235"}""")
         implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-        when(mockWSHttp.GET[HttpResponse](Matchers.any())(Matchers.any(), Matchers.any(), Matchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
+        when(mockWSHttp.GET[HttpResponse](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
 
-        val result = TestAuthConnector.agentReferenceNo
+        val result = connector.agentReferenceNo
         val agentRefCode = await(result)
         agentRefCode must be(None)
 
       }
-      "returns None if the status from Auth isn't OK" in {
+      "returns None if the status from Auth isn't OK" in new Setup {
         val successResponseJson = Json.parse( """{"accounts": {"agent": {"agentCode":"AGENT-123"}}}""")
         implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-        when(mockWSHttp.GET[HttpResponse](Matchers.any())(Matchers.any(), Matchers.any(), Matchers.any())).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, Some(successResponseJson))))
+        when(mockWSHttp.GET[HttpResponse](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, Some(successResponseJson))))
 
-        val result = TestAuthConnector.agentReferenceNo
+        val result = connector.agentReferenceNo
         val agentRefCode = await(result)
         agentRefCode.isDefined must be(false)
       }
 
-      "returns None if User doesn't have an Agent" in {
+      "returns None if User doesn't have an Agent" in new Setup {
         val successResponseJson = Json.parse( """{"accounts": {"sa": {"link":"/sa/individual/1872796160", "utr": "1872796160"}}}""")
         implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-        when(mockWSHttp.GET[HttpResponse](Matchers.any())(Matchers.any(), Matchers.any(), Matchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
+        when(mockWSHttp.GET[HttpResponse](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
 
-        val result = TestAuthConnector.agentReferenceNo
+        val result = connector.agentReferenceNo
         val agentRefCode = await(result)
         agentRefCode.isDefined must be(false)
       }

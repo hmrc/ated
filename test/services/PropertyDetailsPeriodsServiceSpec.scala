@@ -22,7 +22,7 @@ import builders.PropertyDetailsBuilder
 import connectors.{AuthConnector, EtmpReturnsConnector}
 import models._
 import org.joda.time.LocalDate
-import org.mockito.Matchers
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
@@ -45,10 +45,14 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite wit
   val mockEtmpConnector = mock[EtmpReturnsConnector]
   val mockAuthConnector = mock[AuthConnector]
 
-  object TestPropertyDetailsService extends PropertyDetailsPeriodService {
-    override val propertyDetailsCache = mockPropertyDetailsCache
-    override val etmpConnector = mockEtmpConnector
-    override val authConnector = mockAuthConnector
+  trait Setup {
+    class TestPropertyDetailsService extends PropertyDetailsPeriodService {
+      override val propertyDetailsCache = mockPropertyDetailsCache
+      override val etmpConnector = mockEtmpConnector
+      override val authConnector = mockAuthConnector
+    }
+
+    val testPropertyDetailsService = new TestPropertyDetailsService()
   }
 
   val accountRef = "ATED-123123"
@@ -86,32 +90,25 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite wit
       |}
     """.stripMargin
 
-  "PropertyDetailsService: Periods" must {
-    "use the correct DataCacheconnector" in {
-      PropertyDetailsService.propertyDetailsCache must be(PropertyDetailsMongoRepository())
-    }
-  }
   implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
   val propertyDetails1 = PropertyDetailsBuilder.getFullPropertyDetails("1", Some("something"))
   val propertyDetails2 = PropertyDetailsBuilder.getFullPropertyDetails("2", Some("something else"))
   val propertyDetails3 = PropertyDetailsBuilder.getFullPropertyDetails("3", Some("something more"), liabilityAmount = Some(BigDecimal(999.99)))
 
-
-
   "Save property details Full Tax Period" must {
 
-    "Saving existing property details full tax period value when we don't have it in an existing list" in {
+    "Saving existing property details full tax period value when we don't have it in an existing list" in new Setup {
       val updatedpropertyDetails4 = PropertyDetailsBuilder.getPropertyDetails("4", Some("something better"))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-       when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val testPropertyDetailsDatesLiable = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
       val testPropertyDetailsPeriod = IsFullTaxPeriod(updatedpropertyDetails4.period.flatMap(_.isFullPeriod).getOrElse(false), Some(testPropertyDetailsDatesLiable))
 
-      val result = TestPropertyDetailsService.cacheDraftFullTaxPeriod(accountRef,
+      val result = testPropertyDetailsService.cacheDraftFullTaxPeriod(accountRef,
         updatedpropertyDetails4.id,
         testPropertyDetailsPeriod)
 
@@ -119,17 +116,17 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite wit
       newProp.isDefined must be(false)
     }
 
-    "Saving existing property details full tax period updates an existing list. Change value so clear future values and add the new period" in {
+    "Saving existing property details full tax period updates an existing list. Change value so clear future values and add the new period" in new Setup {
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-       when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val testPropertyDetailsDatesLiable = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
       val isFullPeriod = IsFullTaxPeriod(propertyDetails3.period.flatMap(_.isFullPeriod.map(x => !x)).getOrElse(false), Some(testPropertyDetailsDatesLiable))
 
-      val result = TestPropertyDetailsService.cacheDraftFullTaxPeriod(accountRef,
+      val result = testPropertyDetailsService.cacheDraftFullTaxPeriod(accountRef,
         propertyDetails3.id, isFullPeriod)
 
       val newProp = await(result)
@@ -146,16 +143,16 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite wit
 
     }
 
-    "Saving existing property details full tax period updates an existing list. Change value so clear future values no period to add" in {
+    "Saving existing property details full tax period updates an existing list. Change value so clear future values no period to add" in new Setup {
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-       when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val isFullPeriod = IsFullTaxPeriod(propertyDetails3.period.flatMap(_.isFullPeriod.map(x => !x)).getOrElse(false), None)
 
-      val result = TestPropertyDetailsService.cacheDraftFullTaxPeriod(accountRef,
+      val result = testPropertyDetailsService.cacheDraftFullTaxPeriod(accountRef,
         propertyDetails3.id, isFullPeriod)
 
       val newProp = await(result)
@@ -172,17 +169,17 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite wit
 
     }
 
-    "Saving existing property details full tax period updates an existing list. Dont change value" in {
+    "Saving existing property details full tax period updates an existing list. Dont change value" in new Setup {
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-       when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val testPropertyDetailsDatesLiable = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
       val isFullPeriod = IsFullTaxPeriod(propertyDetails3.period.flatMap(_.isFullPeriod).getOrElse(false), Some(testPropertyDetailsDatesLiable))
 
-      val result = TestPropertyDetailsService.cacheDraftFullTaxPeriod(accountRef,
+      val result = testPropertyDetailsService.cacheDraftFullTaxPeriod(accountRef,
         propertyDetails3.id,
         isFullPeriod
       )
@@ -204,31 +201,31 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite wit
 
   "Save property details In Relief" must {
 
-    "Saving existing property details in relief value when we don't have it in an existing list" in {
+    "Saving existing property details in relief value when we don't have it in an existing list" in new Setup {
       val updatedpropertyDetails4 = PropertyDetailsBuilder.getPropertyDetails("4", Some("something better"))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-       when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val inRelief = PropertyDetailsInRelief(updatedpropertyDetails4.period.flatMap(_.isInRelief))
-      val result = TestPropertyDetailsService.cacheDraftInRelief(accountRef,
+      val result = testPropertyDetailsService.cacheDraftInRelief(accountRef,
         updatedpropertyDetails4.id, inRelief)
 
       val newProp = await(result)
       newProp.isDefined must be(false)
     }
 
-    "Saving existing property details in relief updates an existing list. Dont clear future values" in {
+    "Saving existing property details in relief updates an existing list. Dont clear future values" in new Setup {
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-       when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val inRelief = PropertyDetailsInRelief(propertyDetails3.period.flatMap(_.isInRelief.map(x => !x)))
-      val result = TestPropertyDetailsService.cacheDraftInRelief(accountRef,
+      val result = testPropertyDetailsService.cacheDraftInRelief(accountRef,
         propertyDetails3.id, inRelief)
 
       val newProp = await(result)
@@ -247,12 +244,12 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite wit
 
   "Save property details DatesLiable" must {
 
-    "Saving existing property details DatesLiable value when we don't have it in an existing list" in {
+    "Saving existing property details DatesLiable value when we don't have it in an existing list" in new Setup {
       val updatedpropertyDetails4 = PropertyDetailsBuilder.getPropertyDetails("4", Some("something better"))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-       when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val liabilityPeriod = propertyDetails3.period.flatMap(_.liabilityPeriods.headOption)
@@ -260,24 +257,24 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite wit
         liabilityPeriod.map(_.startDate).getOrElse(new LocalDate("1970-01-01")),
         liabilityPeriod.map(_.endDate).getOrElse(new LocalDate("1970-01-01"))
       )
-      val result = TestPropertyDetailsService.cacheDraftDatesLiable(accountRef,
+      val result = testPropertyDetailsService.cacheDraftDatesLiable(accountRef,
         updatedpropertyDetails4.id, updatedValue)
 
       val newProp = await(result)
       newProp.isDefined must be(false)
     }
 
-    "Saving existing property details DatesLiable updates an existing list. Change value so clear future values" in {
+    "Saving existing property details DatesLiable updates an existing list. Change value so clear future values" in new Setup {
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-       when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedValue = PropertyDetailsDatesLiable(
         new LocalDate("2999-02-03"),new LocalDate("2999-03-04")
       )
-      val result = TestPropertyDetailsService.cacheDraftDatesLiable(accountRef,
+      val result = testPropertyDetailsService.cacheDraftDatesLiable(accountRef,
         propertyDetails3.id, updatedValue)
 
       val newProp = await(result)
@@ -296,19 +293,19 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite wit
       newProp.get.period.get.liabilityPeriods.head.endDate must be (updatedValue.endDate)
     }
 
-    "Saving existing property details DatesLiable updates an existing list with no Periods. Change value so clear future values" in {
+    "Saving existing property details DatesLiable updates an existing list with no Periods. Change value so clear future values" in new Setup {
 
       val propertyDetails3Empty = propertyDetails3.copy(period = None)
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3Empty)))
-       when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedValue = PropertyDetailsDatesLiable(
         new LocalDate("2999-02-03"),new LocalDate("2999-03-04")
       )
-      val result = TestPropertyDetailsService.cacheDraftDatesLiable(accountRef,
+      val result = testPropertyDetailsService.cacheDraftDatesLiable(accountRef,
         propertyDetails3.id, updatedValue)
 
       val newProp = await(result)
@@ -320,11 +317,11 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite wit
       newProp.get.period.isDefined must be (false)
     }
 
-    "Saving existing property details DatesLiable updates an existing list. Dont change value" in {
+    "Saving existing property details DatesLiable updates an existing list. Dont change value" in new Setup {
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-       when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val liabilityPeriod = propertyDetails3.period.flatMap(_.liabilityPeriods.headOption)
@@ -332,7 +329,7 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite wit
         liabilityPeriod.map(_.startDate).getOrElse(new LocalDate("1970-01-01")),
         liabilityPeriod.map(_.endDate).getOrElse(new LocalDate("1970-01-01"))
       )
-      val result = TestPropertyDetailsService.cacheDraftDatesLiable(accountRef,
+      val result = testPropertyDetailsService.cacheDraftDatesLiable(accountRef,
         propertyDetails3.id, updatedValue)
 
       val newProp = await(result)
@@ -355,18 +352,18 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite wit
 
   "Add DatesLiable" must {
 
-    "Add new DatesLiable to an empty list" in {
+    "Add new DatesLiable to an empty list" in new Setup {
       val propertyDetails3Empty = propertyDetails3.copy(period = Some(PropertyDetailsPeriod()))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3Empty)))
-       when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedPeriod = PropertyDetailsDatesLiable(
         new LocalDate("2999-02-03"),new LocalDate("2999-03-04")
       )
-      val result = TestPropertyDetailsService.addDraftDatesLiable(accountRef,
+      val result = testPropertyDetailsService.addDraftDatesLiable(accountRef,
         propertyDetails3.id, updatedPeriod)
 
       val newProp = await(result)
@@ -379,16 +376,16 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite wit
       newProp.get.period.get.reliefPeriods.size must be (0)
     }
 
-    "Add new DatesLiable to an existing list" in {
+    "Add new DatesLiable to an existing list" in new Setup {
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-       when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedPeriod = PropertyDetailsDatesLiable(
         new LocalDate("2999-02-03"),new LocalDate("2999-03-04")
       )
-      val result = TestPropertyDetailsService.addDraftDatesLiable(accountRef,
+      val result = testPropertyDetailsService.addDraftDatesLiable(accountRef,
         propertyDetails3.id, updatedPeriod)
 
       val newProp = await(result)
@@ -400,17 +397,17 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite wit
       newProp.get.period.get.reliefPeriods.size must be (propertyDetails3.period.get.reliefPeriods.size)
     }
 
-    "Add new DatesLiable to an existing list with the same date as an existing one" in {
+    "Add new DatesLiable to an existing list with the same date as an existing one" in new Setup {
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-       when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val oldPeriod = propertyDetails3.period.get.liabilityPeriods.headOption.get
       val updatedPeriod = PropertyDetailsDatesLiable(
         oldPeriod.startDate, oldPeriod.endDate.plusYears(1)
       )
-      val result = TestPropertyDetailsService.addDraftDatesLiable(accountRef,
+      val result = testPropertyDetailsService.addDraftDatesLiable(accountRef,
         propertyDetails3.id, updatedPeriod)
 
       val newProp = await(result)
@@ -429,18 +426,18 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite wit
 
 
   "Add DatesInRelief" must {
-    "Add new DatesInRelief to an empty list" in {
+    "Add new DatesInRelief to an empty list" in new Setup {
       val propertyDetails3Empty = propertyDetails3.copy(period = Some(PropertyDetailsPeriod()))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3Empty)))
-       when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedPeriod = PropertyDetailsDatesInRelief(
         new LocalDate("2999-02-03"),new LocalDate("2999-03-04")
       )
-      val result = TestPropertyDetailsService.addDraftDatesInRelief(accountRef,
+      val result = testPropertyDetailsService.addDraftDatesInRelief(accountRef,
         propertyDetails3.id, updatedPeriod)
 
       val newProp = await(result)
@@ -452,16 +449,16 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite wit
       newProp.get.period.get.reliefPeriods.size must be (1)
     }
 
-    "Add new DatesInRelief to an existing list" in {
+    "Add new DatesInRelief to an existing list" in new Setup {
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-       when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedPeriod = PropertyDetailsDatesInRelief(
         new LocalDate("2999-02-03"),new LocalDate("2999-03-04")
       )
-      val result = TestPropertyDetailsService.addDraftDatesInRelief(accountRef,
+      val result = testPropertyDetailsService.addDraftDatesInRelief(accountRef,
         propertyDetails3.id, updatedPeriod)
 
       val newProp = await(result)
@@ -473,17 +470,17 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite wit
       newProp.get.period.get.reliefPeriods.size must be (propertyDetails3.period.get.reliefPeriods.size  + 1)
     }
 
-    "Add new DatesInRelief to an existing list with the same date as an existing one" in {
+    "Add new DatesInRelief to an existing list with the same date as an existing one" in new Setup {
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-       when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val oldPeriod = propertyDetails3.period.get.reliefPeriods.headOption.get
       val updatedPeriod = PropertyDetailsDatesInRelief(
         oldPeriod.startDate, oldPeriod.endDate.plusYears(1)
       )
-      val result = TestPropertyDetailsService.addDraftDatesInRelief(accountRef,
+      val result = testPropertyDetailsService.addDraftDatesInRelief(accountRef,
         propertyDetails3.id, updatedPeriod)
 
       val newProp = await(result)
@@ -502,15 +499,15 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite wit
 
   "Delete property details Period" must {
 
-    "Delete a Period from an existing list" in {
+    "Delete a Period from an existing list" in new Setup {
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-       when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val oldPeriod = propertyDetails3.period.get.reliefPeriods.headOption.get
-      val result = TestPropertyDetailsService.deleteDraftPeriod(accountRef, propertyDetails3.id, oldPeriod.startDate)
+      val result = testPropertyDetailsService.deleteDraftPeriod(accountRef, propertyDetails3.id, oldPeriod.startDate)
 
       val newProp = await(result)
       newProp.isDefined must be(true)

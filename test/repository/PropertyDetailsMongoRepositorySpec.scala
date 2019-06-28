@@ -17,10 +17,12 @@
 package repository
 
 import builders.PropertyDetailsBuilder
+import metrics.ServiceMetrics
 import org.scalatest._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
 import reactivemongo.api.DB
+import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto}
 import uk.gov.hmrc.mongo.{Awaiting, MongoSpecSupport}
 
 class PropertyDetailsMongoRepositorySpec extends PlaySpec
@@ -30,8 +32,11 @@ class PropertyDetailsMongoRepositorySpec extends PlaySpec
   with MockitoSugar
   with BeforeAndAfterEach {
 
+  lazy val serviceMetrics: ServiceMetrics = app.injector.instanceOf[ServiceMetrics]
 
-  def repository(implicit mongo: () => DB) = new PropertyDetailsReactiveMongoRepository
+  def repository(implicit mongo: () => DB) = {
+    new PropertyDetailsReactiveMongoRepository(mongo, serviceMetrics)(app.injector.instanceOf[ApplicationCrypto].JsonCrypto)
+  }
 
   override def beforeEach(): Unit = {
     await(repository.drop)

@@ -17,13 +17,16 @@
 package services
 
 import connectors.{AuthConnector, EtmpDetailsConnector}
+import javax.inject.Inject
 import models._
 import utils.SessionUtils
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse }
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
+class SubscriptionDataServiceImpl @Inject()(val etmpConnector: EtmpDetailsConnector,
+                                            val authConnector: AuthConnector) extends SubscriptionDataService
 trait SubscriptionDataService {
 
   def etmpConnector: EtmpDetailsConnector
@@ -37,7 +40,13 @@ trait SubscriptionDataService {
   def updateSubscriptionData(atedReferenceNo: String, updateData: UpdateSubscriptionDataRequest)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     authConnector.agentReferenceNo flatMap {
       agentRefNo =>
-        val request = UpdateEtmpSubscriptionDataRequest(SessionUtils.getUniqueAckNo, updateData.emailConsent, updateData.changeIndicators, agentRefNo, updateData.address)
+        val request = UpdateEtmpSubscriptionDataRequest(
+          SessionUtils.getUniqueAckNo,
+          updateData.emailConsent,
+          updateData.changeIndicators,
+          agentRefNo,
+          updateData.address
+        )
         etmpConnector.updateSubscriptionData(atedReferenceNo, request)
     }
   }
@@ -46,10 +55,4 @@ trait SubscriptionDataService {
     val request = updateData.copy(acknowledgementReference = Some(SessionUtils.getUniqueAckNo))
     etmpConnector.updateRegistrationDetails(atedReferenceNo, safeId, request)
   }
-
-}
-
-object SubscriptionDataService extends SubscriptionDataService {
-  def etmpConnector: EtmpDetailsConnector = EtmpDetailsConnector
-  val authConnector: AuthConnector = AuthConnector
 }

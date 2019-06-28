@@ -22,7 +22,7 @@ import builders.PropertyDetailsBuilder
 import connectors.{AuthConnector, EtmpReturnsConnector}
 import models._
 import org.joda.time.LocalDate
-import org.mockito.Matchers
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
@@ -45,10 +45,14 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
   val mockEtmpConnector = mock[EtmpReturnsConnector]
   val mockAuthConnector = mock[AuthConnector]
 
-  object TestPropertyDetailsService extends PropertyDetailsValuesService {
-    override val propertyDetailsCache = mockPropertyDetailsCache
-    override val etmpConnector = mockEtmpConnector
-    override val authConnector = mockAuthConnector
+  trait Setup {
+    class TestPropertyDetailsService extends PropertyDetailsValuesService {
+      override val propertyDetailsCache = mockPropertyDetailsCache
+      override val etmpConnector = mockEtmpConnector
+      override val authConnector = mockAuthConnector
+    }
+
+    val testPropertyDetailsService = new TestPropertyDetailsService()
   }
 
   val accountRef = "ATED-123123"
@@ -86,11 +90,6 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       |}
     """.stripMargin
 
-  "PropertyDetailsValuesService" must {
-    "use the correct DataCacheconnector" in {
-      PropertyDetailsService.propertyDetailsCache must be(PropertyDetailsMongoRepository())
-    }
-  }
   implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
   lazy val propertyDetails1 = PropertyDetailsBuilder.getFullPropertyDetails("1", Some("something"))
   lazy val propertyDetails2 = PropertyDetailsBuilder.getFullPropertyDetails("2", Some("something else"))
@@ -98,15 +97,15 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
 
   "Cache Draft HasValue Change" must {
 
-    "Saving existing property details hasValueChanged value when we don't have it in an existing list" in {
+    "Saving existing property details hasValueChanged value when we don't have it in an existing list" in new Setup {
       lazy val updatedpropertyDetails4 = PropertyDetailsBuilder.getPropertyDetails("4", Some("something better"))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.cacheDraftHasValueChanged(accountRef,
+      val result = testPropertyDetailsService.cacheDraftHasValueChanged(accountRef,
         updatedpropertyDetails4.id,
         true)
 
@@ -114,15 +113,15 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       newProp.isDefined must be(false)
     }
 
-    "Saving existing property details hasValueChanged updates an existing list. Dont Change value so keep old values" in {
+    "Saving existing property details hasValueChanged updates an existing list. Dont Change value so keep old values" in new Setup {
 
       val oldPropertyDetails3 = propertyDetails3.copy(value = Some(PropertyDetailsValue(hasValueChanged = Some(true), revaluedValue = Some(BigDecimal(1111.11)))))
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, oldPropertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.cacheDraftHasValueChanged(accountRef,
+      val result = testPropertyDetailsService.cacheDraftHasValueChanged(accountRef,
         propertyDetails3.id, true)
 
       val newProp = await(result)
@@ -135,15 +134,15 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
 
     }
 
-    "Saving existing property details hasValueChanged updates an existing list. Change value so clear future values" in {
+    "Saving existing property details hasValueChanged updates an existing list. Change value so clear future values" in new Setup {
 
       val oldPropertyDetails3 = propertyDetails3.copy(value = Some(PropertyDetailsValue(hasValueChanged = Some(true), revaluedValue = Some(BigDecimal(1111.11)))))
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, oldPropertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.cacheDraftHasValueChanged(accountRef,
+      val result = testPropertyDetailsService.cacheDraftHasValueChanged(accountRef,
         propertyDetails3.id, false)
 
       val newProp = await(result)
@@ -160,15 +159,15 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
 
   "Save property details Acquisition" must {
 
-    "Saving existing property details acquisiton value when we don't have it in an existing list" in {
+    "Saving existing property details acquisiton value when we don't have it in an existing list" in new Setup {
       lazy val updatedpropertyDetails4 = PropertyDetailsBuilder.getPropertyDetails("4", Some("something better"))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.cacheDraftPropertyDetailsAcquisition(accountRef,
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsAcquisition(accountRef,
         updatedpropertyDetails4.id,
         true)
 
@@ -177,14 +176,14 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
     }
 
 
-    "Saving existing property details anAcquistion updates an existing list. Dont change value" in {
+    "Saving existing property details anAcquistion updates an existing list. Dont change value" in new Setup {
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.cacheDraftPropertyDetailsAcquisition(accountRef,
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsAcquisition(accountRef,
         propertyDetails3.id, true)
 
       val newProp = await(result)
@@ -196,14 +195,14 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       newProp.get.value.get.revaluedValue must be(Some(BigDecimal(1111.11)))
     }
 
-    "Saving existing property details anAcquistion updates an existing list. Change value clears the revalued values" in {
+    "Saving existing property details anAcquistion updates an existing list. Change value clears the revalued values" in new Setup {
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.cacheDraftPropertyDetailsAcquisition(accountRef,
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsAcquisition(accountRef,
         propertyDetails3.id, false)
 
       val newProp = await(result)
@@ -217,7 +216,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
   }
 
   "Save property details Revalued" must {
-    "Saving existing property details Revalued doesnt update the list if no values have changed" in {
+    "Saving existing property details Revalued doesnt update the list if no values have changed" in new Setup {
 
       val updateValue = new PropertyDetailsRevalued(isPropertyRevalued = propertyDetails3.value.get.isPropertyRevalued,
         revaluedValue = propertyDetails3.value.get.revaluedValue,
@@ -225,10 +224,10 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.cacheDraftPropertyDetailsRevalued(accountRef,
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsRevalued(accountRef,
         propertyDetails3.id,
         updateValue)
 
@@ -256,7 +255,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       newValue.notNewBuildValue.isDefined must be(true)
       newValue.notNewBuildDate.isDefined must be(true)
     }
-    "Saving existing property details revalued updates an existing list" in {
+    "Saving existing property details revalued updates an existing list" in new Setup {
 
       val updateValue = new PropertyDetailsRevalued(isPropertyRevalued = Some(true),
                 revaluedValue = Some(BigDecimal(222.22)),
@@ -264,10 +263,10 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.cacheDraftPropertyDetailsRevalued(accountRef,
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsRevalued(accountRef,
         propertyDetails3.id,
         updateValue)
 
@@ -290,16 +289,16 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
 
   "Save property details OwnedBefore" must {
 
-    "Saving existing property details OwnedBefore only updates the owned before value if that is all that has changed" in {
+    "Saving existing property details OwnedBefore only updates the owned before value if that is all that has changed" in new Setup {
 
       val updateValue = new PropertyDetailsOwnedBefore(Some(true), Some(BigDecimal(333.22)))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.cacheDraftPropertyDetailsOwnedBefore(accountRef,
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsOwnedBefore(accountRef,
         propertyDetails3.id,
         updateValue)
 
@@ -329,17 +328,17 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       newValue.isValuedByAgent.isDefined must be(true)
 
     }
-    "Saving existing property details creates the value object if we dont have one" in {
+    "Saving existing property details creates the value object if we dont have one" in new Setup {
 
       val updateValue = new PropertyDetailsOwnedBefore(Some(false), Some(BigDecimal(333.22)))
 
       val propertyDetails3NoValue = propertyDetails3.copy(value = None)
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3NoValue)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.cacheDraftPropertyDetailsOwnedBefore(accountRef,
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsOwnedBefore(accountRef,
         propertyDetails3.id,
         updateValue)
 
@@ -361,7 +360,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
 
   "Save property details NewBuild" must {
 
-    "Saving existing property details NewBuild doesnt update the list if no values have changed" in {
+    "Saving existing property details NewBuild doesnt update the list if no values have changed" in new Setup {
 
       val updateValue = new PropertyDetailsNewBuild(isNewBuild = propertyDetails3.value.get.isNewBuild,
         newBuildValue = propertyDetails3.value.get.newBuildValue,
@@ -372,10 +371,10 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.cacheDraftPropertyDetailsNewBuild(accountRef,
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuild(accountRef,
         propertyDetails3.id,
         updateValue)
 
@@ -404,7 +403,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       newValue.notNewBuildDate must be(propertyDetails3.value.get.notNewBuildDate)
     }
 
-    "Saving existing property details NewBuild updates an existing list if a value has changed" in {
+    "Saving existing property details NewBuild updates an existing list if a value has changed" in new Setup {
 
       val updateValue = new PropertyDetailsNewBuild(isNewBuild = Some(true),
         newBuildValue = Some(BigDecimal(222.22)),
@@ -415,10 +414,10 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.cacheDraftPropertyDetailsNewBuild(accountRef,
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuild(accountRef,
         propertyDetails3.id,
         updateValue)
 
@@ -452,16 +451,16 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
   }
 
   "Save property details ProfessionallyValued" must {
-    "Saving existing property details ProfessionallyValued doesnt update the list if no values have changed" in {
+    "Saving existing property details ProfessionallyValued doesnt update the list if no values have changed" in new Setup {
 
       val updateValue = new PropertyDetailsProfessionallyValued(isValuedByAgent = propertyDetails3.value.get.isValuedByAgent)
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.cacheDraftPropertyDetailsProfessionallyValued(accountRef,
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsProfessionallyValued(accountRef,
         propertyDetails3.id,
         updateValue)
 
@@ -489,17 +488,17 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       newValue.notNewBuildValue.isDefined must be(true)
       newValue.notNewBuildDate.isDefined must be(true)
     }
-    "Saving existing property details ProfessionallyValued updates an existing list" in {
+    "Saving existing property details ProfessionallyValued updates an existing list" in new Setup {
 
 
       val updateValue = new PropertyDetailsProfessionallyValued(Some(false))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.cacheDraftPropertyDetailsProfessionallyValued(accountRef,
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsProfessionallyValued(accountRef,
         propertyDetails3.id,
         updateValue)
 

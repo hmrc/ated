@@ -18,7 +18,8 @@ package models
 
 import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsPath, Json, Reads, Writes}
+import play.api.libs.json.{Format, JsObject, JsPath, JsResult, JsValue, Json, OFormat, Reads, Writes}
+
 
 case class EditLiabilityReturnsResponse(mode: String,
                                         oldFormBundleNumber: String,
@@ -49,11 +50,13 @@ case class EditLiabilityReturnsResponseModel(processingDate: DateTime,
                                              accountBalance: BigDecimal)
 
 object EditLiabilityReturnsResponseModel {
-  //  implicit val jodaLocalDateTimeReads = Reads[LocalDateTime](x => x.validate[String].map(y => LocalDateTime.parse(y, ISODateTimeFormat.dateTimeNoMillis())))
-  //  implicit val jodaLocalDateTimeWrites = Writes[LocalDateTime](x => Json.parse(x.toString("yyyy-MM-dd'T'HH:mm:ss'Z'")))
-  // DateTime
-  implicit val yourJodaDateWrites = Writes.jodaDateWrites("yyyy-MM-dd'T'HH:mm:ss'Z'")
-  // DateTime
-  implicit val yourJodaDateReads = Reads.jodaDateReads("yyyy-MM-dd'T'HH:mm:ss'Z'")
+  import play.api.libs.json.JodaWrites.jodaDateWrites
+  import play.api.libs.json.JodaReads.jodaDateReads
+
+  val reads: Reads[DateTime] = jodaDateReads("yyyy-MM-dd'T'HH:mm:ss'Z'")
+  val writes: Writes[DateTime] = jodaDateWrites("yyyy-MM-dd'T'HH:mm:ss'Z'")
+
+  implicit val datetimeFormat: Format[DateTime] = Format(reads, writes)
+
   implicit val formats = Json.format[EditLiabilityReturnsResponseModel]
 }

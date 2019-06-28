@@ -17,21 +17,26 @@
 package services
 
 import connectors.{AuthConnector, EtmpReturnsConnector}
+import javax.inject.Inject
 import models._
 import org.joda.time.LocalDate
-import repository.PropertyDetailsMongoRepository
+import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
 import utils.ReliefConstants
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import uk.gov.hmrc.http.HeaderCarrier
 
+class PropertyDetailsPeriodServiceImpl @Inject()(val propertyDetailsMongoWrapper: PropertyDetailsMongoWrapper,
+                                                 val etmpConnector: EtmpReturnsConnector,
+                                                 val authConnector: AuthConnector) extends PropertyDetailsPeriodService {
+  val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetailsMongoWrapper()
+}
+
 trait PropertyDetailsPeriodService extends ReliefConstants {
 
   def etmpConnector: EtmpReturnsConnector
-
   def authConnector: AuthConnector
-
   def propertyDetailsCache: PropertyDetailsMongoRepository
 
   def cacheDraftFullTaxPeriod(atedRefNo: String, id: String, updatedDetails: IsFullTaxPeriod)
@@ -40,7 +45,7 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
         foundPropertyDetails =>
-          if (Some(updatedDetails.isFullPeriod) == foundPropertyDetails.period.flatMap(_.isFullPeriod))
+          if (foundPropertyDetails.period.flatMap(_.isFullPeriod).contains(updatedDetails.isFullPeriod))
           //Don't update anything
             foundPropertyDetails
           else {
@@ -83,9 +88,9 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       def lineItemMatches(lineItem: LineItem) = {
-        (lineItem.startDate == updatedDetails.startDate &&
+        lineItem.startDate == updatedDetails.startDate &&
           lineItem.endDate == updatedDetails.endDate &&
-          lineItem.lineItemType == TypeLiability)
+          lineItem.lineItemType == TypeLiability
       }
 
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -93,7 +98,7 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
 
           val oldLiabilityPeriods = foundPropertyDetails.period.map(_.liabilityPeriods).getOrElse(Nil)
           (oldLiabilityPeriods.size, oldLiabilityPeriods.headOption) match {
-            case (1, Some(x)) if (lineItemMatches(x)) => foundPropertyDetails
+            case (1, Some(x)) if lineItemMatches(x) => foundPropertyDetails
             case _ =>
               val newLineItem = new LineItem(lineItemType = TypeLiability,
                 startDate = updatedDetails.startDate,
@@ -212,10 +217,4 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
     } yield cacheResponse
   }
 
-}
-
-object PropertyDetailsPeriodService extends PropertyDetailsPeriodService {
-  val propertyDetailsCache: PropertyDetailsMongoRepository = PropertyDetailsMongoRepository()
-  val etmpConnector: EtmpReturnsConnector = EtmpReturnsConnector
-  val authConnector: AuthConnector = AuthConnector
 }

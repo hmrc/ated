@@ -17,24 +17,30 @@
 package services
 
 import connectors.{AuthConnector, EmailConnector, EtmpReturnsConnector}
+import javax.inject.Inject
 import models.{ReliefsTaxAvoidance, SubmitEtmpReturnsRequest}
 import play.api.http.Status._
 import play.api.libs.json.Json
-import repository.ReliefsMongoRepository
+import repository.{ReliefsMongoWrapper, ReliefsMongoRepository}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import utils.ReliefUtils
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse }
+
+class ReliefsServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnector,
+                                   val authConnector: AuthConnector,
+                                   val subscriptionDataService: SubscriptionDataService,
+                                   val emailConnector: EmailConnector,
+                                   val reliefRepo: ReliefsMongoWrapper) extends ReliefsService {
+  val reliefsCache: ReliefsMongoRepository = reliefRepo()
+}
 
 trait ReliefsService extends NotificationService {
 
   def reliefsCache: ReliefsMongoRepository
-
   def etmpConnector: EtmpReturnsConnector
-
   def authConnector: AuthConnector
-
   def subscriptionDataService: SubscriptionDataService
 
   def saveDraftReliefs(atedRefNo: String, relief: ReliefsTaxAvoidance)(implicit hc: HeaderCarrier): Future[Seq[ReliefsTaxAvoidance]] = {
@@ -74,7 +80,7 @@ trait ReliefsService extends NotificationService {
     }
   }
 
-  def retrieveDraftReliefForPeriodKey(atedRefNo: String, periodKey: Int)(implicit hc: HeaderCarrier) = {
+  def retrieveDraftReliefForPeriodKey(atedRefNo: String, periodKey: Int)(implicit hc: HeaderCarrier): Future[Option[ReliefsTaxAvoidance]] = {
     for {
       draftReliefs <- retrieveDraftReliefs(atedRefNo)
     } yield {
@@ -91,7 +97,7 @@ trait ReliefsService extends NotificationService {
     }
   }
 
-  def deleteAllDraftReliefs(atedRefNo: String)(implicit hc: HeaderCarrier) = {
+  def deleteAllDraftReliefs(atedRefNo: String)(implicit hc: HeaderCarrier): Future[Seq[ReliefsTaxAvoidance]] = {
     for {
       _ <- reliefsCache.deleteReliefs(atedRefNo)
       reliefsList <- reliefsCache.fetchReliefs(atedRefNo)
@@ -100,7 +106,7 @@ trait ReliefsService extends NotificationService {
     }
   }
 
-  def deleteAllDraftReliefByYear(atedRefNo: String, periodKey: Int)(implicit hc: HeaderCarrier) = {
+  def deleteAllDraftReliefByYear(atedRefNo: String, periodKey: Int)(implicit hc: HeaderCarrier): Future[Seq[ReliefsTaxAvoidance]] = {
     for {
       _ <- reliefsCache.deleteDraftReliefByYear(atedRefNo, periodKey)
       reliefsList <- reliefsCache.fetchReliefs(atedRefNo)
@@ -109,12 +115,4 @@ trait ReliefsService extends NotificationService {
     }
   }
 
-}
-
-object ReliefsService extends ReliefsService {
-  val reliefsCache = ReliefsMongoRepository()
-  val etmpConnector: EtmpReturnsConnector = EtmpReturnsConnector
-  val authConnector: AuthConnector = AuthConnector
-  val subscriptionDataService: SubscriptionDataService = SubscriptionDataService
-  val emailConnector: EmailConnector = EmailConnector
 }

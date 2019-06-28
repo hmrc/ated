@@ -17,39 +17,55 @@
 package connectors
 
 import audit.Auditable
-import config.{MicroserviceAuditConnector, WSHttp}
-import metrics.{Metrics, MetricsEnum}
+import javax.inject.Inject
+import metrics.{MetricsEnum, ServiceMetrics}
 import models._
-import play.api.Mode.Mode
-import play.api.{Configuration, Logger, Play}
+import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json.Json
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging.Authorization
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.{Audit, EventTypes}
-import uk.gov.hmrc.play.config.{AppName, ServicesConfig}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-trait EtmpDetailsConnector extends ServicesConfig with RawResponseReads with Auditable {
+class EtmpDetailsConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
+                                            val http: HttpClient,
+                                            val auditConnector: AuditConnector,
+                                            val metrics: ServiceMetrics) extends EtmpDetailsConnector {
+  val serviceUrl: String = servicesConfig.baseUrl("etmp-hod")
 
-  val atedBaseURI = "annual-tax-enveloped-dwellings"
-  val submitClientRelationship = "relationship"
-  val getAgentClientRelationship = "relationship"
-  val retrieveSubscriptionData = "subscription"
-  val saveSubscriptionData = "subscription"
-  val saveRegistrationDetails = "registration/safeid"
+  val urlHeaderEnvironment: String = servicesConfig.getConfString("etmp-hod.environment", "")
+  val urlHeaderAuthorization: String = s"Bearer ${servicesConfig.getConfString("etmp-hod.authorization-token", "")}"
 
+  val audit: Audit = new Audit("ated", auditConnector)
+
+  val atedBaseURI: String = "annual-tax-enveloped-dwellings"
+  val submitClientRelationship: String = "relationship"
+  val getAgentClientRelationship: String = "relationship"
+  val retrieveSubscriptionData: String = "subscription"
+  val saveSubscriptionData: String = "subscription"
+  val saveRegistrationDetails: String = "registration/safeid"
+}
+
+trait EtmpDetailsConnector extends RawResponseReads with Auditable {
   def serviceUrl: String
-
   def urlHeaderEnvironment: String
-
   def urlHeaderAuthorization: String
 
-  def http: CoreGet with CorePost with CorePut
+  def http: HttpClient
+  def metrics: ServiceMetrics
 
-  def metrics: Metrics
+  val atedBaseURI: String
+  val submitClientRelationship: String
+  val getAgentClientRelationship: String
+  val retrieveSubscriptionData: String
+  val saveSubscriptionData: String
+  val saveRegistrationDetails: String
 
   def getDetails(identifier: String, identifierType: String): Future[HttpResponse] = {
     def getDetailsFromEtmp(getUrl: String): Future[HttpResponse] = {
@@ -187,25 +203,4 @@ trait EtmpDetailsConnector extends ServicesConfig with RawResponseReads with Aud
         "status" -> s"${eventType}"))
   }
 
-}
-
-object EtmpDetailsConnector extends EtmpDetailsConnector {
-
-  val serviceUrl = baseUrl("etmp-hod")
-
-  val appName: String = AppName(Play.current.configuration).appName
-
-  val urlHeaderEnvironment: String = config("etmp-hod").getString("environment").fold("")(x => x)
-
-  val urlHeaderAuthorization: String = s"Bearer ${config("etmp-hod").getString("authorization-token").fold("")(x => x)}"
-
-  val http: CoreGet with CorePost with CorePut = WSHttp
-
-  val audit: Audit = new Audit(appName, MicroserviceAuditConnector)
-
-  val metrics = Metrics
-
-  override protected def mode: Mode = Play.current.mode
-
-  override protected def runModeConfiguration: Configuration = Play.current.configuration
 }

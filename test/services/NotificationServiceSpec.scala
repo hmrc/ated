@@ -17,7 +17,7 @@
 package services
 
 import connectors.{EmailConnector, EmailNotSent, EmailSent}
-import org.mockito.Matchers
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
@@ -36,23 +36,28 @@ class NotificationServiceSpec extends PlaySpec with OneServerPerSuite with Mocki
     reset(mockEmailConnector)
   }
 
-  object TestNotificationService extends NotificationService {
-    override val emailConnector = mockEmailConnector
+  trait Setup {
+
+    class TestNotificationService extends NotificationService {
+      override val emailConnector = mockEmailConnector
+    }
+
+    val testNotificationService = new TestNotificationService()
   }
 
   "sendMail" must {
 
     implicit val hc = HeaderCarrier()
 
-    "send email when email address present" in {
-      when(mockEmailConnector.sendTemplatedEmail(Matchers.any(), Matchers.any(), Matchers.any())(Matchers.any())) thenReturn Future.successful(EmailSent)
+    "send email when email address present" in new Setup {
+      when(mockEmailConnector.sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
       val json = Json.parse( """{"safeId":"1111111111","organisationName":"Test Org","address":[{"name1":"name1","name2":"name2","addressDetails":{"addressType":"Correspondence","addressLine1":"address line 1","addressLine2":"address line 2","addressLine3":"address line 3","addressLine4":"address line 4","postalCode":"ZZ1 1ZZ","countryCode":"GB"},"contactDetails":{"phoneNumber":"01234567890","mobileNumber":"0712345678","emailAddress":"test@mail.com"}}]}""")
-      await(TestNotificationService.sendMail(json, "")) must be(EmailSent)
+      await(testNotificationService.sendMail(json, "")) must be(EmailSent)
     }
 
-    "handle missing email address" in {
+    "handle missing email address" in new Setup {
       val json = Json.parse( """{"safeId":"1111111111","organisationName":"Test Org","address":[{"name1":"name1","name2":"name2","addressDetails":{"addressType":"Correspondence","addressLine1":"address line 1","addressLine2":"address line 2","addressLine3":"address line 3","addressLine4":"address line 4","postalCode":"ZZ1 1ZZ","countryCode":"GB"},"contactDetails":{"phoneNumber":"01234567890","mobileNumber":"0712345678"}}]}""")
-      await(TestNotificationService.sendMail(json, "")) must be(EmailNotSent)
+      await(testNotificationService.sendMail(json, "")) must be(EmailNotSent)
     }
   }
 }
