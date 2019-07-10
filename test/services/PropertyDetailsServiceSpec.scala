@@ -22,7 +22,7 @@ import java.util.UUID
 import builders.{ChangeLiabilityReturnBuilder, PropertyDetailsBuilder}
 import connectors.{AuthConnector, EmailConnector, EmailSent, EtmpReturnsConnector}
 import models._
-import org.mockito.Matchers
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
@@ -47,12 +47,16 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
   val mockSubscriptionDataService = mock[SubscriptionDataService]
   val mockEmailConnector = mock[EmailConnector]
 
-  object TestPropertyDetailsService extends PropertyDetailsService {
-    override val propertyDetailsCache = mockPropertyDetailsCache
-    override val etmpConnector = mockEtmpConnector
-    override val authConnector = mockAuthConnector
-    override val subscriptionDataService = mockSubscriptionDataService
-    override val emailConnector = mockEmailConnector
+  trait Setup {
+    class TestPropertyDetailsService extends PropertyDetailsService {
+      override val propertyDetailsCache = mockPropertyDetailsCache
+      override val etmpConnector = mockEtmpConnector
+      override val authConnector = mockAuthConnector
+      override val subscriptionDataService = mockSubscriptionDataService
+      override val emailConnector = mockEmailConnector
+    }
+
+    val testPropertyDetailsService = new TestPropertyDetailsService()
   }
 
   val accountRef = "ATED-123123"
@@ -96,59 +100,54 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
 
   implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-  "PropertyDetailsService" must {
-    "use the correct DataCacheconnector" in {
-      PropertyDetailsService.propertyDetailsCache must be(PropertyDetailsMongoRepository())
-    }
-  }
   "fetch Property Details" must {
 
-    "fetch the cached Property Details when we have some" in {
+    "fetch the cached Property Details when we have some" in new Setup {
       lazy val testPropertyDetails = List(PropertyDetailsBuilder.getPropertyDetails("1"))
 
-      when(mockPropertyDetailsCache.fetchPropertyDetails(Matchers.any())).thenReturn(Future.successful(testPropertyDetails))
-      val result = TestPropertyDetailsService.retrieveDraftPropertyDetails(accountRef)
+      when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.any())).thenReturn(Future.successful(testPropertyDetails))
+      val result = testPropertyDetailsService.retrieveDraftPropertyDetails(accountRef)
 
       await(result) must be(testPropertyDetails)
     }
 
-    "fetch an empty list when we have no cached Property Details" in {
-      when(mockPropertyDetailsCache.fetchPropertyDetails(Matchers.any())).thenReturn(Future.successful(Nil))
-      val result = TestPropertyDetailsService.retrieveDraftPropertyDetails(accountRef)
+    "fetch an empty list when we have no cached Property Details" in new Setup {
+      when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.any())).thenReturn(Future.successful(Nil))
+      val result = testPropertyDetailsService.retrieveDraftPropertyDetails(accountRef)
 
       await(result).isEmpty must be(true)
     }
-    "fetch the cached Property Details when we have an ID and no matching data" in {
+    "fetch the cached Property Details when we have an ID and no matching data" in new Setup {
       implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-      when(mockPropertyDetailsCache.fetchPropertyDetails(Matchers.any())).thenReturn(Future.successful(Nil))
-      val result = TestPropertyDetailsService.retrieveDraftPropertyDetail(accountRef, "3")
+      when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.any())).thenReturn(Future.successful(Nil))
+      val result = testPropertyDetailsService.retrieveDraftPropertyDetail(accountRef, "3")
 
       await(result).isDefined must be(false)
     }
 
 
-    "fetch the cached Property Details when we have an ID and matching data" in {
+    "fetch the cached Property Details when we have an ID and matching data" in new Setup {
       lazy val propertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1")
       lazy val propertyDetails2 = PropertyDetailsBuilder.getPropertyDetails("2")
       lazy val propertyDetails3 = PropertyDetailsBuilder.getPropertyDetails("3")
       lazy val testPropertyDetailsList = Seq(propertyDetails1, propertyDetails2, propertyDetails3)
-      when(mockPropertyDetailsCache.fetchPropertyDetails(Matchers.any())).thenReturn(Future.successful(testPropertyDetailsList))
-      val result = TestPropertyDetailsService.retrieveDraftPropertyDetail(accountRef, "1")
+      when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.any())).thenReturn(Future.successful(testPropertyDetailsList))
+      val result = testPropertyDetailsService.retrieveDraftPropertyDetail(accountRef, "1")
 
       await(result) must be(Some(propertyDetails1))
     }
 
 
-    "fetch the cached Property Details when we have an a Period Key" in {
+    "fetch the cached Property Details when we have an a Period Key" in new Setup {
       lazy val tooEarly = PropertyDetailsBuilder.getPropertyDetails("1").copy(periodKey = 2013)
       lazy val tooLate = PropertyDetailsBuilder.getPropertyDetails("2").copy(periodKey = 2015)
       lazy val entirePeriod = PropertyDetailsBuilder.getPropertyDetails("3").copy(periodKey = 2014)
       lazy val startOfPeriod = PropertyDetailsBuilder.getPropertyDetails("4").copy(periodKey = 2014)
 
       val testPropertyDetailsList = Seq(tooEarly, tooLate, entirePeriod, startOfPeriod)
-      when(mockPropertyDetailsCache.fetchPropertyDetails(Matchers.any())).thenReturn(Future.successful(testPropertyDetailsList))
-      val result = TestPropertyDetailsService.retrievePeriodDraftPropertyDetails(accountRef, 2014)
+      when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.any())).thenReturn(Future.successful(testPropertyDetailsList))
+      val result = testPropertyDetailsService.retrievePeriodDraftPropertyDetails(accountRef, 2014)
 
       val resultList = await(result)
       resultList.head.id must be("3")
@@ -159,29 +158,29 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
 
 
   "Delete property details" must {
-    "remove the delete success details if we find one" in {
+    "remove the delete success details if we find one" in new Setup {
       lazy val propertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1")
       lazy val propertyDetails2 = PropertyDetailsBuilder.getPropertyDetails("2")
       lazy val propertyDetails3 = PropertyDetailsBuilder.getPropertyDetails("3")
 
-      when(mockPropertyDetailsCache.deletePropertyDetailsByfieldName(Matchers.any(), Matchers.any()))
+      when(mockPropertyDetailsCache.deletePropertyDetailsByfieldName(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(PropertyDetailsDeleted))
 
-      val result = TestPropertyDetailsService.deleteDraftPropertyDetail(accountRef, "2")
+      val result = testPropertyDetailsService.deleteDraftPropertyDetail(accountRef, "2")
 
       val update = await(result)
       update must be (PropertyDetailsDeleted)
     }
 
-    "return delete error if we don't find one to delete" in {
+    "return delete error if we don't find one to delete" in new Setup {
       lazy val propertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1")
       lazy val propertyDetails2 = PropertyDetailsBuilder.getPropertyDetails("2")
       lazy val propertyDetails3 = PropertyDetailsBuilder.getPropertyDetails("3")
 
-      when(mockPropertyDetailsCache.deletePropertyDetailsByfieldName(Matchers.any(), Matchers.any()))
+      when(mockPropertyDetailsCache.deletePropertyDetailsByfieldName(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(PropertyDetailsDeleteError))
 
-      val result = TestPropertyDetailsService.deleteDraftPropertyDetail(accountRef, "4")
+      val result = testPropertyDetailsService.deleteDraftPropertyDetail(accountRef, "4")
 
       val update = await(result)
       update must be (PropertyDetailsDeleteError)
@@ -189,17 +188,17 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
   }
 
   "Delete property details by property id" must {
-    "remove the selected property details if we find one" in {
+    "remove the selected property details if we find one" in new Setup {
       lazy val propertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1")
       lazy val propertyDetails2 = PropertyDetailsBuilder.getPropertyDetails("2")
       lazy val propertyDetails3 = PropertyDetailsBuilder.getPropertyDetails("3")
 
-      when(mockPropertyDetailsCache.deletePropertyDetailsByfieldName(Matchers.eq(accountRef), Matchers.eq("1")))
+      when(mockPropertyDetailsCache.deletePropertyDetailsByfieldName(ArgumentMatchers.eq(accountRef), ArgumentMatchers.eq("1")))
         .thenReturn(Future.successful(PropertyDetailsDeleted))
 
-      when(mockPropertyDetailsCache.fetchPropertyDetailsById(Matchers.eq(accountRef), Matchers.eq("1")))
+      when(mockPropertyDetailsCache.fetchPropertyDetailsById(ArgumentMatchers.eq(accountRef), ArgumentMatchers.eq("1")))
         .thenReturn(Future.successful(Seq()))
-      val result = TestPropertyDetailsService.deleteChargeableDraft(accountRef, "1")
+      val result = testPropertyDetailsService.deleteChargeableDraft(accountRef, "1")
       val updateList = await(result)
       updateList.size must be(0)
     }
@@ -209,20 +208,20 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
 
   "Create property details" must {
 
-    "Create property details and return a new Id" in {
+    "Create property details and return a new Id" in new Setup {
       lazy val addressRef = PropertyDetailsBuilder.getPropertyDetailsAddress(None)
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef)).thenReturn(Future.successful(Nil))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.createDraftPropertyDetails(accountRef, 2014, addressRef)
+      val result = testPropertyDetailsService.createDraftPropertyDetails(accountRef, 2014, addressRef)
 
       val updateDetails = await(result)
       updateDetails.isDefined must be(true)
     }
 
-    "Create new property details, updates an existing list" in {
+    "Create new property details, updates an existing list" in new Setup {
       lazy val propertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1", Some("something"))
       lazy val propertyDetails2 = PropertyDetailsBuilder.getPropertyDetails("2", Some("something else"))
       lazy val propertyDetails3 = PropertyDetailsBuilder.getPropertyDetails("3", Some("something more"))
@@ -231,10 +230,10 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.createDraftPropertyDetails(accountRef,
+      val result = testPropertyDetailsService.createDraftPropertyDetails(accountRef,
         propertyDetails3.periodKey,
         updatedPropertyDetails4)
 
@@ -246,7 +245,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
 
   "Save property details Address" must {
 
-    "Saving existing property details when we have some, updates an existing list" in {
+    "Saving existing property details when we have some, updates an existing list" in new Setup {
       lazy val propertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1", Some("something"))
       lazy val propertyDetails2 = PropertyDetailsBuilder.getPropertyDetails("2", Some("something else"))
       lazy val propertyDetails3 = PropertyDetailsBuilder.getPropertyDetails("3", Some("something more"), liabilityAmount = Some(BigDecimal(999)))
@@ -255,10 +254,10 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.cacheDraftPropertyDetailsAddress(accountRef,
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsAddress(accountRef,
         updatedpropertyDetails3.id,
         updatedpropertyDetails3.addressProperty)
 
@@ -279,33 +278,33 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
     lazy val propertyDetails2 = PropertyDetailsBuilder.getPropertyDetails("2", Some("something else"))
     lazy val propertyDetails3 = PropertyDetailsBuilder.getPropertyDetails("3", Some("something more"))
 
-    "Fail to Calculate when we don't have it in an existing list" in {
+    "Fail to Calculate when we don't have it in an existing list" in new Setup {
 
       lazy val updatedpropertyDetails4 = PropertyDetailsBuilder.getPropertyDetails("4", Some("something better"))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.calculateDraftPropertyDetails(accountRef,
+      val result = testPropertyDetailsService.calculateDraftPropertyDetails(accountRef,
         updatedpropertyDetails4.id)
 
       val newProp = await(result)
       newProp.isDefined must be(false)
     }
 
-    "Return the existing Liability Amount if we have it already calculated" in {
+    "Return the existing Liability Amount if we have it already calculated" in new Setup {
       lazy val calcPropertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1", Some("something"), liabilityAmount = Some(BigDecimal(123.22)))
 
       val successResponse = Json.parse(jsonEtmpResponse)
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(calcPropertyDetails1)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
-      when(mockAuthConnector.agentReferenceNo(Matchers.any())).thenReturn(Future.successful(None))
+      when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
-      val result = TestPropertyDetailsService.calculateDraftPropertyDetails(accountRef, calcPropertyDetails1.id)
+      val result = testPropertyDetailsService.calculateDraftPropertyDetails(accountRef, calcPropertyDetails1.id)
 
       val newProp = await(result)
       newProp.isDefined must be(true)
@@ -318,18 +317,18 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       newProp.get.calculated.get.liabilityAmount.get must be(BigDecimal(123.22))
     }
 
-    "Calculate the liability Amount if don't already have calculated" in {
+    "Calculate the liability Amount if don't already have calculated" in new Setup {
       lazy val calcPropertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1", Some("something"), liabilityAmount = Some(BigDecimal(123.22))).copy(calculated = None)
 
       val successResponse = Json.parse(jsonEtmpResponse)
-      when(mockEtmpConnector.submitReturns(Matchers.eq(accountRef), Matchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(calcPropertyDetails1)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
-      when(mockAuthConnector.agentReferenceNo(Matchers.any())).thenReturn(Future.successful(None))
+      when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
-      val result = TestPropertyDetailsService.calculateDraftPropertyDetails(accountRef,
+      val result = testPropertyDetailsService.calculateDraftPropertyDetails(accountRef,
         calcPropertyDetails1.id)
 
       val newProp = await(result)
@@ -348,16 +347,16 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
     lazy val propertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1", Some("something"))
     lazy val propertyDetails2 = PropertyDetailsBuilder.getPropertyDetails("2", Some("something else"))
     lazy val propertyDetails3 = PropertyDetailsBuilder.getPropertyDetails("3", Some("something more"))
-    "Saving existing property details title when we don't have it in an existing list" in {
+    "Saving existing property details title when we don't have it in an existing list" in new Setup {
 
       lazy val updatedpropertyDetails4 = PropertyDetailsBuilder.getPropertyDetails("4", Some("something better"))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.cacheDraftPropertyDetailsTitle(accountRef,
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsTitle(accountRef,
         updatedpropertyDetails4.id,
         updatedpropertyDetails4.title.get)
 
@@ -365,15 +364,15 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       newProp.isDefined must be(false)
     }
 
-    "Saving existing property details title updates an existing list" in {
+    "Saving existing property details title updates an existing list" in new Setup {
       lazy val updatedpropertyDetails3 = new PropertyDetailsTitle("updateTitle here")
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = TestPropertyDetailsService.cacheDraftPropertyDetailsTitle(accountRef,
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsTitle(accountRef,
         propertyDetails3.id,
         updatedpropertyDetails3)
 
@@ -394,27 +393,27 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
     lazy val propertyDetails1 = PropertyDetailsBuilder.getFullPropertyDetails("1", Some("something"))
     lazy val propertyDetails2 = PropertyDetailsBuilder.getFullPropertyDetails("2", Some("something else"))
     lazy val propertyDetails3 = PropertyDetailsBuilder.getFullPropertyDetails("3", Some("something more"), liabilityAmount = Some(BigDecimal(999.99)))
-    "Saving existing property details Tax Avoidance value when we don't have it in an existing list" in {
+    "Saving existing property details Tax Avoidance value when we don't have it in an existing list" in new Setup {
       val updatedpropertyDetails4 = PropertyDetailsBuilder.getPropertyDetails("4", Some("something better"))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedValue = PropertyDetailsTaxAvoidance(propertyDetails3.period.flatMap(_.isTaxAvoidance.map(x => !x)))
-      val result = TestPropertyDetailsService.cacheDraftTaxAvoidance(accountRef,
+      val result = testPropertyDetailsService.cacheDraftTaxAvoidance(accountRef,
         updatedpropertyDetails4.id, updatedValue)
 
       val newProp = await(result)
       newProp.isDefined must be(false)
     }
 
-    "Saving existing property details Tax Avoidance updates an existing list. Change value so clear future values" in {
+    "Saving existing property details Tax Avoidance updates an existing list. Change value so clear future values" in new Setup {
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedValue = PropertyDetailsTaxAvoidance(
@@ -422,7 +421,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
         propertyDetails3.period.flatMap(_.taxAvoidanceScheme),
         propertyDetails3.period.flatMap(_.taxAvoidancePromoterReference)
       )
-      val result = TestPropertyDetailsService.cacheDraftTaxAvoidance(accountRef,
+      val result = testPropertyDetailsService.cacheDraftTaxAvoidance(accountRef,
         propertyDetails3.id, updatedValue)
 
       val newProp = await(result)
@@ -439,11 +438,11 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       newProp.get.period.get.taxAvoidancePromoterReference must be (updatedValue.taxAvoidancePromoterReference)
     }
 
-    "Saving existing property details Tax Avoidance updates an existing list. Dont change value" in {
+    "Saving existing property details Tax Avoidance updates an existing list. Dont change value" in new Setup {
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedValue = PropertyDetailsTaxAvoidance(
@@ -451,7 +450,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
         propertyDetails3.period.flatMap(_.taxAvoidanceScheme),
         propertyDetails3.period.flatMap(_.taxAvoidancePromoterReference)
       )
-      val result = TestPropertyDetailsService.cacheDraftTaxAvoidance(accountRef,
+      val result = testPropertyDetailsService.cacheDraftTaxAvoidance(accountRef,
         propertyDetails3.id, updatedValue)
 
       val newProp = await(result)
@@ -474,16 +473,16 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
     lazy val propertyDetails1 = PropertyDetailsBuilder.getFullPropertyDetails("1", Some("something"))
     lazy val propertyDetails2 = PropertyDetailsBuilder.getFullPropertyDetails("2", Some("something else"))
     lazy val propertyDetails3 = PropertyDetailsBuilder.getFullPropertyDetails("3", Some("something more"), liabilityAmount = Some(BigDecimal(999.99)))
-    "Saving existing property details in relief value when we don't have it in an existing list" in {
+    "Saving existing property details in relief value when we don't have it in an existing list" in new Setup {
       val updatedpropertyDetails4 = PropertyDetailsBuilder.getPropertyDetails("4", Some("something better"))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedValue = PropertyDetailsSupportingInfo("Updated " + propertyDetails3.period.flatMap(_.supportingInfo).getOrElse(""))
-      val result = TestPropertyDetailsService.cacheDraftSupportingInfo(accountRef,
+      val result = testPropertyDetailsService.cacheDraftSupportingInfo(accountRef,
         updatedpropertyDetails4.id,
         updatedValue)
 
@@ -491,14 +490,14 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       newProp.isDefined must be(false)
     }
 
-    "Saving existing property details  in relief updates an existing list. Change value so clear future values" in {
+    "Saving existing property details  in relief updates an existing list. Change value so clear future values" in new Setup {
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedValue = PropertyDetailsSupportingInfo("Updated " + propertyDetails3.period.flatMap(_.supportingInfo).getOrElse(""))
-      val result = TestPropertyDetailsService.cacheDraftSupportingInfo(accountRef,
+      val result = testPropertyDetailsService.cacheDraftSupportingInfo(accountRef,
         propertyDetails3.id, updatedValue)
 
       val newProp = await(result)
@@ -514,14 +513,14 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       newProp.get.period.get.liabilityPeriods.isEmpty must be (false)
     }
 
-    "Saving existing property details anAcquistion updates an existing list. Dont change value" in {
+    "Saving existing property details anAcquistion updates an existing list. Dont change value" in new Setup {
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedValue = PropertyDetailsSupportingInfo(propertyDetails3.period.flatMap(_.supportingInfo).getOrElse(""))
-      val result = TestPropertyDetailsService.cacheDraftSupportingInfo(accountRef,
+      val result = testPropertyDetailsService.cacheDraftSupportingInfo(accountRef,
         propertyDetails3.id, updatedValue)
 
       val newProp = await(result)
@@ -543,59 +542,59 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
     lazy val protectedBankDetails = ChangeLiabilityReturnBuilder.generateLiabilityProtectedBankDetails
     lazy val propertyDetailsWithBankDetails = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(periodKey = 2016, formBundle = "1", bankDetails = Some(protectedBankDetails))
     lazy val propertyDetailsNoBankDetails = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(periodKey = 2016, formBundle = "1", bankDetails = None)
-    "update the has bank details when we have bank details" in {
-      when(mockPropertyDetailsCache.fetchPropertyDetails(Matchers.eq(accountRef)))
+    "update the has bank details when we have bank details" in new Setup {
+      when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(accountRef)))
         .thenReturn(Future.successful(Seq(propertyDetailsWithBankDetails)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
-      val result = await(TestPropertyDetailsService.cacheDraftHasBankDetails(accountRef, propertyDetailsWithBankDetails.id, true))
+      val result = await(testPropertyDetailsService.cacheDraftHasBankDetails(accountRef, propertyDetailsWithBankDetails.id, true))
 
       result.get.bankDetails.get.hasBankDetails must be(true)
       result.get.bankDetails.get.bankDetails.isDefined must be(true)
       result.get.bankDetails.get.protectedBankDetails.isDefined must be(false)
     }
 
-    "clear the bank details if we have some and the hasBankDetails is false" in {
-      when(mockPropertyDetailsCache.fetchPropertyDetails(Matchers.eq(accountRef)))
+    "clear the bank details if we have some and the hasBankDetails is false" in new Setup {
+      when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(accountRef)))
         .thenReturn(Future.successful(Seq(propertyDetailsWithBankDetails)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
-      val result = await(TestPropertyDetailsService.cacheDraftHasBankDetails(accountRef, propertyDetailsWithBankDetails.id, false))
+      val result = await(testPropertyDetailsService.cacheDraftHasBankDetails(accountRef, propertyDetailsWithBankDetails.id, false))
 
       result.get.bankDetails.get.hasBankDetails must be(false)
       result.get.bankDetails.get.bankDetails.isDefined must be(false)
       result.get.bankDetails.get.protectedBankDetails.isDefined must be(false)
     }
 
-    "create the bank details model if we don't already have one" in {
-      when(mockPropertyDetailsCache.fetchPropertyDetails(Matchers.eq(accountRef)))
+    "create the bank details model if we don't already have one" in new Setup {
+      when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(accountRef)))
         .thenReturn(Future.successful(Seq(propertyDetailsNoBankDetails)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
-      val result = await(TestPropertyDetailsService.cacheDraftHasBankDetails(accountRef, propertyDetailsWithBankDetails.id, true))
+      val result = await(testPropertyDetailsService.cacheDraftHasBankDetails(accountRef, propertyDetailsWithBankDetails.id, true))
 
       result.get.bankDetails.get.hasBankDetails must be(true)
       result.get.bankDetails.get.bankDetails.isDefined must be(false)
       result.get.bankDetails.get.protectedBankDetails.isDefined must be(false)
     }
 
-    "clear the bank details if we have some and the flag is false" in {
-      when(mockPropertyDetailsCache.fetchPropertyDetails(Matchers.eq(accountRef)))
+    "clear the bank details if we have some and the flag is false" in new Setup {
+      when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(accountRef)))
         .thenReturn(Future.successful(Seq(propertyDetailsWithBankDetails)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
-      val result = await(TestPropertyDetailsService.cacheDraftHasBankDetails(accountRef, propertyDetailsWithBankDetails.id, false))
+      val result = await(testPropertyDetailsService.cacheDraftHasBankDetails(accountRef, propertyDetailsWithBankDetails.id, false))
 
       result.get.bankDetails.get.hasBankDetails must be(false)
       result.get.bankDetails.get.bankDetails.isDefined must be(false)
       result.get.bankDetails.get.protectedBankDetails.isDefined must be(false)
     }
 
-    "return None if form-bundle not-found in cache" in {
-      when(mockPropertyDetailsCache.fetchPropertyDetails(Matchers.eq(accountRef)))
+    "return None if form-bundle not-found in cache" in new Setup {
+      when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(accountRef)))
         .thenReturn(Future.successful(Nil))
       val bankDetails = ChangeLiabilityReturnBuilder.generateLiabilityBankDetails
-      val result = await(TestPropertyDetailsService.cacheDraftHasBankDetails(accountRef, "", true))
+      val result = await(testPropertyDetailsService.cacheDraftHasBankDetails(accountRef, "", true))
       result must be(None)
     }
   }
@@ -604,105 +603,105 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
     lazy val protectedBankDetails = ChangeLiabilityReturnBuilder.generateLiabilityProtectedBankDetails
     lazy val propertyDetailsWithBankDetails = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(periodKey = 2016, formBundle = "1", bankDetails = Some(protectedBankDetails))
     lazy val propertyDetailsNoBankDetails = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(periodKey = 2016, formBundle = "1", bankDetails = None)
-    "return Some(PropertyDetails) if form-bundle found in cache with bank details" in {
-      when(mockPropertyDetailsCache.fetchPropertyDetails(Matchers.eq(accountRef)))
+    "return Some(PropertyDetails) if form-bundle found in cache with bank details" in new Setup {
+      when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(accountRef)))
         .thenReturn(Future.successful(Seq(propertyDetailsWithBankDetails)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
       val bankDetails = ChangeLiabilityReturnBuilder.generateLiabilityBankDetails.bankDetails.get
       //val expected = updateChangeLiabilityReturnWithProtectedBankDetails(2015, formBundle1, protectedBankDetails)
-      val result = await(TestPropertyDetailsService.cacheDraftBankDetails(accountRef, propertyDetailsWithBankDetails.id, bankDetails))
+      val result = await(testPropertyDetailsService.cacheDraftBankDetails(accountRef, propertyDetailsWithBankDetails.id, bankDetails))
 
       result.get.bankDetails.get.hasBankDetails must be(true)
       result.get.bankDetails.get.bankDetails must be(Some(bankDetails))
       result.get.bankDetails.get.protectedBankDetails.isDefined must be(false)
     }
 
-    "return Some(PropertyDetails) if form-bundle found in cache with no bank details" in {
-      when(mockPropertyDetailsCache.fetchPropertyDetails(Matchers.eq(accountRef)))
+    "return Some(PropertyDetails) if form-bundle found in cache with no bank details" in new Setup {
+      when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(accountRef)))
         .thenReturn(Future.successful(Seq(propertyDetailsNoBankDetails)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
       val bankDetails = ChangeLiabilityReturnBuilder.generateLiabilityBankDetails.bankDetails.get
       //val expected = updateChangeLiabilityReturnWithProtectedBankDetails(2015, formBundle1, protectedBankDetails)
-      val result = await(TestPropertyDetailsService.cacheDraftBankDetails(accountRef, propertyDetailsNoBankDetails.id, bankDetails))
+      val result = await(testPropertyDetailsService.cacheDraftBankDetails(accountRef, propertyDetailsNoBankDetails.id, bankDetails))
 
       result.get.bankDetails.get.hasBankDetails must be(true)
       result.get.bankDetails.get.bankDetails must be(Some(bankDetails))
       result.get.bankDetails.get.protectedBankDetails.isDefined must be(false)
     }
 
-    "return None if form-bundle not-found in cache" in {
-      when(mockPropertyDetailsCache.fetchPropertyDetails(Matchers.eq(accountRef)))
+    "return None if form-bundle not-found in cache" in new Setup {
+      when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(accountRef)))
         .thenReturn(Future.successful(Nil))
       val bankDetails = ChangeLiabilityReturnBuilder.generateLiabilityBankDetails
-      val result = await(TestPropertyDetailsService.cacheDraftBankDetails(accountRef, "", bankDetails.bankDetails.get))
+      val result = await(testPropertyDetailsService.cacheDraftBankDetails(accountRef, "", bankDetails.bankDetails.get))
       result must be(None)
     }
   }
 
 
   "Retrieve the Liability Amount for the PropertyDetails" must {
-    "Get the Liability Amount " in {
+    "Get the Liability Amount " in new Setup {
       lazy val propertyDetailsExample = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
 
       val successResponse = Json.parse(jsonEtmpResponse)
-      when(mockEtmpConnector.submitReturns(Matchers.eq(accountRef), Matchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
-      val result = TestPropertyDetailsService.getLiabilityAmount(accountRef, "1", propertyDetailsExample)
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
+      val result = testPropertyDetailsService.getLiabilityAmount(accountRef, "1", propertyDetailsExample)
 
       val liabilityAmount = await(result)
       liabilityAmount must be(Some(999.99))
     }
 
-    "Return None if we have no Liability Amount " in {
+    "Return None if we have no Liability Amount " in new Setup {
       implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
       lazy val propertyDetailsExample = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
 
       val successResponse = Json.parse(jsonEtmpResponse)
-      when(mockEtmpConnector.submitReturns(Matchers.eq(accountRef), Matchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
-      val result = TestPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
+      val result = testPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
 
       val liabilityAmount = await(result)
       liabilityAmount.isDefined must be(false)
     }
 
-    "Fail if we have BAD_REQUEST" in {
+    "Fail if we have BAD_REQUEST" in new Setup {
       lazy val propertyDetailsExample = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
 
       val failureResponse = Json.parse( """{ "reason": "Error"}""")
-      when(mockEtmpConnector.submitReturns(Matchers.eq(accountRef), Matchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, Some(failureResponse))))
-      val result = TestPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, Some(failureResponse))))
+      val result = testPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
 
       val thrown = the[BadRequestException] thrownBy await(result)
       thrown.getMessage must include("Error")
     }
 
-    "Fail if we have dont find Liability Amount" in {
+    "Fail if we have dont find Liability Amount" in new Setup {
       lazy val propertyDetailsExample = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
 
       val failureResponse = Json.parse( """{ "reason": "Error"}""")
-      when(mockEtmpConnector.submitReturns(Matchers.eq(accountRef), Matchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, Some(failureResponse))))
-      val result = TestPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, Some(failureResponse))))
+      val result = testPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
 
       val thrown = the[InternalServerException] thrownBy await(result)
       thrown.getMessage must include("No Liability Amount Found")
       }
 
-    "Fail if we have dont have valid details " in {
+    "Fail if we have dont have valid details " in new Setup {
       implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
       lazy val propertyDetailsPopulated = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
       val propertyDetailsExample = propertyDetailsPopulated.copy(period = None, calculated = None)
 
       val failureResponse = Json.parse( """{ "reason": "Error"}""")
-      when(mockEtmpConnector.submitReturns(Matchers.eq(accountRef), Matchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, Some(failureResponse))))
-      val thrown = the[InternalServerException] thrownBy TestPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, Some(failureResponse))))
+      val thrown = the[InternalServerException] thrownBy testPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
 
       thrown.getMessage must include("Invalid Data for the request")
     }
   }
 
   "Submit the Property Details from the Cache" must {
-    "Submit the property details and delete the item from the cache if it's a valid id" in {
+    "Submit the property details and delete the item from the cache if it's a valid id" in new Setup {
       lazy val propertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1", Some("something"), liabilityAmount = Some(BigDecimal(999.99)))
       lazy val propertyDetails2 = PropertyDetailsBuilder.getPropertyDetails("2", Some("something else"))
       lazy val propertyDetails3 = PropertyDetailsBuilder.getPropertyDetails("3", Some("something more"))
@@ -710,21 +709,21 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       val successResponse = Json.parse(jsonEtmpResponse)
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockEtmpConnector.submitReturns(Matchers.eq(accountRef), Matchers.any[SubmitEtmpReturnsRequest]())) thenReturn {
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest]())) thenReturn {
         Future.successful(HttpResponse(OK, Some(successResponse)))
       }
-      when(mockPropertyDetailsCache.cachePropertyDetails(Matchers.any[PropertyDetails]()))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
-      when(mockAuthConnector.agentReferenceNo(Matchers.any())).thenReturn(Future.successful(None))
-      when(mockSubscriptionDataService.retrieveSubscriptionData(Matchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
-      when(mockEmailConnector.sendTemplatedEmail(Matchers.any(), Matchers.any(), Matchers.any())(Matchers.any())) thenReturn Future.successful(EmailSent)
+      when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+      when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
+      when(mockEmailConnector.sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
 
-      val result = TestPropertyDetailsService.submitDraftPropertyDetail(accountRef, "1")
+      val result = testPropertyDetailsService.submitDraftPropertyDetail(accountRef, "1")
       await(result).status must be(OK)
-      verify(mockEmailConnector, times(1)).sendTemplatedEmail(Matchers.any(), Matchers.any(), Matchers.any())(Matchers.any())
+      verify(mockEmailConnector, times(1)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
     }
 
-    "return a NOT_FOUND if the property details doesn't exist for this id" in {
+    "return a NOT_FOUND if the property details doesn't exist for this id" in new Setup {
       lazy val propertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1", Some("something"))
       lazy val propertyDetails2 = PropertyDetailsBuilder.getPropertyDetails("2", Some("something else"))
       lazy val propertyDetails3 = PropertyDetailsBuilder.getPropertyDetails("3", Some("something more"))
@@ -732,15 +731,15 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       val successResponse = Json.parse(jsonEtmpResponse)
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockAuthConnector.agentReferenceNo(Matchers.any())).thenReturn(Future.successful(None))
-      when(mockSubscriptionDataService.retrieveSubscriptionData(Matchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
+      when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+      when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
 
-      val result = TestPropertyDetailsService.submitDraftPropertyDetail(accountRef, "4")
+      val result = testPropertyDetailsService.submitDraftPropertyDetail(accountRef, "4")
       await(result).status must be(NOT_FOUND)
-      verify(mockEmailConnector, times(0)).sendTemplatedEmail(Matchers.any(), Matchers.any(), Matchers.any())(Matchers.any())
+      verify(mockEmailConnector, times(0)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
     }
 
-    "return a NOT_FOUND if the property details are invalid for this id" in {
+    "return a NOT_FOUND if the property details are invalid for this id" in new Setup {
       lazy val propertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1", Some("something")).copy(period = None, calculated = None)
       lazy val propertyDetails2 = PropertyDetailsBuilder.getPropertyDetails("2", Some("something else"))
       lazy val propertyDetails3 = PropertyDetailsBuilder.getPropertyDetails("3", Some("something more"))
@@ -749,12 +748,12 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       val successResponse = Json.parse(jsonEtmpResponse)
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetailsExample, propertyDetails2, propertyDetails3)))
-      when(mockAuthConnector.agentReferenceNo(Matchers.any())).thenReturn(Future.successful(None))
-      when(mockSubscriptionDataService.retrieveSubscriptionData(Matchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
+      when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+      when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
 
-      val result = TestPropertyDetailsService.submitDraftPropertyDetail(accountRef, "1")
+      val result = testPropertyDetailsService.submitDraftPropertyDetail(accountRef, "1")
       await(result).status must be(NOT_FOUND)
-      verify(mockEmailConnector, times(0)).sendTemplatedEmail(Matchers.any(), Matchers.any(), Matchers.any())(Matchers.any())
+      verify(mockEmailConnector, times(0)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
     }
   }
 

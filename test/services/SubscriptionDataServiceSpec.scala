@@ -18,7 +18,7 @@ package services
 
 import connectors.{AuthConnector, EtmpDetailsConnector}
 import models._
-import org.mockito.Matchers
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
@@ -34,9 +34,13 @@ class SubscriptionDataServiceSpec extends PlaySpec with OneServerPerSuite with M
   val mockEtmpConnector = mock[EtmpDetailsConnector]
   val mockAuthConnector = mock[AuthConnector]
 
-  object TestSubscriptionDataService extends SubscriptionDataService {
-    override val etmpConnector = mockEtmpConnector
-    val authConnector = mockAuthConnector
+  trait Setup {
+    class TestSubscriptionDataService extends SubscriptionDataService {
+      override val etmpConnector = mockEtmpConnector
+      val authConnector = mockAuthConnector
+    }
+
+    val testSubscriptionDataService = new TestSubscriptionDataService()
   }
 
   val accountRef = "ATED-123123"
@@ -49,13 +53,9 @@ class SubscriptionDataServiceSpec extends PlaySpec with OneServerPerSuite with M
 
   "SubscriptionDataService" must {
 
-    "use the correct Etmpconnector" in {
-      SubscriptionDataService.etmpConnector must be(EtmpDetailsConnector)
-    }
-
-    "retrieve Subscription Data" in {
-      when(mockEtmpConnector.getSubscriptionData(Matchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
-      val result = TestSubscriptionDataService.retrieveSubscriptionData(accountRef)
+    "retrieve Subscription Data" in new Setup {
+      when(mockEtmpConnector.getSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
+      val result = testSubscriptionDataService.retrieveSubscriptionData(accountRef)
       val response = await(result)
       response.status must be(OK)
       response.json must be(successResponse)
@@ -64,14 +64,14 @@ class SubscriptionDataServiceSpec extends PlaySpec with OneServerPerSuite with M
     "save account details" must {
       val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
 
-      "work if we have valid data" in {
+      "work if we have valid data" in new Setup {
         val addressDetails = AddressDetails("Correspondence", "line1", "line2", None, None, Some("postCode"), "GB")
         val updatedData = UpdateSubscriptionDataRequest(true, ChangeIndicators(), List(Address(addressDetails = addressDetails)))
         implicit val hc = HeaderCarrier()
 
-        when(mockEtmpConnector.updateSubscriptionData(Matchers.any(), Matchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
-        when(mockAuthConnector.agentReferenceNo(Matchers.any())).thenReturn(Future.successful(None))
-        val result = TestSubscriptionDataService.updateSubscriptionData(accountRef, updatedData)
+        when(mockEtmpConnector.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
+        when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+        val result = testSubscriptionDataService.updateSubscriptionData(accountRef, updatedData)
         val response = await(result)
         response.status must be(OK)
         response.json must be(successResponse)
@@ -81,12 +81,12 @@ class SubscriptionDataServiceSpec extends PlaySpec with OneServerPerSuite with M
     "save registration details" must {
       val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
 
-      "work if we have valid data" in {
+      "work if we have valid data" in new Setup {
         val registeredDetails = RegisteredAddressDetails(addressLine1 = "", addressLine2 = "", countryCode = "GB")
         val updatedData = new UpdateRegistrationDetailsRequest(None, false, None, Some(Organisation("testName")), registeredDetails, ContactDetails(), false, false)
 
-        when(mockEtmpConnector.updateRegistrationDetails(Matchers.any(), Matchers.any(), Matchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
-        val result = TestSubscriptionDataService.updateRegistrationDetails(accountRef, "safeId", updatedData)
+        when(mockEtmpConnector.updateRegistrationDetails(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
+        val result = testSubscriptionDataService.updateRegistrationDetails(accountRef, "safeId", updatedData)
         val response = await(result)
         response.status must be(OK)
         response.json must be(successResponse)

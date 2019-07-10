@@ -17,16 +17,29 @@
 package controllers
 
 import connectors.EtmpDetailsConnector
-import play.api.mvc.Action
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import javax.inject.{Inject, Singleton}
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-trait DetailsController extends BaseController {
+@Singleton
+class DetailsControllerImpl @Inject()(
+                                      val cc: ControllerComponents,
+                                      val etmpConnector: EtmpDetailsConnector
+                                     ) extends BackendController(cc) with DetailsController
+
+@Singleton
+class AgentDetailsController @Inject()(
+                                        val cc: ControllerComponents,
+                                        val etmpConnector: EtmpDetailsConnector
+                                      ) extends BackendController(cc) with DetailsController
+
+trait DetailsController extends BackendController {
 
   def etmpConnector: EtmpDetailsConnector
 
-  def getDetails(accountRef: String, identifier: String, identifierType: String) = Action.async { implicit request =>
+  def getDetails(accountRef: String, identifier: String, identifierType: String): Action[AnyContent] = Action.async { implicit request =>
     etmpConnector.getDetails(identifier = identifier, identifierType = identifierType) map { responseReceived =>
       responseReceived.status match {
         case OK => Ok(responseReceived.body)
@@ -37,17 +50,4 @@ trait DetailsController extends BaseController {
       }
     }
   }
-
-}
-
-object DetailsController extends DetailsController {
-
-  val etmpConnector: EtmpDetailsConnector = EtmpDetailsConnector
-
-}
-
-object AgentDetailsController extends DetailsController {
-
-  val etmpConnector: EtmpDetailsConnector = EtmpDetailsConnector
-
 }

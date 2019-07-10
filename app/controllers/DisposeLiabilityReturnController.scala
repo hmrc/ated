@@ -16,20 +16,32 @@
 
 package controllers
 
-import models.{BankDetails, BankDetailsModel, DisposeLiability}
+import javax.inject.{Inject, Singleton}
+import models.{BankDetails, DisposeLiability, DisposeLiabilityReturn, PropertyDetails}
 import play.api.Logger
-import play.api.libs.json.Json
-import play.api.mvc.Action
+import play.api.libs.json.{JsValue, Json, OFormat}
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.DisposeLiabilityReturnService
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-trait DisposeLiabilityReturnController extends BaseController {
+@Singleton
+class DisposeLiabilityReturnControllerImpl @Inject()(
+                                                    val disposeLiabilityReturnService: DisposeLiabilityReturnService,
+                                                    val cc: ControllerComponents,
+                                                    val crypto: ApplicationCrypto
+                                                    ) extends BackendController(cc) with DisposeLiabilityReturnController
+
+trait DisposeLiabilityReturnController extends BackendController {
+  val crypto: ApplicationCrypto
+  implicit lazy val compositeCrypto: CryptoWithKeysFromConfig = crypto.JsonCrypto
+  implicit lazy val format: OFormat[DisposeLiabilityReturn] = DisposeLiabilityReturn.formats
 
   def disposeLiabilityReturnService: DisposeLiabilityReturnService
 
-  def retrieveAndCacheDisposeLiabilityReturn(accountRef: String, formBundle: String) = Action.async { implicit request =>
+  def retrieveAndCacheDisposeLiabilityReturn(accountRef: String, formBundle: String): Action[AnyContent] = Action.async { implicit request =>
     for {
       disposeLiabilityResponse <- disposeLiabilityReturnService.retrieveAndCacheDisposeLiabilityReturn(accountRef, formBundle)
     } yield {
@@ -40,7 +52,7 @@ trait DisposeLiabilityReturnController extends BaseController {
     }
   }
 
-  def updateDisposalDate(atedRef: String, oldFormBundleNo: String) = Action.async(parse.json) {
+  def updateDisposalDate(atedRef: String, oldFormBundleNo: String): Action[JsValue] = Action.async(parse.json) {
     implicit request => withJsonBody[DisposeLiability] {
       updatedDate => disposeLiabilityReturnService.updateDraftDisposeLiabilityReturnDate(atedRef, oldFormBundleNo, updatedDate) map {
         case Some(x) => Ok(Json.toJson(x))
@@ -49,7 +61,7 @@ trait DisposeLiabilityReturnController extends BaseController {
     }
   }
 
-  def updateHasBankDetails(atedRef: String, oldFormBundleNo: String) = Action.async(parse.json) {
+  def updateHasBankDetails(atedRef: String, oldFormBundleNo: String): Action[JsValue] = Action.async(parse.json) {
     implicit request => withJsonBody[Boolean] {
       updatedValue => disposeLiabilityReturnService.updateDraftDisposeHasBankDetails(atedRef, oldFormBundleNo, updatedValue) map {
         case Some(x) => Ok(Json.toJson(x))
@@ -58,7 +70,7 @@ trait DisposeLiabilityReturnController extends BaseController {
     }
   }
 
-  def updateBankDetails(atedRef: String, oldFormBundleNo: String) = Action.async(parse.json) {
+  def updateBankDetails(atedRef: String, oldFormBundleNo: String): Action[JsValue] = Action.async(parse.json) {
     implicit request => withJsonBody[BankDetails] {
       updatedValue => disposeLiabilityReturnService.updateDraftDisposeBankDetails(atedRef, oldFormBundleNo, updatedValue) map {
         case Some(x) => Ok(Json.toJson(x))
@@ -67,7 +79,7 @@ trait DisposeLiabilityReturnController extends BaseController {
     }
   }
 
-  def calculateDraftDisposal(atedRef: String, oldFormBundleNo: String) = Action.async {
+  def calculateDraftDisposal(atedRef: String, oldFormBundleNo: String): Action[AnyContent] = Action.async {
     implicit request =>
       disposeLiabilityReturnService.calculateDraftDispose(atedRef, oldFormBundleNo) map {
         case Some(x) => Ok(Json.toJson(x))
@@ -75,7 +87,7 @@ trait DisposeLiabilityReturnController extends BaseController {
       }
   }
 
-  def submitDisposeLiabilityReturn(atedRef: String, oldFormBundleNo: String) = Action.async { implicit request =>
+  def submitDisposeLiabilityReturn(atedRef: String, oldFormBundleNo: String): Action[AnyContent] = Action.async { implicit request =>
     disposeLiabilityReturnService.submitDisposeLiability(atedRef, oldFormBundleNo) map { response =>
       response.status match {
         case OK => Ok(response.body)
@@ -85,11 +97,5 @@ trait DisposeLiabilityReturnController extends BaseController {
       }
     }
   }
-
-}
-
-object DisposeLiabilityReturnController extends DisposeLiabilityReturnController {
-
-  val disposeLiabilityReturnService = DisposeLiabilityReturnService
 
 }

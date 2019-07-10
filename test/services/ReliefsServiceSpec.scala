@@ -21,7 +21,7 @@ import java.util.UUID
 import builders.ReliefBuilder
 import connectors.{AuthConnector, EmailConnector, EmailSent, EtmpReturnsConnector}
 import models.{Reliefs, TaxAvoidance}
-import org.mockito.Matchers
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
@@ -44,12 +44,16 @@ class ReliefsServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSug
   val mockSubscriptionDataService = mock[SubscriptionDataService]
   val mockEmailConnector = mock[EmailConnector]
 
-  object TestReliefsService extends ReliefsService {
-    override val reliefsCache = mockReliefsCache
-    override val etmpConnector = mockEtmpConnector
-    override val authConnector = mockAuthConnector
-    override val subscriptionDataService = mockSubscriptionDataService
-    override val emailConnector = mockEmailConnector
+  trait Setup {
+    class TestReliefsService extends ReliefsService {
+      override val reliefsCache = mockReliefsCache
+      override val etmpConnector = mockEtmpConnector
+      override val authConnector = mockAuthConnector
+      override val subscriptionDataService = mockSubscriptionDataService
+      override val emailConnector = mockEmailConnector
+    }
+
+    val testReliefsService = new TestReliefsService()
   }
 
   val accountRef = "ATED-123123"
@@ -67,58 +71,58 @@ class ReliefsServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSug
 
   "ReliefsService" must {
 
-    "saveDraftReliefs when we are passed some Reliefs" in {
+    "saveDraftReliefs when we are passed some Reliefs" in new Setup {
       implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
       val testReliefs = ReliefBuilder.reliefTaxAvoidance(accountRef, periodKey)
 
-      when(mockReliefsCache.cacheRelief(Matchers.any())).thenReturn(Future.successful(ReliefCached))
-      when(mockReliefsCache.fetchReliefs(Matchers.any())).thenReturn(Future.successful(Seq(testReliefs)))
-      val result = TestReliefsService.saveDraftReliefs(accountRef, testReliefs)
+      when(mockReliefsCache.cacheRelief(ArgumentMatchers.any())).thenReturn(Future.successful(ReliefCached))
+      when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq(testReliefs)))
+      val result = testReliefsService.saveDraftReliefs(accountRef, testReliefs)
 
       await(result) must be(Seq(testReliefs))
     }
 
-    "fetch the cached Reliefs when we have some" in {
+    "fetch the cached Reliefs when we have some" in new Setup {
       implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
       val testReliefs = ReliefBuilder.reliefTaxAvoidance(accountRef, periodKey)
 
-      when(mockReliefsCache.fetchReliefs(Matchers.any())).thenReturn(Future.successful(Seq(testReliefs)))
-      val result = TestReliefsService.retrieveDraftReliefs(accountRef)
+      when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq(testReliefs)))
+      val result = testReliefsService.retrieveDraftReliefs(accountRef)
 
       await(result) must be(Seq(testReliefs))
     }
 
-    "fetch an empty list when we have no cached Reliefs" in {
+    "fetch an empty list when we have no cached Reliefs" in new Setup {
       implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-      when(mockReliefsCache.fetchReliefs(Matchers.any())).thenReturn(Future.successful(Seq()))
-      val result = TestReliefsService.retrieveDraftReliefs(accountRef)
+      when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq()))
+      val result = testReliefsService.retrieveDraftReliefs(accountRef)
 
       await(result) must be(Seq())
     }
 
     "submit cached Reliefs" must {
 
-      "work even if we have no reliefs found" in {
+      "work even if we have no reliefs found" in new Setup {
         implicit val hc = new HeaderCarrier()
 
         val testReliefs = ReliefBuilder.reliefTaxAvoidance(accountRef, periodKey)
-        when(mockReliefsCache.fetchReliefs(Matchers.any())).thenReturn(Future.successful(Seq()))
+        when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq()))
 
         val submitSuccess = Json.parse( """{"status" : "OK", "processingDate" :  "2014-12-17T09:30:47Z", "formBundleNumber" : "123456789012"}""")
-        when(mockEtmpConnector.submitReturns(Matchers.any(), Matchers.any())).thenReturn(Future.successful(HttpResponse(OK)))
+        when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK)))
 
-        when(mockReliefsCache.deleteReliefs(Matchers.anyString())).thenReturn(Future.successful(ReliefDeleted))
-        when(mockAuthConnector.agentReferenceNo(Matchers.any())).thenReturn(Future.successful(None))
+        when(mockReliefsCache.deleteReliefs(ArgumentMatchers.anyString())).thenReturn(Future.successful(ReliefDeleted))
+        when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
-        when(mockSubscriptionDataService.retrieveSubscriptionData(Matchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
+        when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
 
-        val result = TestReliefsService.submitAndDeleteDraftReliefs("accountRef", periodKey)
+        val result = testReliefsService.submitAndDeleteDraftReliefs("accountRef", periodKey)
         await(result).status must be(NOT_FOUND)
-        verify(mockEmailConnector, times(0)).sendTemplatedEmail(Matchers.any(), Matchers.any(), Matchers.any())(Matchers.any())
+        verify(mockEmailConnector, times(0)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
       }
 
-      "submit cached Reliefs and delete them if this submit works" in {
+      "submit cached Reliefs and delete them if this submit works" in new Setup {
         implicit val hc = new HeaderCarrier()
 
         val reliefs = new Reliefs(periodKey = periodKey, rentalBusiness = true,
@@ -134,22 +138,22 @@ class ReliefsServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSug
           socialHousingScheme = Some("Scheme789"))
 
         val reliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(accountRef, periodKey, reliefs, taxAvoidance)
-        when(mockReliefsCache.fetchReliefs(Matchers.any())).thenReturn(Future.successful(Seq(reliefsTaxAvoidance)))
-        when(mockReliefsCache.cacheRelief(Matchers.any())).thenReturn(Future.successful(ReliefCached))
-        when(mockAuthConnector.agentReferenceNo(Matchers.any())).thenReturn(Future.successful(None))
-        when(mockSubscriptionDataService.retrieveSubscriptionData(Matchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
-        when(mockEmailConnector.sendTemplatedEmail(Matchers.any(), Matchers.any(), Matchers.any())(Matchers.any())) thenReturn Future.successful(EmailSent)
-        when(mockReliefsCache.deleteDraftReliefByYear(Matchers.any(), Matchers.any())).thenReturn(Future.successful(ReliefDeleted))
+        when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq(reliefsTaxAvoidance)))
+        when(mockReliefsCache.cacheRelief(ArgumentMatchers.any())).thenReturn(Future.successful(ReliefCached))
+        when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+        when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
+        when(mockEmailConnector.sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
+        when(mockReliefsCache.deleteDraftReliefByYear(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(ReliefDeleted))
 
         val submitSuccess = Json.parse( """{"status" : "OK", "processingDate" :  "2014-12-17T09:30:47Z", "formBundleNumber" : "123456789012"}""")
-        when(mockEtmpConnector.submitReturns(Matchers.any(), Matchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(submitSuccess))))
-        val result = TestReliefsService.submitAndDeleteDraftReliefs("accountRef", periodKey)
+        when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(submitSuccess))))
+        val result = testReliefsService.submitAndDeleteDraftReliefs("accountRef", periodKey)
         await(result).status must be(OK)
-        verify(mockEmailConnector, times(1)).sendTemplatedEmail(Matchers.any(), Matchers.any(), Matchers.any())(Matchers.any())
+        verify(mockEmailConnector, times(1)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
       }
     }
 
-    "delete reliefs for a particular user" in {
+    "delete reliefs for a particular user" in new Setup {
 
       implicit val hc = HeaderCarrier()
 
@@ -166,23 +170,23 @@ class ReliefsServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSug
         socialHousingScheme = Some("Scheme789"))
 
       val reliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(accountRef, periodKey, reliefs, taxAvoidance)
-      when(mockReliefsCache.fetchReliefs(Matchers.any())).thenReturn(Future.successful(Seq(reliefsTaxAvoidance)))
-      when(mockReliefsCache.cacheRelief(Matchers.any())).thenReturn(Future.successful(ReliefCached))
-      when(mockAuthConnector.agentReferenceNo(Matchers.any())).thenReturn(Future.successful(None))
+      when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq(reliefsTaxAvoidance)))
+      when(mockReliefsCache.cacheRelief(ArgumentMatchers.any())).thenReturn(Future.successful(ReliefCached))
+      when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
-      val fetchResult = TestReliefsService.retrieveDraftReliefs("accountRef")
+      val fetchResult = testReliefsService.retrieveDraftReliefs("accountRef")
 
       await(fetchResult) must be(Seq(reliefsTaxAvoidance))
 
-      when(mockReliefsCache.deleteReliefs(Matchers.any())).thenReturn(Future.successful(ReliefDeleted))
-      when(mockReliefsCache.fetchReliefs(Matchers.any())).thenReturn(Future.successful(Seq()))
-      val result = TestReliefsService.deleteAllDraftReliefs("accountRef")
+      when(mockReliefsCache.deleteReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(ReliefDeleted))
+      when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq()))
+      val result = testReliefsService.deleteAllDraftReliefs("accountRef")
 
       await(result) must be(Seq())
 
     }
 
-    "delete all relief drafts for an user for that year" in {
+    "delete all relief drafts for an user for that year" in new Setup {
       implicit val hc = HeaderCarrier()
 
       val reliefs = new Reliefs(periodKey = periodKey, rentalBusiness = true,
@@ -198,17 +202,17 @@ class ReliefsServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSug
         socialHousingScheme = Some("Scheme789"))
 
       val reliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(accountRef, periodKey, reliefs, taxAvoidance)
-      when(mockReliefsCache.fetchReliefs(Matchers.any())).thenReturn(Future.successful(Seq(reliefsTaxAvoidance)))
-      when(mockReliefsCache.cacheRelief(Matchers.any())).thenReturn(Future.successful(ReliefCached))
-      when(mockAuthConnector.agentReferenceNo(Matchers.any())).thenReturn(Future.successful(None))
+      when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq(reliefsTaxAvoidance)))
+      when(mockReliefsCache.cacheRelief(ArgumentMatchers.any())).thenReturn(Future.successful(ReliefCached))
+      when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
-      val fetchResult = TestReliefsService.retrieveDraftReliefs("accountRef")
+      val fetchResult = testReliefsService.retrieveDraftReliefs("accountRef")
 
       await(fetchResult) must be(Seq(reliefsTaxAvoidance))
 
-      when(mockReliefsCache.deleteDraftReliefByYear(Matchers.any(), Matchers.any())).thenReturn(Future.successful(ReliefDeleted))
-      when(mockReliefsCache.fetchReliefs(Matchers.any())).thenReturn(Future.successful(Seq()))
-      val result = TestReliefsService.deleteAllDraftReliefByYear("accountRef", 2017)
+      when(mockReliefsCache.deleteDraftReliefByYear(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(ReliefDeleted))
+      when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq()))
+      val result = testReliefsService.deleteAllDraftReliefByYear("accountRef", 2017)
 
       await(result) must be(Seq())
     }

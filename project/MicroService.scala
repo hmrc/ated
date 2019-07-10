@@ -1,20 +1,18 @@
+import play.routes.compiler.InjectedRoutesGenerator
 import sbt.Keys._
-import sbt.Tests.{Group, SubProcess}
-import sbt._
+import sbt.{Def, _}
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin._
 import uk.gov.hmrc.versioning.SbtGitVersioning
-import play.routes.compiler.StaticRoutesGenerator
 import uk.gov.hmrc.versioning.SbtGitVersioning.autoImport.majorVersion
-import uk.gov.hmrc.SbtArtifactory
 
 trait MicroService {
 
   import uk.gov.hmrc._
   import DefaultBuildSettings._
-  import uk.gov.hmrc.SbtAutoBuildPlugin
   import play.sbt.routes.RoutesKeys.routesGenerator
-  import uk.gov.hmrc.{SbtBuildInfo, ShellPrompt}
+  import uk.gov.hmrc.SbtAutoBuildPlugin
+  import TestPhases.oneForkedJvmPerTest
 
   val appName: String
 
@@ -22,11 +20,11 @@ trait MicroService {
   lazy val plugins: Seq[Plugins] = Seq(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin, SbtArtifactory)
   lazy val playSettings: Seq[Setting[_]] = Seq.empty
 
-  lazy val scoverageSettings = {
+  lazy val scoverageSettings: Seq[Def.Setting[_ >: String with Double with Boolean]] = {
     import scoverage.ScoverageKeys
     Seq(
       ScoverageKeys.coverageExcludedPackages := "<empty>;Reverse.*;app.Routes.*;prod.*;uk.gov.hmrc.*;testOnlyDoNotUseInAppConf.*;forms.*;models.*;config.*;",
-      ScoverageKeys.coverageMinimum := 100,
+      ScoverageKeys.coverageMinimum := 99,
       ScoverageKeys.coverageFailOnMinimum := true,
       ScoverageKeys.coverageHighlighting := true,
       parallelExecution in Test := false
@@ -40,14 +38,21 @@ trait MicroService {
     .settings(scalaSettings: _*)
     .settings(publishingSettings: _*)
     .settings(defaultSettings(): _*)
+    .configs(IntegrationTest)
     .settings(
+      addTestReportOption(IntegrationTest, "int-test-reports"),
+      inConfig(IntegrationTest)(Defaults.itSettings),
       scalaVersion := "2.11.11",
       targetJvm := "jvm-1.8",
       libraryDependencies ++= appDependencies,
       parallelExecution in Test := false,
       fork in Test := true,
       retrieveManaged := true,
-      routesGenerator := StaticRoutesGenerator
+      routesGenerator := InjectedRoutesGenerator,
+      Keys.fork                  in IntegrationTest :=  false,
+      unmanagedSourceDirectories in IntegrationTest :=  (baseDirectory in IntegrationTest)(base => Seq(base / "it")).value,
+      testGrouping               in IntegrationTest :=  oneForkedJvmPerTest((definedTests in IntegrationTest).value),
+      parallelExecution in IntegrationTest := false
     )
 
     .settings(

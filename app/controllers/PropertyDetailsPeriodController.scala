@@ -16,21 +16,30 @@
 
 package controllers
 
-import audit.Auditable
-import config.MicroserviceAuditConnector
+import javax.inject.{Inject, Singleton}
 import models._
 import org.joda.time.LocalDate
-import play.api.Logger
-import play.api.libs.json.Json
-import play.api.mvc.Action
-import services.{PropertyDetailsPeriodService}
-import uk.gov.hmrc.play.audit.model.{Audit, EventTypes}
-import uk.gov.hmrc.play.config.AppName
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import play.api.libs.json.{Json, OFormat}
+import play.api.mvc.ControllerComponents
+import services.PropertyDetailsPeriodService
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import play.api.libs.json.JodaWrites._
+import play.api.libs.json.JodaReads._
+import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-trait PropertyDetailsPeriodController extends BaseController {
+@Singleton
+class PropertyDetailsPeriodControllerImpl @Inject()(
+                                                     val propertyDetailsService: PropertyDetailsPeriodService,
+                                                     val cc: ControllerComponents,
+                                                     implicit val crypto: ApplicationCrypto
+                                                   ) extends BackendController(cc) with PropertyDetailsPeriodController
+
+trait PropertyDetailsPeriodController extends BackendController {
+  val crypto: ApplicationCrypto
+  implicit lazy val compositeCrypto: CryptoWithKeysFromConfig = crypto.JsonCrypto
+  implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
 
   def propertyDetailsService: PropertyDetailsPeriodService
 
@@ -45,6 +54,7 @@ trait PropertyDetailsPeriodController extends BaseController {
         }
       }
   }
+
   def saveDraftInRelief(atedRefNo: String, id: String) = Action.async(parse.json) {
     implicit request =>
       withJsonBody[PropertyDetailsInRelief] { draftPropertyDetails =>
@@ -104,11 +114,5 @@ trait PropertyDetailsPeriodController extends BaseController {
         }
       }
   }
-
-}
-
-object PropertyDetailsPeriodController extends PropertyDetailsPeriodController {
-
-  val propertyDetailsService = PropertyDetailsPeriodService
 
 }

@@ -16,29 +16,32 @@
 
 package connectors
 
-import config.WSHttp
+import javax.inject.Inject
 import models.SendEmailRequest
-import play.api.Mode.Mode
-import play.api.{Configuration, Logger, Play}
+import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json.Json
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.play.config.ServicesConfig
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-
 
 sealed trait EmailStatus
 case object EmailSent extends EmailStatus
 case object EmailNotSent extends EmailStatus
 
-trait EmailConnector extends ServicesConfig with RawResponseReads {
-
+class EmailConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
+                                      val http: HttpClient) extends EmailConnector {
+  val serviceUrl: String = servicesConfig.baseUrl("email")
   val sendEmailUri: String = "hmrc/email"
-  val serviceUrl = baseUrl("email")
+}
 
-  def http: CoreGet with CorePost with CorePut
+trait EmailConnector extends RawResponseReads {
+  val serviceUrl: String
+  val sendEmailUri: String
+  val http: HttpClient
 
   def sendTemplatedEmail(emailAddress: String, templateName: String, params: Map[String, String])(implicit hc: HeaderCarrier): Future[EmailStatus] = {
 
@@ -49,24 +52,12 @@ trait EmailConnector extends ServicesConfig with RawResponseReads {
 
     http.POST(postUrl, jsonData).map { response =>
       response.status match {
-        case ACCEPTED => {
+        case ACCEPTED =>
           EmailSent
-        }
-        case status => {
-          Logger.warn("email failed")
+        case status =>
+          Logger.warn(s"[EmailConnector] Email failed - $status")
           EmailNotSent
-        }
       }
     }
   }
-}
-
-object EmailConnector extends EmailConnector {
-  // $COVERAGE-OFF$
-  val http: CoreGet with CorePost with CorePut = WSHttp
-  // $COVERAGE-OFF$
-
-  override protected def mode: Mode = Play.current.mode
-
-  override protected def runModeConfiguration: Configuration = Play.current.configuration
 }

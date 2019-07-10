@@ -17,15 +17,17 @@
 package controllers
 
 import models.SummaryReturnsModel
-import org.mockito.Matchers
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
 import play.api.libs.json.Json
+import play.api.mvc.ControllerComponents
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import services.ReturnSummaryService
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.Future
 
@@ -34,35 +36,37 @@ class ReturnsSummaryControllerSpec extends PlaySpec with OneServerPerSuite with 
   val mockReturnSummaryService = mock[ReturnSummaryService]
   val atedRefNo = "ATED-123"
 
-  object TestReturnsSummaryController extends ReturnsSummaryController {
-    val returnSummaryService: ReturnSummaryService = mockReturnSummaryService
+  trait Setup {
+    val cc: ControllerComponents = app.injector.instanceOf[ControllerComponents]
+
+    class TestReturnsSummaryController extends BackendController(cc) with ReturnsSummaryController {
+      val returnSummaryService: ReturnSummaryService = mockReturnSummaryService
+    }
+
+    val controller = new TestReturnsSummaryController()
   }
 
   override def beforeEach = {
     reset(mockReturnSummaryService)
   }
 
-
   "ReturnsSummaryController" must {
-    "use correct ETMP connector" in {
-      ReturnsSummaryController.returnSummaryService must be(ReturnSummaryService)
-    }
 
     "getFullSummaryReturn" must {
-      "return SummaryReturnsModel model, if found in cache or ETMP" in {
+      "return SummaryReturnsModel model, if found in cache or ETMP" in new Setup {
         val summaryReturnsModel = SummaryReturnsModel(None, Nil)
-        when(mockReturnSummaryService.getFullSummaryReturns(Matchers.eq(atedRefNo))(Matchers.any())).thenReturn(Future.successful(summaryReturnsModel))
-        val result = TestReturnsSummaryController.getFullSummaryReturn(atedRefNo).apply(FakeRequest())
+        when(mockReturnSummaryService.getFullSummaryReturns(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(summaryReturnsModel))
+        val result = controller.getFullSummaryReturn(atedRefNo).apply(FakeRequest())
         status(result) must be(OK)
         contentAsJson(result) must be(Json.toJson(summaryReturnsModel))
 
       }
 
       "getPartialSummaryReturn" must {
-        "return SummaryReturnsModel model, if found in cache or ETMP" in {
+        "return SummaryReturnsModel model, if found in cache or ETMP" in new Setup {
           val summaryReturnsModel = SummaryReturnsModel(None, Nil)
-          when(mockReturnSummaryService.getPartialSummaryReturn(Matchers.eq(atedRefNo))(Matchers.any())).thenReturn(Future.successful(summaryReturnsModel))
-          val result = TestReturnsSummaryController.getPartialSummaryReturn(atedRefNo).apply(FakeRequest())
+          when(mockReturnSummaryService.getPartialSummaryReturn(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(summaryReturnsModel))
+          val result = controller.getPartialSummaryReturn(atedRefNo).apply(FakeRequest())
           status(result) must be(OK)
           contentAsJson(result) must be(Json.toJson(summaryReturnsModel))
 

@@ -16,14 +16,25 @@
 
 package controllers
 
+import javax.inject.{Inject, Singleton}
 import models.{UpdateRegistrationDetailsRequest, UpdateSubscriptionDataRequest}
-import play.api.mvc.Action
+import play.api.mvc.ControllerComponents
 import services.SubscriptionDataService
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-trait SubscriptionDataController extends BaseController {
+@Singleton
+class SubscriptionDataControllerImpl @Inject()(val cc: ControllerComponents,
+                                               val subscriptionDataService: SubscriptionDataService
+                                              ) extends BackendController(cc) with SubscriptionDataController
+
+@Singleton
+class AgentRetrieveClientSubscriptionDataController @Inject()(val cc: ControllerComponents,
+                                                              val subscriptionDataService: SubscriptionDataService
+                                                             ) extends BackendController(cc) with SubscriptionDataController
+
+trait SubscriptionDataController extends BackendController {
 
   def subscriptionDataService: SubscriptionDataService
 
@@ -79,12 +90,4 @@ trait SubscriptionDataController extends BaseController {
     }
   }
 
-}
-
-object SubscriptionDataController extends SubscriptionDataController {
-  val subscriptionDataService: SubscriptionDataService = SubscriptionDataService
-}
-
-object AgentRetrieveClientSubscriptionDataController extends SubscriptionDataController {
-  val subscriptionDataService: SubscriptionDataService = SubscriptionDataService
 }

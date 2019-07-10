@@ -18,6 +18,7 @@ package repository
 
 
 import builders.ReliefBuilder
+import metrics.ServiceMetrics
 import models.{Reliefs, TaxAvoidance}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
@@ -32,7 +33,9 @@ class ReliefsMongoRepositorySpec extends PlaySpec
   with MockitoSugar
   with BeforeAndAfterEach {
 
-  def repository(implicit mongo: () => DB) = new ReliefsReactiveMongoRepository
+  lazy val serviceMetrics: ServiceMetrics = app.injector.instanceOf[ServiceMetrics]
+
+  def repository(implicit mongo: () => DB) = new ReliefsReactiveMongoRepository(mongo, serviceMetrics)
 
   override def beforeEach(): Unit = {
     await(repository.drop)

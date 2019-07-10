@@ -17,27 +17,36 @@
 package controllers
 
 import audit.Auditable
-import config.MicroserviceAuditConnector
 import connectors.AuthConnector
+import javax.inject.{Inject, Named, Singleton}
 import models.ReliefsTaxAvoidance
-import play.api.{Logger, Play}
-import play.api.libs.json.Json
-import play.api.mvc.Action
+import play.api.Logger
+import play.api.libs.json.{JsValue, Json}
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.ReliefsService
-import uk.gov.hmrc.play.audit.model.{Audit, EventTypes}
-import uk.gov.hmrc.play.config.AppName
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.model.Audit
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import uk.gov.hmrc.http.HeaderCarrier
 
-trait ReliefsController extends BaseController with Auditable {
+@Singleton
+class ReliefsControllerImpl @Inject()(val cc: ControllerComponents,
+                                      val reliefsService: ReliefsService,
+                                      val authConnector: AuthConnector,
+                                      val auditConnector: AuditConnector,
+                                      @Named("appName") val appName: String) extends BackendController(cc) with ReliefsController {
+  val audit: Audit = new Audit(s"ATED:$appName", auditConnector)
+}
+
+trait ReliefsController extends BackendController with Auditable {
 
   def reliefsService: ReliefsService
 
   def authConnector: AuthConnector
 
-  def saveDraftReliefs(atedRefNo: String) = Action.async(parse.json) { implicit request =>
+  def saveDraftReliefs(atedRefNo: String): Action[JsValue] = Action.async(parse.json) { implicit request =>
     val agentRefNoFuture = authConnector.agentReferenceNo
     withJsonBody[ReliefsTaxAvoidance] { draftRelief =>
       val saveDraftReliefsFuture = reliefsService.saveDraftReliefs(atedRefNo, draftRelief)
@@ -51,7 +60,7 @@ trait ReliefsController extends BaseController with Auditable {
     }
   }
 
-  def retrieveDraftReliefs(atedRefNo: String, periodKey: Int) = Action.async { implicit request =>
+  def retrieveDraftReliefs(atedRefNo: String, periodKey: Int): Action[AnyContent] = Action.async { implicit request =>
     reliefsService.retrieveDraftReliefs(atedRefNo).map { reliefs =>
       reliefs.find(_.periodKey == periodKey) match {
         case Some(x) => Ok(Json.toJson(x))
@@ -60,7 +69,7 @@ trait ReliefsController extends BaseController with Auditable {
     }
   }
 
-  def submitDraftReliefs(atedRefNo: String, periodKey: Int) = Action.async { implicit request =>
+  def submitDraftReliefs(atedRefNo: String, periodKey: Int): Action[AnyContent] = Action.async { implicit request =>
     reliefsService.submitAndDeleteDraftReliefs(atedRefNo, periodKey).map { responseOfSubmit =>
       responseOfSubmit.status match {
         case OK => Ok(responseOfSubmit.body)
@@ -76,7 +85,7 @@ trait ReliefsController extends BaseController with Auditable {
     }
   }
 
-  def deleteDraftReliefs(atedRefNo: String) = Action.async { implicit request =>
+  def deleteDraftReliefs(atedRefNo: String): Action[AnyContent] = Action.async { implicit request =>
     reliefsService.deleteAllDraftReliefs(atedRefNo).map {
       case Nil => Ok
       case a =>
@@ -86,7 +95,7 @@ trait ReliefsController extends BaseController with Auditable {
     }
   }
 
-  def deleteDraftReliefsByYear(atedRefNo: String, periodKey: Int) = Action.async { implicit request =>
+  def deleteDraftReliefsByYear(atedRefNo: String, periodKey: Int): Action[AnyContent] = Action.async { implicit request =>
     reliefsService.deleteAllDraftReliefByYear(atedRefNo, periodKey).map {
       case Nil => Ok
       case a =>
@@ -98,7 +107,7 @@ trait ReliefsController extends BaseController with Auditable {
 
 
   private def auditSaveDraftReliefs(atedRefNo: String,
-                                    reliefsTaxAvoid: ReliefsTaxAvoidance, agentRefNo: Option[String] = None)(implicit hc: HeaderCarrier) = {
+                                    reliefsTaxAvoid: ReliefsTaxAvoidance, agentRefNo: Option[String] = None)(implicit hc: HeaderCarrier): Unit = {
 
     val basicReliefsMap = Map(
       "submittedBy" -> atedRefNo,
@@ -139,17 +148,5 @@ trait ReliefsController extends BaseController with Auditable {
 
     sendDataEvent("saveDraftReliefs", detail = basicReliefsMap ++ taxAvoidanceMap)
   }
-
-}
-
-object ReliefsController extends ReliefsController {
-
-  val appName: String = AppName(Play.current.configuration).appName
-
-  val reliefsService = ReliefsService
-
-  val authConnector = AuthConnector
-
-  val audit: Audit = new Audit(s"ATED:${appName}", MicroserviceAuditConnector)
 
 }

@@ -17,29 +17,30 @@
 package services
 
 import connectors.EtmpReturnsConnector
+import javax.inject.Inject
 import models._
 import org.joda.time.LocalDate
 import play.api.http.Status._
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import utils.AtedConstants._
-
-import scala.concurrent.ExecutionContext.Implicits.global
 import utils.ReliefUtils._
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse }
+
+class ReturnSummaryServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnector,
+                                         val propertyDetailsService: PropertyDetailsService,
+                                         val reliefsService: ReliefsService,
+                                         val disposeLiabilityReturnService: DisposeLiabilityReturnService) extends ReturnSummaryService
 
 trait ReturnSummaryService {
 
   def etmpConnector: EtmpReturnsConnector
-
   def propertyDetailsService: PropertyDetailsService
-
   def reliefsService: ReliefsService
-
   def disposeLiabilityReturnService: DisposeLiabilityReturnService
 
   val years: Int = 6
-
 
   private def createDraftReturns(reliefDrafts: Seq[ReliefsTaxAvoidance], liabilityDrafts: Seq[PropertyDetails],
                                  disposeLiabilityDrafts: Seq[DisposeLiabilityReturn]): Seq[DraftReturns] = {
@@ -146,14 +147,13 @@ trait ReturnSummaryService {
           f => SubmittedLiabilityReturns(f.formBundleNumber, address, f.liabilityAmount, f.dateFrom, f.dateTo, f.dateOfSubmission, f.changeAllowed, f.paymentReference)
         )
         orderedReturns match {
-          case head :: second :: tail => {
+          case head :: second :: tail =>
             (head.dateOfSubmission == second.dateOfSubmission, head.changeAllowed, second.changeAllowed) match {
               case (true, true, false) => (List(head), second :: tail)
               case (true, true, true) => (List(head, second), tail)
               case (true, false, false) => (List(head, second), tail)
               case _ => (List(head), second :: tail)
             }
-          }
           case head :: tail => (List(head), tail)
           case _ => (Nil, Nil)
         }
@@ -208,11 +208,4 @@ trait ReturnSummaryService {
       SummaryReturnsModel(None, Nil) //means we did call to api9 - found 404, also no drafts at all
     }
   }
-}
-
-object ReturnSummaryService extends ReturnSummaryService {
-  def etmpConnector: EtmpReturnsConnector = EtmpReturnsConnector
-  val propertyDetailsService: PropertyDetailsService = PropertyDetailsService
-  val reliefsService: ReliefsService = ReliefsService
-  val disposeLiabilityReturnService: DisposeLiabilityReturnService = DisposeLiabilityReturnService
 }

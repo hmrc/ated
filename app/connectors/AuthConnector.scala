@@ -16,24 +16,25 @@
 
 package connectors
 
-import config.WSHttp
-import play.api.Mode.Mode
-import play.api.{Configuration, Logger, Play}
+import javax.inject.Inject
 import play.api.http.Status._
-import uk.gov.hmrc.play.config.ServicesConfig
-import uk.gov.hmrc.play.http._
+import uk.gov.hmrc.http._
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.http._
 
-trait AuthConnector extends ServicesConfig with RawResponseReads {
+class AuthConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
+                                  val http: HttpClient) extends AuthConnector {
+  val serviceUrl = servicesConfig.baseUrl("auth")
+  val authorityUri = "auth/authority"
+}
 
+trait AuthConnector extends RawResponseReads {
   def serviceUrl: String
-
   def authorityUri: String
-
-  def http: CoreGet with CorePost
+  def http: HttpClient
 
   def agentReferenceNo(implicit hc: HeaderCarrier): Future[Option[String]] = {
     val getUrl = s"""$serviceUrl/$authorityUri"""
@@ -49,14 +50,4 @@ trait AuthConnector extends ServicesConfig with RawResponseReads {
     }
   }
 
-}
-
-object AuthConnector extends AuthConnector {
-  val serviceUrl = baseUrl("auth")
-  val authorityUri = "auth/authority"
-  val http: CoreGet with CorePost = WSHttp
-
-  override protected def mode: Mode = Play.current.mode
-
-  override protected def runModeConfiguration: Configuration = Play.current.configuration
 }

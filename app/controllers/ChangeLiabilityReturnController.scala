@@ -16,24 +16,31 @@
 
 package controllers
 
-import audit.Auditable
-import config.MicroserviceAuditConnector
-import models._
+import javax.inject.{Inject, Singleton}
+import models.PropertyDetails
 import play.api.Logger
-import play.api.libs.json.Json
-import play.api.mvc.Action
-import services.{ChangeLiabilityService, PropertyDetailsService}
-import uk.gov.hmrc.play.audit.model.{Audit, EventTypes}
-import uk.gov.hmrc.play.config.AppName
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import play.api.libs.json.{Json, OFormat}
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import services.ChangeLiabilityService
+import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-trait ChangeLiabilityReturnController extends BaseController {
+@Singleton
+class ChangeLiabilityReturnControllerImpl @Inject()(
+                                                     val changeLiabilityService: ChangeLiabilityService,
+                                                     val cc: ControllerComponents,
+                                                     implicit val crypto: ApplicationCrypto
+                                                   ) extends BackendController(cc) with ChangeLiabilityReturnController
+trait ChangeLiabilityReturnController extends BackendController {
+  val crypto: ApplicationCrypto
+  implicit lazy val compositeCrypto: CryptoWithKeysFromConfig = crypto.JsonCrypto
+  implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
 
   def changeLiabilityService: ChangeLiabilityService
 
-  def convertSubmittedReturnToCachedDraft(accountRef: String, formBundle: String) = Action.async { implicit request =>
+  def convertSubmittedReturnToCachedDraft(accountRef: String, formBundle: String): Action[AnyContent] = Action.async { implicit request =>
     for {
       changeLiabilityResponse <- changeLiabilityService.convertSubmittedReturnToCachedDraft(accountRef, formBundle)
     } yield {
@@ -53,7 +60,7 @@ trait ChangeLiabilityReturnController extends BaseController {
     }
   }
 
-  def submitChangeLiabilityReturn(atedRef: String, oldFormBundleNo: String) = Action.async { implicit request =>
+  def submitChangeLiabilityReturn(atedRef: String, oldFormBundleNo: String): Action[AnyContent] = Action.async { implicit request =>
     changeLiabilityService.submitChangeLiability(atedRef, oldFormBundleNo) map { response =>
       response.status match {
         case OK => Ok(response.body)
@@ -64,20 +71,16 @@ trait ChangeLiabilityReturnController extends BaseController {
     }
   }
 
-  def convertPreviousSubmittedReturnToCachedDraft(accountRef: String, formBundle: String, period: Int) = Action.async { implicit request =>
-    for {
-      changeLiabilityResponse <- changeLiabilityService.convertSubmittedReturnToCachedDraft(accountRef, formBundle, Some(true), Some(period))
-    } yield {
-      changeLiabilityResponse match {
-        case Some(x) => Ok(Json.toJson(x))
-        case None => NotFound(Json.parse("""{}"""))
+  def convertPreviousSubmittedReturnToCachedDraft(accountRef: String, formBundle: String, period: Int): Action[AnyContent] =
+    Action.async { implicit request =>
+      for {
+        changeLiabilityResponse <- changeLiabilityService.convertSubmittedReturnToCachedDraft(accountRef, formBundle, Some(true), Some(period))
+      } yield {
+        changeLiabilityResponse match {
+          case Some(x) => Ok(Json.toJson(x))
+          case None => NotFound(Json.parse("""{}"""))
+        }
       }
     }
-  }
-
-}
-
-object ChangeLiabilityReturnController extends ChangeLiabilityReturnController {
-  override val changeLiabilityService = ChangeLiabilityService
 
 }

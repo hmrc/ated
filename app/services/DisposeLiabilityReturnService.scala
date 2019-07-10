@@ -17,18 +17,28 @@
 package services
 
 import connectors.{AuthConnector, EmailConnector, EtmpReturnsConnector}
+import javax.inject.Inject
 import models._
 import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json.Json
-import repository.DisposeLiabilityReturnMongoRepository
+import repository.{DisposeLiabilityReturnMongoRepository, DisposeLiabilityReturnMongoWrapper}
 import utils.ReliefUtils._
 import utils.SessionUtils._
 import utils.{ChangeLiabilityUtils, PropertyDetailsUtils}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse }
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+
+class DisposeLiabilityReturnServiceImpl @Inject()(val etmpReturnsConnector: EtmpReturnsConnector,
+                                                  val disposeLiabilityReturnMongoWrapper: DisposeLiabilityReturnMongoWrapper,
+                                                  val authConnector: AuthConnector,
+                                                  val subscriptionDataService: SubscriptionDataService,
+                                                  val emailConnector: EmailConnector
+                                                 ) extends DisposeLiabilityReturnService {
+  val disposeLiabilityReturnRepository: DisposeLiabilityReturnMongoRepository = disposeLiabilityReturnMongoWrapper()
+}
 
 trait DisposeLiabilityReturnService extends NotificationService {
 
@@ -289,14 +299,4 @@ trait DisposeLiabilityReturnService extends NotificationService {
     EtmpPropertyDetails(titleNumber = property.titleNumber, address = propertyDetailsAddress,
       additionalDetails = property.additionalDetails)
   }
-}
-
-object DisposeLiabilityReturnService extends DisposeLiabilityReturnService {
-
-  def etmpReturnsConnector: EtmpReturnsConnector = EtmpReturnsConnector
-
-  val disposeLiabilityReturnRepository = DisposeLiabilityReturnMongoRepository()
-  val authConnector: AuthConnector = AuthConnector
-  val subscriptionDataService: SubscriptionDataService = SubscriptionDataService
-  val emailConnector: EmailConnector = EmailConnector
 }

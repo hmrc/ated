@@ -19,22 +19,17 @@ package services
 
 import connectors.{AuthConnector, EtmpReturnsConnector}
 import models._
-import play.api.Logger
-import play.api.http.Status._
-import play.api.libs.json.{JsValue, Json}
 import repository.{PropertyDetailsDelete, PropertyDetailsMongoRepository}
+import uk.gov.hmrc.http.HeaderCarrier
 import utils._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.http.HeaderCarrier
 
 trait PropertyDetailsBaseService extends ReliefConstants {
 
   def etmpConnector: EtmpReturnsConnector
-
   def authConnector: AuthConnector
-
   def propertyDetailsCache: PropertyDetailsMongoRepository
 
   def retrieveDraftPropertyDetails(atedRefNo: String)(implicit hc: HeaderCarrier): Future[Seq[PropertyDetails]] = {
@@ -48,7 +43,8 @@ trait PropertyDetailsBaseService extends ReliefConstants {
     }
   }
 
-  def deleteDraftPropertyDetail(atedRefNo: String, id: String)(implicit hc: HeaderCarrier): Future[PropertyDetailsDelete] = propertyDetailsCache.deletePropertyDetailsByfieldName(atedRefNo, id)
+  def deleteDraftPropertyDetail(atedRefNo: String, id: String)(implicit hc: HeaderCarrier): Future[PropertyDetailsDelete] =
+    propertyDetailsCache.deletePropertyDetailsByfieldName(atedRefNo, id)
 
   protected def cacheDraftPropertyDetails(atedRefNo: String, updatePropertyDetails: Seq[PropertyDetails] => Future[Option[PropertyDetails]])
                                          (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {

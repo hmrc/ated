@@ -16,17 +16,23 @@
 
 package controllers
 
-import play.api.mvc.Action
+import javax.inject.{Inject, Singleton}
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.FormBundleService
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-trait FormBundleReturnsController extends BaseController {
+@Singleton
+class FormBundleReturnsControllerImpl @Inject()(
+                                                 val cc: ControllerComponents,
+                                                 val formBundleService: FormBundleService
+                                               ) extends BackendController(cc) with FormBundleReturnsController
 
+trait FormBundleReturnsController extends BackendController {
   def formBundleService: FormBundleService
 
-  def getFormBundleReturns(accountRef: String, formBundle: String) = Action.async { implicit request =>
+  def getFormBundleReturns(accountRef: String, formBundle: String): Action[AnyContent] = Action.async { implicit request =>
     formBundleService.getFormBundleReturns(accountRef, formBundle) map { responseReceived =>
       responseReceived.status match {
         case OK => Ok(responseReceived.body)
@@ -37,11 +43,4 @@ trait FormBundleReturnsController extends BaseController {
       }
     }
   }
-
-}
-
-object FormBundleReturnsController extends FormBundleReturnsController {
-
-  val formBundleService: FormBundleService = FormBundleService
-
 }

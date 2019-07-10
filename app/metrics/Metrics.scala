@@ -16,23 +16,21 @@
 
 package metrics
 
-import com.codahale.metrics.Timer
+import com.codahale.metrics.MetricRegistry
 import com.codahale.metrics.Timer.Context
-import metrics.MetricsEnum.{MetricsEnum, Value}
-import uk.gov.hmrc.play.graphite.MicroserviceMetrics
+import com.kenshoo.play.metrics.Metrics
+import javax.inject.Inject
+import metrics.MetricsEnum.MetricsEnum
 
-trait Metrics {
+class ServiceMetricsImpl @Inject()(val metrics: Metrics) extends ServiceMetrics
+trait ServiceMetrics {
+  val metrics: Metrics
 
-  def startTimer(api: MetricsEnum): Timer.Context
+  def startTimer(api: MetricsEnum): Context = timers(api).time()
+  def incrementSuccessCounter(api: MetricsEnum): Unit = successCounters(api).inc()
+  def incrementFailedCounter(api: MetricsEnum): Unit = failedCounters(api).inc()
 
-  def incrementSuccessCounter(api: MetricsEnum): Unit
-
-  def incrementFailedCounter(api: MetricsEnum): Unit
-
-}
-
-object Metrics extends Metrics with MicroserviceMetrics {
-  val registry = metrics.defaultRegistry
+  val registry: MetricRegistry = metrics.defaultRegistry
   val timers = Map(
     MetricsEnum.GgAdminAllocateAgent -> registry.timer("gga-allocate-agent-response-timer"),
     MetricsEnum.EtmpSubmitReturns -> registry.timer("etmp-submit-returns-response-timer"),
@@ -83,11 +81,4 @@ object Metrics extends Metrics with MicroserviceMetrics {
     MetricsEnum.EtmpGetDetails -> registry.counter("etmp-get-details-failed-counter"),
     MetricsEnum.EtmpGetFormBundleReturns -> registry.counter("etmp-get-form-bundle-returns-failed-counter")
   )
-
-  override def startTimer(api: MetricsEnum): Context = timers(api).time()
-
-  override def incrementSuccessCounter(api: MetricsEnum): Unit = successCounters(api).inc()
-
-  override def incrementFailedCounter(api: MetricsEnum): Unit = failedCounters(api).inc()
-
 }

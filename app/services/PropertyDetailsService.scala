@@ -16,19 +16,26 @@
 
 package services
 
-
 import connectors.{AuthConnector, EmailConnector, EtmpReturnsConnector}
+import javax.inject.Inject
 import models._
-import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json.{JsValue, Json}
-import repository.PropertyDetailsMongoRepository
-import utils._
+import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse, InternalServerException}
 import utils.AtedUtils._
+import utils._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier, HttpResponse, InternalServerException }
+
+class PropertyDetailsServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnector,
+                                           val authConnector: AuthConnector,
+                                           val subscriptionDataService: SubscriptionDataService,
+                                           val emailConnector: EmailConnector,
+                                           val propertyDetailsMongoWrapper: PropertyDetailsMongoWrapper) extends PropertyDetailsService {
+  val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetailsMongoWrapper()
+}
 
 trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConstants with NotificationService {
 
@@ -253,12 +260,4 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
     }
   }
 
-}
-
-object PropertyDetailsService extends PropertyDetailsService {
-  val propertyDetailsCache: PropertyDetailsMongoRepository = PropertyDetailsMongoRepository()
-  val etmpConnector: EtmpReturnsConnector = EtmpReturnsConnector
-  val authConnector: AuthConnector = AuthConnector
-  val subscriptionDataService: SubscriptionDataService = SubscriptionDataService
-  val emailConnector: EmailConnector = EmailConnector
 }

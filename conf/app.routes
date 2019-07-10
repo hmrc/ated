@@ -1,70 +1,70 @@
 # microservice specific routes
 
 ## Reliefs ##
-POST  /ated/:atedRefNo/ated/reliefs/save                            controllers.ReliefsController.saveDraftReliefs(atedRefNo: String)
-GET   /ated/:atedRefNo/ated/reliefs/:periodKey                      controllers.ReliefsController.retrieveDraftReliefs(atedRefNo: String, periodKey: Int)
-GET   /ated/:atedRefNo/ated/reliefs/submit/:periodKey               controllers.ReliefsController.submitDraftReliefs(atedRefNo: String, periodKey: Int)
-DELETE /ated/:atedRefNo/ated/reliefs/drafts                         controllers.ReliefsController.deleteDraftReliefs(atedRefNo: String)
-DELETE /ated/:atedRefNo/ated/reliefs/drafts/:periodKey              controllers.ReliefsController.deleteDraftReliefsByYear(atedRefNo: String, periodKey: Int)
+POST  /ated/:atedRefNo/ated/reliefs/save                            controllers.ReliefsControllerImpl.saveDraftReliefs(atedRefNo: String)
+GET   /ated/:atedRefNo/ated/reliefs/:periodKey                      controllers.ReliefsControllerImpl.retrieveDraftReliefs(atedRefNo: String, periodKey: Int)
+GET   /ated/:atedRefNo/ated/reliefs/submit/:periodKey               controllers.ReliefsControllerImpl.submitDraftReliefs(atedRefNo: String, periodKey: Int)
+DELETE /ated/:atedRefNo/ated/reliefs/drafts                         controllers.ReliefsControllerImpl.deleteDraftReliefs(atedRefNo: String)
+DELETE /ated/:atedRefNo/ated/reliefs/drafts/:periodKey              controllers.ReliefsControllerImpl.deleteDraftReliefsByYear(atedRefNo: String, periodKey: Int)
 
 
 ## chargeable properties ##
-GET   /ated/:atedRefNo/property-details/retrieve/:id                controllers.PropertyDetailsController.retrieveDraftPropertyDetails(atedRefNo: String, id: String)
-POST  /ated/:atedRefNo/property-details/create/:periodKey           controllers.PropertyDetailsController.createDraftPropertyDetails(atedRefNo: String, periodKey: Int)
-POST  /ated/:atedRefNo/property-details/address/:id                 controllers.PropertyDetailsController.saveDraftPropertyDetailsAddress(atedRefNo: String, id: String)
-POST  /ated/:atedRefNo/property-details/title/:id                   controllers.PropertyDetailsController.saveDraftPropertyDetailsTitle(atedRefNo: String, id: String)
-POST  /ated/:atedRefNo/property-details/has-value-change/:id        controllers.PropertyDetailsValuesController.saveDraftHasValueChanged(atedRefNo: String, id: String)
-POST  /ated/:atedRefNo/property-details/acquisition/:id             controllers.PropertyDetailsValuesController.saveDraftPropertyDetailsAcquisition(atedRefNo: String, id: String)
-POST  /ated/:atedRefNo/property-details/revalued/:id                controllers.PropertyDetailsValuesController.saveDraftPropertyDetailsRevalued(atedRefNo: String, id: String)
-POST  /ated/:atedRefNo/property-details/owned-before/:id            controllers.PropertyDetailsValuesController.saveDraftPropertyDetailsOwnedBefore(atedRefNo: String, id: String)
-POST  /ated/:atedRefNo/property-details/new-build/:id               controllers.PropertyDetailsValuesController.saveDraftPropertyDetailsNewBuild(atedRefNo: String, id: String)
-POST  /ated/:atedRefNo/property-details/valued/:id                  controllers.PropertyDetailsValuesController.saveDraftPropertyDetailsProfessionallyValued(atedRefNo: String, id: String)
-POST  /ated/:atedRefNo/property-details/full-tax-period/:id         controllers.PropertyDetailsPeriodController.saveDraftFullTaxPeriod(atedRefNo: String, id: String)
-POST  /ated/:atedRefNo/property-details/in-relief/:id               controllers.PropertyDetailsPeriodController.saveDraftInRelief(atedRefNo: String, id: String)
-POST  /ated/:atedRefNo/property-details/dates-liable/:id            controllers.PropertyDetailsPeriodController.saveDraftDatesLiable(atedRefNo: String, id: String)
+GET   /ated/:atedRefNo/property-details/retrieve/:id                controllers.PropertyDetailsControllerImpl.retrieveDraftPropertyDetails(atedRefNo: String, id: String)
+POST  /ated/:atedRefNo/property-details/create/:periodKey           controllers.PropertyDetailsControllerImpl.createDraftPropertyDetails(atedRefNo: String, periodKey: Int)
+POST  /ated/:atedRefNo/property-details/address/:id                 controllers.PropertyDetailsControllerImpl.saveDraftPropertyDetailsAddress(atedRefNo: String, id: String)
+POST  /ated/:atedRefNo/property-details/title/:id                   controllers.PropertyDetailsControllerImpl.saveDraftPropertyDetailsTitle(atedRefNo: String, id: String)
+POST  /ated/:atedRefNo/property-details/has-value-change/:id        controllers.PropertyDetailsValuesControllerImpl.saveDraftHasValueChanged(atedRefNo: String, id: String)
+POST  /ated/:atedRefNo/property-details/acquisition/:id             controllers.PropertyDetailsValuesControllerImpl.saveDraftPropertyDetailsAcquisition(atedRefNo: String, id: String)
+POST  /ated/:atedRefNo/property-details/revalued/:id                controllers.PropertyDetailsValuesControllerImpl.saveDraftPropertyDetailsRevalued(atedRefNo: String, id: String)
+POST  /ated/:atedRefNo/property-details/owned-before/:id            controllers.PropertyDetailsValuesControllerImpl.saveDraftPropertyDetailsOwnedBefore(atedRefNo: String, id: String)
+POST  /ated/:atedRefNo/property-details/new-build/:id               controllers.PropertyDetailsValuesControllerImpl.saveDraftPropertyDetailsNewBuild(atedRefNo: String, id: String)
+POST  /ated/:atedRefNo/property-details/valued/:id                  controllers.PropertyDetailsValuesControllerImpl.saveDraftPropertyDetailsProfessionallyValued(atedRefNo: String, id: String)
+POST  /ated/:atedRefNo/property-details/full-tax-period/:id         controllers.PropertyDetailsPeriodControllerImpl.saveDraftFullTaxPeriod(atedRefNo: String, id: String)
+POST  /ated/:atedRefNo/property-details/in-relief/:id               controllers.PropertyDetailsPeriodControllerImpl.saveDraftInRelief(atedRefNo: String, id: String)
+POST  /ated/:atedRefNo/property-details/dates-liable/:id            controllers.PropertyDetailsPeriodControllerImpl.saveDraftDatesLiable(atedRefNo: String, id: String)
 
-POST  /ated/:atedRefNo/property-details/dates-liable/add/:id        controllers.PropertyDetailsPeriodController.addDraftDatesLiable(atedRefNo: String, id: String)
-POST  /ated/:atedRefNo/property-details/dates-in-relief/add/:id     controllers.PropertyDetailsPeriodController.addDraftDatesInRelief(atedRefNo: String, id: String)
-POST  /ated/:atedRefNo/property-details/period/delete/:id           controllers.PropertyDetailsPeriodController.deleteDraftPeriod(atedRefNo: String, id: String)
+POST  /ated/:atedRefNo/property-details/dates-liable/add/:id        controllers.PropertyDetailsPeriodControllerImpl.addDraftDatesLiable(atedRefNo: String, id: String)
+POST  /ated/:atedRefNo/property-details/dates-in-relief/add/:id     controllers.PropertyDetailsPeriodControllerImpl.addDraftDatesInRelief(atedRefNo: String, id: String)
+POST  /ated/:atedRefNo/property-details/period/delete/:id           controllers.PropertyDetailsPeriodControllerImpl.deleteDraftPeriod(atedRefNo: String, id: String)
 
-POST  /ated/:atedRefNo/property-details/tax-avoidance/:id           controllers.PropertyDetailsController.saveDraftTaxAvoidance(atedRefNo: String, id: String)
-POST  /ated/:atedRefNo/property-details/supporting-info/:id         controllers.PropertyDetailsController.saveDraftSupportingInfo(atedRefNo: String, id: String)
+POST  /ated/:atedRefNo/property-details/tax-avoidance/:id           controllers.PropertyDetailsControllerImpl.saveDraftTaxAvoidance(atedRefNo: String, id: String)
+POST  /ated/:atedRefNo/property-details/supporting-info/:id         controllers.PropertyDetailsControllerImpl.saveDraftSupportingInfo(atedRefNo: String, id: String)
 
-GET   /ated/:atedRefNo/property-details/calculate/:id               controllers.PropertyDetailsController.calculateDraftPropertyDetails(atedRefNo: String, id: String)
+GET   /ated/:atedRefNo/property-details/calculate/:id               controllers.PropertyDetailsControllerImpl.calculateDraftPropertyDetails(atedRefNo: String, id: String)
 
-POST  /ated/:atedRefNo/property-details/submit/:id                  controllers.PropertyDetailsController.submitDraftPropertyDetails(atedRefNo: String, id: String)
+POST  /ated/:atedRefNo/property-details/submit/:id                  controllers.PropertyDetailsControllerImpl.submitDraftPropertyDetails(atedRefNo: String, id: String)
 
-DELETE      /ated/:atedRefNo/property-details/delete/drafts/:id     controllers.PropertyDetailsController.deleteDraftPropertyDetails(atedRefNo: String, id: String)
+DELETE      /ated/:atedRefNo/property-details/delete/drafts/:id     controllers.PropertyDetailsControllerImpl.deleteDraftPropertyDetails(atedRefNo: String, id: String)
 
 ## API 1b ##
-GET   /ated/:atedRefNo/ated/details/:identifier/:identifierType     controllers.DetailsController.getDetails(atedRefNo:String, identifier: String, identifierType: String)
+GET   /ated/:atedRefNo/ated/details/:identifier/:identifierType     controllers.DetailsControllerImpl.getDetails(atedRefNo:String, identifier: String, identifierType: String)
 GET   /agent/:agentCode/ated/details/:identifier/:identifierType    controllers.AgentDetailsController.getDetails(agentCode:String, identifier: String, identifierType: String)
-POST  /ated/:atedRefNo/registration-details/:safeId                 controllers.SubscriptionDataController.updateRegistrationDetails(atedRefNo: String, safeId: String)
+POST  /ated/:atedRefNo/registration-details/:safeId                 controllers.SubscriptionDataControllerImpl.updateRegistrationDetails(atedRefNo: String, safeId: String)
 
 ## returns summary ##
-GET   /ated/:atedRefNo/returns/partial-summary                      controllers.ReturnsSummaryController.getPartialSummaryReturn(atedRefNo: String)
-GET   /ated/:atedRefNo/returns/full-summary                         controllers.ReturnsSummaryController.getFullSummaryReturn(atedRefNo: String)
+GET   /ated/:atedRefNo/returns/partial-summary                      controllers.ReturnsSummaryControllerImpl.getPartialSummaryReturn(atedRefNo: String)
+GET   /ated/:atedRefNo/returns/full-summary                         controllers.ReturnsSummaryControllerImpl.getFullSummaryReturn(atedRefNo: String)
 
 ## subscription ##
-GET   /ated/:atedRefNo/subscription-data                            controllers.SubscriptionDataController.retrieveSubscriptionData(atedRefNo: String)
-POST  /ated/:atedRefNo/subscription-data                            controllers.SubscriptionDataController.updateSubscriptionData(atedRefNo: String)
+GET   /ated/:atedRefNo/subscription-data                            controllers.SubscriptionDataControllerImpl.retrieveSubscriptionData(atedRefNo: String)
+POST  /ated/:atedRefNo/subscription-data                            controllers.SubscriptionDataControllerImpl.updateSubscriptionData(atedRefNo: String)
 GET   /agent/:agentCode/ated/subscription-data/:atedRefno           controllers.AgentRetrieveClientSubscriptionDataController.retrieveSubscriptionDataByAgent(atedRefno: String, agentCode: String)
 
 ## form-bundle
-GET   /ated/:atedRefNo/returns/form-bundle/:formBundleNumber        controllers.FormBundleReturnsController.getFormBundleReturns(atedRefNo: String, formBundleNumber:String)
+GET   /ated/:atedRefNo/returns/form-bundle/:formBundleNumber        controllers.FormBundleReturnsControllerImpl.getFormBundleReturns(atedRefNo: String, formBundleNumber:String)
 
 ## change liability return journey
-GET   /ated/:ated/liability-return/:oldFBNo                         controllers.ChangeLiabilityReturnController.convertSubmittedReturnToCachedDraft(ated: String, oldFBNo: String)
-GET   /ated/:ated/prev-liability-return/:oldFBNo/:period            controllers.ChangeLiabilityReturnController.convertPreviousSubmittedReturnToCachedDraft(ated: String, oldFBNo: String, period: Int)
-POST  /ated/:ated/liability-return/:oldFBNo/update-has-bank         controllers.PropertyDetailsController.updateDraftHasBankDetails(ated: String, oldFBNo: String)
-POST  /ated/:ated/liability-return/:oldFBNo/update-bank             controllers.PropertyDetailsController.updateDraftBankDetails(ated: String, oldFBNo: String)
-GET   /ated/:ated/liability-return/calculate/:oldFBNo               controllers.ChangeLiabilityReturnController.calculateDraftChangeLiability(ated: String, oldFBNo: String)
-POST  /ated/:ated/liability-return/:oldFBNo/submit                  controllers.ChangeLiabilityReturnController.submitChangeLiabilityReturn(ated: String, oldFBNo: String)
+GET   /ated/:ated/liability-return/:oldFBNo                         controllers.ChangeLiabilityReturnControllerImpl.convertSubmittedReturnToCachedDraft(ated: String, oldFBNo: String)
+GET   /ated/:ated/prev-liability-return/:oldFBNo/:period            controllers.ChangeLiabilityReturnControllerImpl.convertPreviousSubmittedReturnToCachedDraft(ated: String, oldFBNo: String, period: Int)
+POST  /ated/:ated/liability-return/:oldFBNo/update-has-bank         controllers.PropertyDetailsControllerImpl.updateDraftHasBankDetails(ated: String, oldFBNo: String)
+POST  /ated/:ated/liability-return/:oldFBNo/update-bank             controllers.PropertyDetailsControllerImpl.updateDraftBankDetails(ated: String, oldFBNo: String)
+GET   /ated/:ated/liability-return/calculate/:oldFBNo               controllers.ChangeLiabilityReturnControllerImpl.calculateDraftChangeLiability(ated: String, oldFBNo: String)
+POST  /ated/:ated/liability-return/:oldFBNo/submit                  controllers.ChangeLiabilityReturnControllerImpl.submitChangeLiabilityReturn(ated: String, oldFBNo: String)
 
 ## dispose liability return journey
-GET   /ated/:ated/dispose-liability/:oldFBNo                        controllers.DisposeLiabilityReturnController.retrieveAndCacheDisposeLiabilityReturn(ated: String, oldFBNo: String)
-POST  /ated/:ated/dispose-liability/:oldFBNo/update-date            controllers.DisposeLiabilityReturnController.updateDisposalDate(ated: String, oldFBNo: String)
-POST  /ated/:ated/dispose-liability/:oldFBNo/update-has-bank        controllers.DisposeLiabilityReturnController.updateHasBankDetails(ated: String, oldFBNo: String)
-POST  /ated/:ated/dispose-liability/:oldFBNo/update-bank            controllers.DisposeLiabilityReturnController.updateBankDetails(ated: String, oldFBNo: String)
-GET   /ated/:ated/dispose-liability/:oldFBNo/calculate              controllers.DisposeLiabilityReturnController.calculateDraftDisposal(ated: String, oldFBNo: String)
-POST  /ated/:ated/dispose-liability/:oldFBNo/submit                 controllers.DisposeLiabilityReturnController.submitDisposeLiabilityReturn(ated: String, oldFBNo: String)
+GET   /ated/:ated/dispose-liability/:oldFBNo                        controllers.DisposeLiabilityReturnControllerImpl.retrieveAndCacheDisposeLiabilityReturn(ated: String, oldFBNo: String)
+POST  /ated/:ated/dispose-liability/:oldFBNo/update-date            controllers.DisposeLiabilityReturnControllerImpl.updateDisposalDate(ated: String, oldFBNo: String)
+POST  /ated/:ated/dispose-liability/:oldFBNo/update-has-bank        controllers.DisposeLiabilityReturnControllerImpl.updateHasBankDetails(ated: String, oldFBNo: String)
+POST  /ated/:ated/dispose-liability/:oldFBNo/update-bank            controllers.DisposeLiabilityReturnControllerImpl.updateBankDetails(ated: String, oldFBNo: String)
+GET   /ated/:ated/dispose-liability/:oldFBNo/calculate              controllers.DisposeLiabilityReturnControllerImpl.calculateDraftDisposal(ated: String, oldFBNo: String)
+POST  /ated/:ated/dispose-liability/:oldFBNo/submit                 controllers.DisposeLiabilityReturnControllerImpl.submitDisposeLiabilityReturn(ated: String, oldFBNo: String)

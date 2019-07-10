@@ -16,8 +16,11 @@
 
 package models
 
-import play.api.libs.json.Json
+import play.api.libs.json.{Format, Json, OFormat}
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
+import play.api.libs.json.JodaWrites._
+import play.api.libs.json.JodaReads._
+import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 
 case class PendingClient(
                           atedReferenceNo: String,
@@ -93,5 +96,9 @@ case class DisposeLiabilityReturn(atedRefNo: String,
                                   timeStamp: DateTime = DateTime.now(DateTimeZone.UTC))
 
 object DisposeLiabilityReturn {
-  implicit val formats = Json.format[DisposeLiabilityReturn]
+  def formats(implicit crypto: CompositeSymmetricCrypto): OFormat[DisposeLiabilityReturn] = {
+    implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
+
+    Json.format[DisposeLiabilityReturn]
+  }
 }
