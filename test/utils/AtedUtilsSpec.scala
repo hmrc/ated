@@ -16,7 +16,7 @@
 
 package utils
 
-import models.{ClientsAgent, IndividualRelationship, OrganisationRelationship, RelationshipDetails}
+import models.{ClientsAgent, EtmpLiabilityReturns, IndividualRelationship, OrganisationRelationship, RelationshipDetails}
 import org.joda.time.LocalDate
 import org.scalatestplus.play.PlaySpec
 import uk.gov.hmrc.http.HeaderCarrier
@@ -61,7 +61,6 @@ class AtedUtilsSpec extends PlaySpec {
     }
 
     "getClientsAgentFromEtmpRelationshipData" must {
-
       "if individual is in relationship-detail, concatenate first name and last name with a space in between" in {
         val testRd1 = RelationshipDetails(
           atedReferenceNumber = "ated-ref-123",
@@ -100,9 +99,85 @@ class AtedUtilsSpec extends PlaySpec {
         )
         AtedUtils.getClientsAgentFromEtmpRelationshipData(testRd1) must be(ClientsAgent(testRd1.agentReferenceNumber, testRd1.atedReferenceNumber, "", agentRejected = false, isEtmpData = true))
       }
+    }
+  }
 
+  "calculateLowerTaxYearBounday" should {
+    def year(i: Int) = LocalDate.parse(s"$i-4-1")
+
+    "return 2012" when {
+      "year is before 2012" in {
+        AtedUtils.calculateLowerTaxYearBounday(2011) mustBe year(2012)
+      }
+      "year is 2012" in {
+        AtedUtils.calculateLowerTaxYearBounday(2012) mustBe year(2012)
+      }
+      "year is before 2017" in {
+        AtedUtils.calculateLowerTaxYearBounday(2017) mustBe year(2012)
+      }
     }
 
+    "return 2017" when {
+      "year is 2017" in {
+        AtedUtils.calculateLowerTaxYearBounday(2018) mustBe year(2017)
+      }
+      "year is before 2022" in {
+        AtedUtils.calculateLowerTaxYearBounday(2021) mustBe year(2017)
+      }
+    }
+
+    "return 2022" when {
+      "year is 2022" in {
+        AtedUtils.calculateLowerTaxYearBounday(2023) mustBe year(2022)
+      }
+      "year is before 2027" in {
+        AtedUtils.calculateLowerTaxYearBounday(2026) mustBe year(2022)
+      }
+    }
+  }
+
+  "enforceFiveYearBoundary" should {
+    def date(s: String) = LocalDate.parse(s)
+
+    "return 2012-4-1 as valuation year" in {
+      Seq(
+        date("2012-4-1") -> 2012,
+        date("2011-3-2") -> 2012,
+        date("2011-3-2") -> 2017
+      ) foreach { case (valued, period) =>
+        AtedUtils.enforceFiveYearBoundary(valued, period) mustBe date("2012-4-1")
+      }
+    }
+
+    "return 2017-4-1 as valuation year" in {
+      Seq(
+        date("2016-3-31") -> 2018,
+        date("2016-3-31") -> 2022,
+        date("2017-4-1") -> 2017
+      ) foreach { case (valued, period) =>
+        AtedUtils.enforceFiveYearBoundary(valued, period) mustBe date("2017-4-1")
+      }
+    }
+
+    "return 2022-4-1 as valuation year" in {
+      Seq(
+        date("2021-3-31") -> 2023,
+        date("2021-3-31") -> 2027,
+        date("2022-4-1") -> 2022
+      ) foreach { case (valued, period) =>
+        AtedUtils.enforceFiveYearBoundary(valued, period) mustBe date("2022-4-1")
+      }
+    }
+
+    "return the provided date (if within tax boundary) as valuation year" in {
+      Seq(
+        date("2014-7-10") -> 2015,
+        date("2019-1-13") -> 2019,
+        date("2023-1-1") -> 2017
+      ) foreach { case (valued, period) =>
+        AtedUtils.enforceFiveYearBoundary(valued, period) mustBe valued
+      }
+    }
   }
 
 }

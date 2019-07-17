@@ -19,12 +19,11 @@ package utils
 import builders.PropertyDetailsBuilder
 import models._
 import org.joda.time.LocalDate
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
-import utils.PropertyDetailsUtils._
+import org.scalatestplus.play.PlaySpec
 import uk.gov.hmrc.http.InternalServerException
 
 
-class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with OneServerPerSuite {
+class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants {
 
   val periodStartDate = new LocalDate("2015-06-02")
   val periodEndDate = new LocalDate("2016-01-10")
@@ -749,13 +748,14 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with OneSer
 
     "return April 2012 if this is not revalued but was acquired before 2012 " in {
       val propVal = PropertyDetailsValue(anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(true))
-      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(new LocalDate("2012-04-01")), periodKey) must be (Some(new LocalDate("2012-04-01")))
+      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(new LocalDate("2012-04-01")), 2015) must be (Some(new LocalDate("2012-04-01")))
+      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(new LocalDate("2012-04-01")), 2019) must be (Some(new LocalDate("2017-04-01")))
     }
 
 
     "return April 2017 if this is not revalued but was acquired before 2017 " in {
       val propVal = PropertyDetailsValue(anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(true))
-      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(new LocalDate("2017-04-01")), 2019) must be (Some(new LocalDate("2017-04-01")))
+      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(new LocalDate("2013-04-01")), 2019) must be (Some(new LocalDate("2017-04-01")))
     }
 
     "return the revalued date if this is an aquisition that has been revalued for policy year 2017" in {

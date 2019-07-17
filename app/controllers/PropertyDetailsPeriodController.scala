@@ -46,25 +46,21 @@ trait PropertyDetailsPeriodController extends BackendController {
   def saveDraftFullTaxPeriod(atedRefNo: String, id: String) = Action.async(parse.json) {
     implicit request =>
       withJsonBody[IsFullTaxPeriod] { draftPropertyDetails =>
-        propertyDetailsService.cacheDraftFullTaxPeriod(atedRefNo, id, draftPropertyDetails).map { updatedDraftPropertyDetails =>
-          updatedDraftPropertyDetails match {
+        propertyDetailsService.cacheDraftFullTaxPeriod(atedRefNo, id, draftPropertyDetails).map {
             case Some(x) => Ok("")
             case None => BadRequest("Invalid Request")
           }
         }
-      }
   }
 
   def saveDraftInRelief(atedRefNo: String, id: String) = Action.async(parse.json) {
     implicit request =>
       withJsonBody[PropertyDetailsInRelief] { draftPropertyDetails =>
-        propertyDetailsService.cacheDraftInRelief(atedRefNo, id, draftPropertyDetails).map { updatedDraftPropertyDetails =>
-          updatedDraftPropertyDetails match {
+        propertyDetailsService.cacheDraftInRelief(atedRefNo, id, draftPropertyDetails).map {
             case Some(x) => Ok("")
             case None => BadRequest("Invalid Request")
           }
         }
-      }
   }
 
   def saveDraftDatesLiable(atedRefNo: String, id: String) = Action.async(parse.json) {
