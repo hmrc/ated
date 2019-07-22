@@ -58,7 +58,7 @@ trait LiabilityUtils extends ReliefConstants {
 
   private def createLiabilityReturns(id: String, property: PropertyDetails, propCalc: PropertyDetailsCalculated,
                                         mode: String, agentRefNo: Option[String] = None,
-                                        valuationDate : LocalDate,
+                                        valuationDate: LocalDate,
                                         professionallyValued : Boolean) = {
 
     val liabilityReturn = EtmpLiabilityReturns(mode = mode,
@@ -67,7 +67,7 @@ trait LiabilityUtils extends ReliefConstants {
       propertyDetails = Some(getEtmpPropertyDetails(property)),
       dateOfAcquisition = propCalc.acquistionDateToUse,
       valueAtAcquisition = propCalc.acquistionValueToUse,
-      dateOfValuation = valuationDate,
+      dateOfValuation = AtedUtils.enforceFiveYearBoundary(valuationDate, property.periodKey),
       taxAvoidanceScheme = getTaxAvoidanceScheme(property),
       taxAvoidancePromoterReference = getTaxAvoidancePromoterReference(property),
       professionalValuation = professionallyValued,

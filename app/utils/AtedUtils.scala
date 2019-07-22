@@ -24,6 +24,8 @@ import uk.gov.hmrc.http.logging.SessionId
 
 object AtedUtils {
 
+  val lowestBound = 2012
+
   def getSessionIdOrAgentCodeAsId(hc: HeaderCarrier, agentCode: String): String = {
     hc.sessionId.fold(SessionId(agentCode).value)(_.value)
   }
@@ -42,4 +44,16 @@ object AtedUtils {
     clientsAgent
   }
 
+  def enforceFiveYearBoundary(valuation: LocalDate, taxYear: Int): LocalDate = {
+    val lowerBoundary = calculateLowerTaxYearBounday(taxYear)
+    if (!(valuation isAfter lowerBoundary)) lowerBoundary else valuation
+  }
+
+  private[utils] def calculateLowerTaxYearBounday(taxYear: Int): LocalDate = {
+    val year = if (taxYear <= lowestBound) lowestBound else {
+      lowestBound + (5 * ((taxYear - lowestBound - 1) / 5).floor.toInt)
+    }
+
+    LocalDate.parse(s"$year-4-1")
+  }
 }
