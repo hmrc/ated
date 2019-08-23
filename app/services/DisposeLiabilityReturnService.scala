@@ -16,20 +16,21 @@
 
 package services
 
-import connectors.{AuthConnector, EmailConnector, EtmpReturnsConnector}
+import connectors.{EmailConnector, EtmpReturnsConnector}
 import javax.inject.Inject
 import models._
 import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json.Json
 import repository.{DisposeLiabilityReturnMongoRepository, DisposeLiabilityReturnMongoWrapper}
+import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import utils.ReliefUtils._
 import utils.SessionUtils._
-import utils.{ChangeLiabilityUtils, PropertyDetailsUtils}
+import utils.{AuthFunctionality, ChangeLiabilityUtils, PropertyDetailsUtils}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 class DisposeLiabilityReturnServiceImpl @Inject()(val etmpReturnsConnector: EtmpReturnsConnector,
                                                   val disposeLiabilityReturnMongoWrapper: DisposeLiabilityReturnMongoWrapper,
@@ -40,7 +41,7 @@ class DisposeLiabilityReturnServiceImpl @Inject()(val etmpReturnsConnector: Etmp
   val disposeLiabilityReturnRepository: DisposeLiabilityReturnMongoRepository = disposeLiabilityReturnMongoWrapper()
 }
 
-trait DisposeLiabilityReturnService extends NotificationService {
+trait DisposeLiabilityReturnService extends NotificationService with AuthFunctionality {
 
   def disposeLiabilityReturnRepository: DisposeLiabilityReturnMongoRepository
 
@@ -132,11 +133,9 @@ trait DisposeLiabilityReturnService extends NotificationService {
   def updateDraftDisposeBankDetails(atedRefNo: String, oldFormBundleNo: String, updatedValue: BankDetails)
                                    (implicit hc: HeaderCarrier): Future[Option[DisposeLiabilityReturn]] = {
     import models.BankDetailsConversions._
-    val agentRefNoFuture = authConnector.agentReferenceNo
     val disposeLiabilityReturnListFuture = retrieveDraftDisposeLiabilityReturns(atedRefNo)
     for {
       disposeLiabilityReturnList <- disposeLiabilityReturnListFuture
-      agentRefNo <- agentRefNoFuture
       disposeLiabilityOpt <- {
         disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
           case Some(x) =>
@@ -155,25 +154,25 @@ trait DisposeLiabilityReturnService extends NotificationService {
 
   def calculateDraftDispose(atedRefNo: String, oldFormBundleNo: String)
                            (implicit hc: HeaderCarrier): Future[Option[DisposeLiabilityReturn]] = {
-    val agentRefNoFuture = authConnector.agentReferenceNo
-    val disposeLiabilityReturnListFuture = retrieveDraftDisposeLiabilityReturns(atedRefNo)
-    for {
-      disposeLiabilityReturnList <- disposeLiabilityReturnListFuture
-      agentRefNo <- agentRefNoFuture
-      disposeLiabilityOpt <- {
-        disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
-          case Some(x) =>
-            getPreCalculationAmounts(atedRefNo, x.formBundleReturn,
-              x.disposeLiability.fold(DisposeLiability(periodKey = x.formBundleReturn.periodKey.trim.toInt))(a => a),
-              oldFormBundleNo, agentRefNo) flatMap { calculated =>
-              val updatedReturn = x.copy(calculated = Some(calculated))
-              disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(updatedReturn).flatMap(x => Future.successful(Some(convertBankDetails(updatedReturn))))
-            }
-          case None => Future.successful(None)
+    retrieveAgentRefNumberFor { agentRefNo =>
+      val disposeLiabilityReturnListFuture = retrieveDraftDisposeLiabilityReturns(atedRefNo)
+      for {
+        disposeLiabilityReturnList <- disposeLiabilityReturnListFuture
+        disposeLiabilityOpt <- {
+          disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
+            case Some(x) =>
+              getPreCalculationAmounts(atedRefNo, x.formBundleReturn,
+                x.disposeLiability.fold(DisposeLiability(periodKey = x.formBundleReturn.periodKey.trim.toInt))(a => a),
+                oldFormBundleNo, agentRefNo) flatMap { calculated =>
+                val updatedReturn = x.copy(calculated = Some(calculated))
+                disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(updatedReturn).flatMap(x => Future.successful(Some(convertBankDetails(updatedReturn))))
+              }
+            case None => Future.successful(None)
+          }
         }
+      } yield {
+        disposeLiabilityOpt
       }
-    } yield {
-      disposeLiabilityOpt
     }
   }
 
@@ -230,50 +229,50 @@ trait DisposeLiabilityReturnService extends NotificationService {
 
   //scalastyle:off method.length
   def submitDisposeLiability(atedRefNo: String, oldFormBundleNo: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    val agentRefNoFuture = authConnector.agentReferenceNo
-    val disposeLiabilityReturnListFuture = retrieveDraftDisposeLiabilityReturns(atedRefNo)
+    retrieveAgentRefNumberFor { agentRefNo =>
+      val disposeLiabilityReturnListFuture = retrieveDraftDisposeLiabilityReturns(atedRefNo)
 
-    def generateEditReturnRequest(x: DisposeLiabilityReturn, agentRefNo: Option[String] = None) = {
-      val liabilityReturn = EditLiabilityReturnsRequest(oldFormBundleNumber = oldFormBundleNo,
-        mode = Post,
-        periodKey = x.formBundleReturn.periodKey.toString,
-        propertyDetails = getEtmpPropertyDetails(x.formBundleReturn.propertyDetails),
-        dateOfAcquisition = x.formBundleReturn.dateOfAcquisition,
-        valueAtAcquisition = x.formBundleReturn.valueAtAcquisition,
-        dateOfValuation = x.formBundleReturn.dateOfValuation,
-        taxAvoidanceScheme = x.formBundleReturn.taxAvoidanceScheme,
-        localAuthorityCode = x.formBundleReturn.localAuthorityCode,
-        professionalValuation = x.formBundleReturn.professionalValuation,
-        ninetyDayRuleApplies = x.formBundleReturn.ninetyDayRuleApplies,
-        lineItem = PropertyDetailsUtils.disposeLineItems(x.formBundleReturn.periodKey, x.formBundleReturn.lineItem, x.disposeLiability.flatMap(_.dateOfDisposal)),
-        bankDetails = ChangeLiabilityUtils.getEtmpBankDetails(x.bankDetails))
-      EditLiabilityReturnsRequestModel(acknowledgmentReference = getUniqueAckNo, agentReferenceNumber = agentRefNo, liabilityReturn = Seq(liabilityReturn))
-    }
-
-    for {
-      disposeLiabilityReturnList <- disposeLiabilityReturnListFuture
-      agentRefNo <- agentRefNoFuture
-      submitStatus: HttpResponse <- {
-        disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
-          case Some(x) => etmpReturnsConnector.submitEditedLiabilityReturns(atedRefNo, generateEditReturnRequest(x, agentRefNo), true)
-          case None => Future.successful(HttpResponse(NOT_FOUND, None))
-        }
+      def generateEditReturnRequest(x: DisposeLiabilityReturn, agentRefNo: Option[String] = None) = {
+        val liabilityReturn = EditLiabilityReturnsRequest(oldFormBundleNumber = oldFormBundleNo,
+          mode = Post,
+          periodKey = x.formBundleReturn.periodKey.toString,
+          propertyDetails = getEtmpPropertyDetails(x.formBundleReturn.propertyDetails),
+          dateOfAcquisition = x.formBundleReturn.dateOfAcquisition,
+          valueAtAcquisition = x.formBundleReturn.valueAtAcquisition,
+          dateOfValuation = x.formBundleReturn.dateOfValuation,
+          taxAvoidanceScheme = x.formBundleReturn.taxAvoidanceScheme,
+          localAuthorityCode = x.formBundleReturn.localAuthorityCode,
+          professionalValuation = x.formBundleReturn.professionalValuation,
+          ninetyDayRuleApplies = x.formBundleReturn.ninetyDayRuleApplies,
+          lineItem = PropertyDetailsUtils.disposeLineItems(x.formBundleReturn.periodKey, x.formBundleReturn.lineItem, x.disposeLiability.flatMap(_.dateOfDisposal)),
+          bankDetails = ChangeLiabilityUtils.getEtmpBankDetails(x.bankDetails))
+        EditLiabilityReturnsRequestModel(acknowledgmentReference = getUniqueAckNo, agentReferenceNumber = agentRefNo, liabilityReturn = Seq(liabilityReturn))
       }
-      subscriptionData <- subscriptionDataService.retrieveSubscriptionData(atedRefNo)
-    } yield {
-      submitStatus.status match {
-        case OK =>
-          deleteDisposeLiabilityDraft(atedRefNo, oldFormBundleNo)
-          sendMail(subscriptionData.json, "disposal_return_submit")
-          HttpResponse(
-            submitStatus.status,
-            responseHeaders = submitStatus.allHeaders,
-            responseJson = Some(Json.toJson(submitStatus.json.as[EditLiabilityReturnsResponseModel])),
-            responseString = Some(Json.prettyPrint(Json.toJson(submitStatus.json.as[EditLiabilityReturnsResponseModel])))
-          )
-        case someStatus =>
-          Logger.warn(s"[DisposeLiabilityReturnService][submitDisposeLiability] status = $someStatus body = ${submitStatus.body}")
-          submitStatus
+
+      for {
+        disposeLiabilityReturnList <- disposeLiabilityReturnListFuture
+        submitStatus: HttpResponse <- {
+          disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
+            case Some(x) => etmpReturnsConnector.submitEditedLiabilityReturns(atedRefNo, generateEditReturnRequest(x, agentRefNo), true)
+            case None => Future.successful(HttpResponse(NOT_FOUND, None))
+          }
+        }
+        subscriptionData <- subscriptionDataService.retrieveSubscriptionData(atedRefNo)
+      } yield {
+        submitStatus.status match {
+          case OK =>
+            deleteDisposeLiabilityDraft(atedRefNo, oldFormBundleNo)
+            sendMail(subscriptionData.json, "disposal_return_submit")
+            HttpResponse(
+              submitStatus.status,
+              responseHeaders = submitStatus.allHeaders,
+              responseJson = Some(Json.toJson(submitStatus.json.as[EditLiabilityReturnsResponseModel])),
+              responseString = Some(Json.prettyPrint(Json.toJson(submitStatus.json.as[EditLiabilityReturnsResponseModel])))
+            )
+          case someStatus =>
+            Logger.warn(s"[DisposeLiabilityReturnService][submitDisposeLiability] status = $someStatus body = ${submitStatus.body}")
+            submitStatus
+        }
       }
     }
   }

@@ -16,10 +16,11 @@
 
 package services
 
-import connectors.{AuthConnector, EtmpReturnsConnector}
+import connectors.EtmpReturnsConnector
 import javax.inject.Inject
 import models._
-import repository.{PropertyDetailsMongoWrapper, PropertyDetailsMongoRepository}
+import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
+import uk.gov.hmrc.auth.core.AuthConnector
 import utils.ReliefConstants
 
 import scala.concurrent.ExecutionContext.Implicits.global

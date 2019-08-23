@@ -19,7 +19,7 @@ package services
 import java.util.UUID
 
 import builders.PropertyDetailsBuilder
-import connectors.{AuthConnector, EtmpReturnsConnector}
+import connectors.EtmpReturnsConnector
 import models._
 import org.joda.time.LocalDate
 import org.mockito.ArgumentMatchers
@@ -27,15 +27,15 @@ import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
-import play.api.libs.json.Json
 import play.api.test.Helpers._
 import reactivemongo.api.commands.WriteResult
 import repository.{PropertyDetailsCached, PropertyDetailsMongoRepository}
+import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.logging.SessionId
 import uk.gov.hmrc.mongo.DatabaseUpdate
 
 import scala.concurrent.Future
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.logging.SessionId
 
 class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 

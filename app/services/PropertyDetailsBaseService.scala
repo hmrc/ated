@@ -17,9 +17,10 @@
 package services
 
 
-import connectors.{AuthConnector, EtmpReturnsConnector}
+import connectors.EtmpReturnsConnector
 import models._
 import repository.{PropertyDetailsDelete, PropertyDetailsMongoRepository}
+import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HeaderCarrier
 import utils._
 

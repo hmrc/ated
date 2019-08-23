@@ -16,14 +16,15 @@
 
 package services
 
-import connectors.{AuthConnector, EmailConnector, EtmpReturnsConnector}
+import connectors.{EmailConnector, EtmpReturnsConnector}
 import javax.inject.Inject
 import models.{ReliefsTaxAvoidance, SubmitEtmpReturnsRequest}
 import play.api.http.Status._
 import play.api.libs.json.Json
-import repository.{ReliefsMongoWrapper, ReliefsMongoRepository}
+import repository.{ReliefsMongoRepository, ReliefsMongoWrapper}
+import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
-import utils.ReliefUtils
+import utils.{AuthFunctionality, ReliefUtils}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -36,7 +37,7 @@ class ReliefsServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnector,
   val reliefsCache: ReliefsMongoRepository = reliefRepo()
 }
 
-trait ReliefsService extends NotificationService {
+trait ReliefsService extends NotificationService with AuthFunctionality {
 
   def reliefsCache: ReliefsMongoRepository
   def etmpConnector: EtmpReturnsConnector
@@ -57,25 +58,25 @@ trait ReliefsService extends NotificationService {
   }
 
   def submitAndDeleteDraftReliefs(atedRefNo: String, periodKey: Int)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    val agentRefNoFuture = authConnector.agentReferenceNo
-    for {
-      agentRefNo <- agentRefNoFuture
-      reliefRequest <- getSubmitReliefsRequest(atedRefNo, periodKey, agentRefNo)
-      submitResponse <- reliefRequest match {
-        case Some(x) => etmpConnector.submitReturns(atedRefNo, x)
-        case _ =>
-          val notFound = Json.parse( """{"reason" : "No Reliefs to submit"}""")
-          Future.successful(HttpResponse(NOT_FOUND, Some(notFound)))
-      }
-      subscriptionData <- subscriptionDataService.retrieveSubscriptionData(atedRefNo)
-    } yield {
-      submitResponse.status match {
-        case OK =>
-          deleteAllDraftReliefByYear(atedRefNo, periodKey)
-          val references = (submitResponse.json \\ "formBundleNumber").map(x => x.as[String]).mkString(",")
-          sendMail(subscriptionData.json, "relief_return_submit", Map("reference" -> references))
-          submitResponse
-        case _ => submitResponse
+    retrieveAgentRefNumberFor { agentRefNo =>
+      for {
+        reliefRequest <- getSubmitReliefsRequest(atedRefNo, periodKey, agentRefNo)
+        submitResponse <- reliefRequest match {
+          case Some(x) => etmpConnector.submitReturns(atedRefNo, x)
+          case _ =>
+            val notFound = Json.parse("""{"reason" : "No Reliefs to submit"}""")
+            Future.successful(HttpResponse(NOT_FOUND, Some(notFound)))
+        }
+        subscriptionData <- subscriptionDataService.retrieveSubscriptionData(atedRefNo)
+      } yield {
+        submitResponse.status match {
+          case OK =>
+            deleteAllDraftReliefByYear(atedRefNo, periodKey)
+            val references = (submitResponse.json \\ "formBundleNumber").map(x => x.as[String]).mkString(",")
+            sendMail(subscriptionData.json, "relief_return_submit", Map("reference" -> references))
+            submitResponse
+          case _ => submitResponse
+        }
       }
     }
   }

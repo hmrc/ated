@@ -16,13 +16,14 @@
 
 package services
 
-import connectors.{AuthConnector, EmailConnector, EtmpReturnsConnector}
+import connectors.{EmailConnector, EtmpReturnsConnector}
 import javax.inject.Inject
 import models._
 import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json.{JsValue, Json}
 import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
+import uk.gov.hmrc.auth.core.AuthConnector
 import utils._
 import utils.AtedUtils._
 
@@ -38,7 +39,7 @@ class ChangeLiabilityServiceImpl @Inject()(val propertyDetailsMongoWrapper: Prop
   val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetailsMongoWrapper()
 }
 
-trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConstants with NotificationService {
+trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConstants with NotificationService with AuthFunctionality {
 
   def subscriptionDataService: SubscriptionDataService
 
@@ -118,28 +119,27 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
   def calculateDraftChangeLiability(atedRefNo: String, id: String)
                                    (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
 
-    val agentRefNoFuture = authConnector.agentReferenceNo
+    retrieveAgentRefNumberFor { agentRefNo =>
+      def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
+        val propertyDetailsOpt = propertyDetailsList.find(_.id == id)
+        val liabilityAmountOpt = propertyDetailsOpt.flatMap(_.calculated.flatMap(_.liabilityAmount))
+        (propertyDetailsOpt, liabilityAmountOpt) match {
+          case (Some(foundPropertyDetails), None) =>
+            val calculatedValues = ChangeLiabilityUtils.changeLiabilityCalculated(foundPropertyDetails)
+            val propertyDetailsWithCalculated = foundPropertyDetails.copy(calculated = Some(calculatedValues))
 
-    def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
-      val propertyDetailsOpt = propertyDetailsList.find(_.id == id)
-      val liabilityAmountOpt = propertyDetailsOpt.flatMap(_.calculated.flatMap(_.liabilityAmount))
-      (propertyDetailsOpt, liabilityAmountOpt) match {
-        case (Some(foundPropertyDetails), None) =>
-          val calculatedValues = ChangeLiabilityUtils.changeLiabilityCalculated(foundPropertyDetails)
-          val propertyDetailsWithCalculated = foundPropertyDetails.copy(calculated = Some(calculatedValues))
-          for {
-            agentRefNo <- agentRefNoFuture
-            preCalcAmounts <- getAmountDueOrRefund(atedRefNo, id, propertyDetailsWithCalculated, agentRefNo)
-          } yield {
-            val updateCalculatedWithLiability = propertyDetailsWithCalculated.calculated.map(_.copy(liabilityAmount = preCalcAmounts._1, amountDueOrRefund = preCalcAmounts._2))
-            Some(propertyDetailsWithCalculated.copy(calculated = updateCalculatedWithLiability))
-          }
+            getAmountDueOrRefund(atedRefNo, id, propertyDetailsWithCalculated, agentRefNo) map { preCalcAmounts =>
+              val updateCalculatedWithLiability = propertyDetailsWithCalculated.calculated
+                .map(_.copy(liabilityAmount = preCalcAmounts._1, amountDueOrRefund = preCalcAmounts._2))
+              Some(propertyDetailsWithCalculated.copy(calculated = updateCalculatedWithLiability))
+            }
 
-        case _ => Future.successful(propertyDetailsOpt)
+          case _ => Future.successful(propertyDetailsOpt)
+        }
       }
-    }
 
-    cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
+      cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
+    }
   }
 
   def emailTemplate(data: JsValue, oldFormBundleNumber: String): String = {
@@ -153,37 +153,37 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
   }
 
   def submitChangeLiability(atedRefNo: String, oldFormBundleNo: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    val agentRefNoFuture = authConnector.agentReferenceNo
-    val changeLiabilityReturnListFuture = retrieveDraftPropertyDetails(atedRefNo)
-    for {
-      changeLiabilityReturnList <- changeLiabilityReturnListFuture
-      agentRefNo <- agentRefNoFuture
-      submitStatus: HttpResponse <- {
-        changeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
-          case Some(x) =>
-            val editLiabilityRequest = ChangeLiabilityUtils.createPostRequest(x, agentRefNo)
-            editLiabilityRequest match {
-              case Some(a) => etmpConnector.submitEditedLiabilityReturns(atedRefNo, a)
-              case None => Future.successful(HttpResponse(NOT_FOUND, None))
-            }
-          case None => Future.successful(HttpResponse(NOT_FOUND, None))
+    retrieveAgentRefNumberFor { agentRefNo =>
+      val changeLiabilityReturnListFuture = retrieveDraftPropertyDetails(atedRefNo)
+      for {
+        changeLiabilityReturnList <- changeLiabilityReturnListFuture
+        submitStatus: HttpResponse <- {
+          changeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
+            case Some(x) =>
+              val editLiabilityRequest = ChangeLiabilityUtils.createPostRequest(x, agentRefNo)
+              editLiabilityRequest match {
+                case Some(a) => etmpConnector.submitEditedLiabilityReturns(atedRefNo, a)
+                case None => Future.successful(HttpResponse(NOT_FOUND, None))
+              }
+            case None => Future.successful(HttpResponse(NOT_FOUND, None))
+          }
         }
-      }
-      subscriptionData <- subscriptionDataService.retrieveSubscriptionData(atedRefNo)
-    } yield {
-      submitStatus.status match {
-        case OK =>
-          deleteDraftPropertyDetail(atedRefNo, oldFormBundleNo)
-          sendMail(subscriptionData.json, emailTemplate(submitStatus.json, oldFormBundleNo))
-          HttpResponse(
-            submitStatus.status,
-            responseHeaders = submitStatus.allHeaders,
-            responseJson = Some(Json.toJson(submitStatus.json.as[EditLiabilityReturnsResponseModel])),
-            responseString = Some(Json.prettyPrint(Json.toJson(submitStatus.json.as[EditLiabilityReturnsResponseModel])))
-          )
-        case someStatus =>
-          Logger.warn(s"[PropertyDetailsService][submitChangeLiability] status = $someStatus body = ${submitStatus.body}")
-          submitStatus
+        subscriptionData <- subscriptionDataService.retrieveSubscriptionData(atedRefNo)
+      } yield {
+        submitStatus.status match {
+          case OK =>
+            deleteDraftPropertyDetail(atedRefNo, oldFormBundleNo)
+            sendMail(subscriptionData.json, emailTemplate(submitStatus.json, oldFormBundleNo))
+            HttpResponse(
+              submitStatus.status,
+              responseHeaders = submitStatus.allHeaders,
+              responseJson = Some(Json.toJson(submitStatus.json.as[EditLiabilityReturnsResponseModel])),
+              responseString = Some(Json.prettyPrint(Json.toJson(submitStatus.json.as[EditLiabilityReturnsResponseModel])))
+            )
+          case someStatus =>
+            Logger.warn(s"[PropertyDetailsService][submitChangeLiability] status = $someStatus body = ${submitStatus.body}")
+            submitStatus
+        }
       }
     }
   }
