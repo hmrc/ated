@@ -19,8 +19,8 @@ package services
 
 import java.util.UUID
 
-import builders.{ChangeLiabilityReturnBuilder, PropertyDetailsBuilder}
-import connectors.{AuthConnector, EmailConnector, EmailSent, EtmpReturnsConnector}
+import builders.{AuthFunctionalityHelper, ChangeLiabilityReturnBuilder, PropertyDetailsBuilder}
+import connectors.{EmailConnector, EmailSent, EtmpReturnsConnector}
 import models._
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
@@ -31,13 +31,14 @@ import play.api.libs.json.Json
 import play.api.test.Helpers._
 import reactivemongo.api.commands.WriteResult
 import repository._
+import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.http.logging.SessionId
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse, InternalServerException}
 import uk.gov.hmrc.mongo.DatabaseUpdate
 
 import scala.concurrent.Future
-import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier, HttpResponse, InternalServerException }
-import uk.gov.hmrc.http.logging.SessionId
 
-class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
+class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
 
   val mockPropertyDetailsCache = mock[PropertyDetailsMongoRepository]
   val mockWriteResult = mock[WriteResult]
@@ -286,6 +287,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
+      mockRetrievingNoAuthRef
 
       val result = testPropertyDetailsService.calculateDraftPropertyDetails(accountRef,
         updatedpropertyDetails4.id)
@@ -302,7 +304,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
         .thenReturn(Future.successful(List(calcPropertyDetails1)))
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
-      when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+      mockRetrievingNoAuthRef
 
       val result = testPropertyDetailsService.calculateDraftPropertyDetails(accountRef, calcPropertyDetails1.id)
 
@@ -326,7 +328,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
         .thenReturn(Future.successful(List(calcPropertyDetails1)))
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
-      when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+      mockRetrievingNoAuthRef
 
       val result = testPropertyDetailsService.calculateDraftPropertyDetails(accountRef,
         calcPropertyDetails1.id)
@@ -714,7 +716,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       }
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
-      when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+      mockRetrievingNoAuthRef
       when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
       when(mockEmailConnector.sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
 
@@ -731,7 +733,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       val successResponse = Json.parse(jsonEtmpResponse)
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+      mockRetrievingNoAuthRef
       when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
 
       val result = testPropertyDetailsService.submitDraftPropertyDetail(accountRef, "4")
@@ -748,7 +750,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       val successResponse = Json.parse(jsonEtmpResponse)
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetailsExample, propertyDetails2, propertyDetails3)))
-      when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+      mockRetrievingNoAuthRef
       when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
 
       val result = testPropertyDetailsService.submitDraftPropertyDetail(accountRef, "1")

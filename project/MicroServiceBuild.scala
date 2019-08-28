@@ -13,10 +13,11 @@ private object AppDependencies {
 
   val compile: Seq[ModuleID] = Seq(
     ws,
-    "uk.gov.hmrc"       %% "bootstrap-play-26"    % "0.39.0",
+    "uk.gov.hmrc"       %% "bootstrap-play-26"    % "0.45.0",
     "uk.gov.hmrc"       %% "domain"               % "5.6.0-play-26",
     "uk.gov.hmrc"       %% "simple-reactivemongo" % "7.20.0-play-26",
     "uk.gov.hmrc"       %% "json-encryption"      % "4.4.0-play-26",
+    "uk.gov.hmrc"       %% "auth-client"          % "2.27.0-play-26",
     "com.typesafe.play" %% "play-json-joda"       % "2.6.10"
   )
 
@@ -33,7 +34,7 @@ private object AppDependencies {
         "org.pegdown"              % "pegdown"            % "1.6.0"             % scope,
         "org.mockito"              % "mockito-core"       % "2.24.5"            % scope,
         "com.typesafe.play"       %% "play-test"          % PlayVersion.current % scope,
-        "uk.gov.hmrc"             %% "reactivemongo-test" % "4.14.0-play-26"    % scope
+        "uk.gov.hmrc"             %% "reactivemongo-test" % "4.15.0-play-26"    % scope
       )
     }.test
   }

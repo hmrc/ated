@@ -18,8 +18,8 @@ package services
 
 import java.util.UUID
 
-import builders.ReliefBuilder
-import connectors.{AuthConnector, EmailConnector, EmailSent, EtmpReturnsConnector}
+import builders.{AuthFunctionalityHelper, ReliefBuilder}
+import connectors.{EmailConnector, EmailSent, EtmpReturnsConnector}
 import models.{Reliefs, TaxAvoidance}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
@@ -30,12 +30,13 @@ import play.api.libs.json.Json
 import play.api.test.Helpers._
 import reactivemongo.api.commands.WriteResult
 import repository.{ReliefCached, ReliefDeleted, ReliefsMongoRepository}
+import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.http.logging.SessionId
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.Future
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse }
-import uk.gov.hmrc.http.logging.SessionId
 
-class ReliefsServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
+class ReliefsServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
 
   val mockReliefsCache = mock[ReliefsMongoRepository]
   val mockEtmpConnector = mock[EtmpReturnsConnector]
@@ -113,7 +114,7 @@ class ReliefsServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSug
         when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK)))
 
         when(mockReliefsCache.deleteReliefs(ArgumentMatchers.anyString())).thenReturn(Future.successful(ReliefDeleted))
-        when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+        mockRetrievingNoAuthRef
 
         when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
 
@@ -140,7 +141,7 @@ class ReliefsServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSug
         val reliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(accountRef, periodKey, reliefs, taxAvoidance)
         when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq(reliefsTaxAvoidance)))
         when(mockReliefsCache.cacheRelief(ArgumentMatchers.any())).thenReturn(Future.successful(ReliefCached))
-        when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+        mockRetrievingNoAuthRef
         when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
         when(mockEmailConnector.sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
         when(mockReliefsCache.deleteDraftReliefByYear(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(ReliefDeleted))
@@ -172,7 +173,7 @@ class ReliefsServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSug
       val reliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(accountRef, periodKey, reliefs, taxAvoidance)
       when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq(reliefsTaxAvoidance)))
       when(mockReliefsCache.cacheRelief(ArgumentMatchers.any())).thenReturn(Future.successful(ReliefCached))
-      when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+      mockRetrievingNoAuthRef
 
       val fetchResult = testReliefsService.retrieveDraftReliefs("accountRef")
 
@@ -204,7 +205,7 @@ class ReliefsServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSug
       val reliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(accountRef, periodKey, reliefs, taxAvoidance)
       when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq(reliefsTaxAvoidance)))
       when(mockReliefsCache.cacheRelief(ArgumentMatchers.any())).thenReturn(Future.successful(ReliefCached))
-      when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+      mockRetrievingNoAuthRef
 
       val fetchResult = testReliefsService.retrieveDraftReliefs("accountRef")
 

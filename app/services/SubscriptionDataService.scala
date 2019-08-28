@@ -16,18 +16,19 @@
 
 package services
 
-import connectors.{AuthConnector, EtmpDetailsConnector}
+import connectors.EtmpDetailsConnector
 import javax.inject.Inject
 import models._
-import utils.SessionUtils
+import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import utils.{AuthFunctionality, SessionUtils}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 class SubscriptionDataServiceImpl @Inject()(val etmpConnector: EtmpDetailsConnector,
                                             val authConnector: AuthConnector) extends SubscriptionDataService
-trait SubscriptionDataService {
+trait SubscriptionDataService extends AuthFunctionality {
 
   def etmpConnector: EtmpDetailsConnector
 
@@ -38,16 +39,15 @@ trait SubscriptionDataService {
   }
 
   def updateSubscriptionData(atedReferenceNo: String, updateData: UpdateSubscriptionDataRequest)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    authConnector.agentReferenceNo flatMap {
-      agentRefNo =>
-        val request = UpdateEtmpSubscriptionDataRequest(
-          SessionUtils.getUniqueAckNo,
-          updateData.emailConsent,
-          updateData.changeIndicators,
-          agentRefNo,
-          updateData.address
-        )
-        etmpConnector.updateSubscriptionData(atedReferenceNo, request)
+    retrieveAgentRefNumberFor { agentRefNo =>
+      val request = UpdateEtmpSubscriptionDataRequest(
+        SessionUtils.getUniqueAckNo,
+        updateData.emailConsent,
+        updateData.changeIndicators,
+        agentRefNo,
+        updateData.address
+      )
+      etmpConnector.updateSubscriptionData(atedReferenceNo, request)
     }
   }
 

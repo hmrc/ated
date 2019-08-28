@@ -16,12 +16,13 @@
 
 package services
 
-import connectors.{AuthConnector, EmailConnector, EtmpReturnsConnector}
+import connectors.{EmailConnector, EtmpReturnsConnector}
 import javax.inject.Inject
 import models._
 import play.api.http.Status._
 import play.api.libs.json.{JsValue, Json}
 import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
+import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse, InternalServerException}
 import utils.AtedUtils._
 import utils._
@@ -37,7 +38,7 @@ class PropertyDetailsServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnect
   val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetailsMongoWrapper()
 }
 
-trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConstants with NotificationService {
+trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConstants with NotificationService with AuthFunctionality {
 
   def subscriptionDataService: SubscriptionDataService
 
@@ -88,28 +89,27 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
   def calculateDraftPropertyDetails(atedRefNo: String, id: String)
                                    (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
 
-    val agentRefNoFuture = authConnector.agentReferenceNo
+    retrieveAgentRefNumberFor { agentRefNo =>
+      def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
+        val propertyDetailsOpt = propertyDetailsList.find(_.id == id)
+        val liabilityAmountOpt = propertyDetailsOpt.flatMap(_.calculated.flatMap(_.liabilityAmount))
+        (propertyDetailsOpt, liabilityAmountOpt) match {
+          case (Some(foundPropertyDetails), None) =>
+            val calculatedValues = PropertyDetailsUtils.propertyDetailsCalculated(foundPropertyDetails)
+            val propertyDetailsWithCalculated = foundPropertyDetails.copy(calculated = Some(calculatedValues))
+            for {
+              liabilityAmount <- getLiabilityAmount(atedRefNo, id, propertyDetailsWithCalculated, agentRefNo)
+            } yield {
+              val updateCalculatedWithLiability = propertyDetailsWithCalculated.calculated.map(_.copy(liabilityAmount = liabilityAmount))
+              Some(propertyDetailsWithCalculated.copy(calculated = updateCalculatedWithLiability))
+            }
 
-    def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
-      val propertyDetailsOpt = propertyDetailsList.find(_.id == id)
-      val liabilityAmountOpt = propertyDetailsOpt.flatMap(_.calculated.flatMap(_.liabilityAmount))
-      (propertyDetailsOpt, liabilityAmountOpt) match {
-        case (Some(foundPropertyDetails), None) =>
-          val calculatedValues = PropertyDetailsUtils.propertyDetailsCalculated(foundPropertyDetails)
-          val propertyDetailsWithCalculated = foundPropertyDetails.copy(calculated = Some(calculatedValues))
-          for {
-            agentRefNo <- agentRefNoFuture
-            liabilityAmount <- getLiabilityAmount(atedRefNo, id, propertyDetailsWithCalculated, agentRefNo)
-          } yield {
-            val updateCalculatedWithLiability = propertyDetailsWithCalculated.calculated.map(_.copy(liabilityAmount = liabilityAmount))
-            Some(propertyDetailsWithCalculated.copy(calculated = updateCalculatedWithLiability))
-          }
-
-        case _ => Future.successful(propertyDetailsOpt)
+          case _ => Future.successful(propertyDetailsOpt)
+        }
       }
-    }
 
-    cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
+      cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
+    }
   }
 
   def getLiabilityAmount(atedRefNo: String, id: String,
@@ -217,36 +217,36 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
   }
 
   def submitDraftPropertyDetail(atedRefNo: String, id: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    val agentRefNoFuture = authConnector.agentReferenceNo
-    val propertyDetailsFuture = retrieveDraftPropertyDetail(atedRefNo, id)
-    for {
-      propertyDetails <- propertyDetailsFuture
-      agentRefNo <- agentRefNoFuture
-      submitResponse <- {
-        propertyDetails match {
-          case Some(x) =>
-            val etmpSubmitReturnRequest = LiabilityUtils.createPostReturnsRequest(id, x, agentRefNo)
-            etmpSubmitReturnRequest match {
-              case Some(returnRequest) => etmpConnector.submitReturns(atedRefNo, returnRequest)
-              case None => Future.successful(HttpResponse(NOT_FOUND, None))
-            }
-          case None => Future.successful(HttpResponse(NOT_FOUND, None))
+    retrieveAgentRefNumberFor { agentRefNo =>
+      val propertyDetailsFuture = retrieveDraftPropertyDetail(atedRefNo, id)
+      for {
+        propertyDetails <- propertyDetailsFuture
+        submitResponse <- {
+          propertyDetails match {
+            case Some(x) =>
+              val etmpSubmitReturnRequest = LiabilityUtils.createPostReturnsRequest(id, x, agentRefNo)
+              etmpSubmitReturnRequest match {
+                case Some(returnRequest) => etmpConnector.submitReturns(atedRefNo, returnRequest)
+                case None => Future.successful(HttpResponse(NOT_FOUND, None))
+              }
+            case None => Future.successful(HttpResponse(NOT_FOUND, None))
+          }
         }
-      }
-      subscriptionData <- subscriptionDataService.retrieveSubscriptionData(atedRefNo)
-    } yield {
-      submitResponse.status match {
-        case OK =>
-          deleteDraftPropertyDetail(atedRefNo, id)
-          sendMail(subscriptionData.json, "chargeable_return_submit")
-          HttpResponse(
-            submitResponse.status,
-            responseHeaders = submitResponse.allHeaders,
-            responseJson = Some(Json.toJson(submitResponse.json.as[SubmitEtmpReturnsResponse])),
-            responseString = Some(Json.prettyPrint(Json.toJson(submitResponse.json.as[SubmitEtmpReturnsResponse])))
-          )
-        case someStatus =>
-          submitResponse
+        subscriptionData <- subscriptionDataService.retrieveSubscriptionData(atedRefNo)
+      } yield {
+        submitResponse.status match {
+          case OK =>
+            deleteDraftPropertyDetail(atedRefNo, id)
+            sendMail(subscriptionData.json, "chargeable_return_submit")
+            HttpResponse(
+              submitResponse.status,
+              responseHeaders = submitResponse.allHeaders,
+              responseJson = Some(Json.toJson(submitResponse.json.as[SubmitEtmpReturnsResponse])),
+              responseString = Some(Json.prettyPrint(Json.toJson(submitResponse.json.as[SubmitEtmpReturnsResponse])))
+            )
+          case someStatus =>
+            submitResponse
+        }
       }
     }
   }

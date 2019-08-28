@@ -16,7 +16,8 @@
 
 package services
 
-import connectors.{AuthConnector, EtmpDetailsConnector}
+import builders.AuthFunctionalityHelper
+import connectors.EtmpDetailsConnector
 import models._
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
@@ -25,11 +26,12 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
 import play.api.libs.json.Json
 import play.api.test.Helpers._
+import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.Future
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse }
 
-class SubscriptionDataServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
+class SubscriptionDataServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
 
   val mockEtmpConnector = mock[EtmpDetailsConnector]
   val mockAuthConnector = mock[AuthConnector]
@@ -70,7 +72,7 @@ class SubscriptionDataServiceSpec extends PlaySpec with OneServerPerSuite with M
         implicit val hc = HeaderCarrier()
 
         when(mockEtmpConnector.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
-        when(mockAuthConnector.agentReferenceNo(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+        mockRetrievingNoAuthRef
         val result = testSubscriptionDataService.updateSubscriptionData(accountRef, updatedData)
         val response = await(result)
         response.status must be(OK)

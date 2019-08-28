@@ -16,8 +16,7 @@
 
 package controllers
 
-import builders.{ReliefBuilder, TestAudit}
-import connectors.AuthConnector
+import builders.{AuthFunctionalityHelper, ReliefBuilder, TestAudit}
 import models.{Reliefs, ReliefsTaxAvoidance, TaxAvoidance}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
@@ -30,6 +29,7 @@ import play.api.mvc.ControllerComponents
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.ReliefsService
+import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.Audit
@@ -38,7 +38,7 @@ import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class ReliefsControllerSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
+class ReliefsControllerSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
 
   val mockReliefsService: ReliefsService = mock[ReliefsService]
   val periodKey = 2015
@@ -120,7 +120,7 @@ class ReliefsControllerSpec extends PlaySpec with OneServerPerSuite with Mockito
         val testReliefs = ReliefBuilder.reliefTaxAvoidance(testAccountRef, periodKey, Reliefs(periodKey = periodKey), taxAvoidance)
 
         when(mockReliefsService.saveDraftReliefs(any(), any())(any())).thenReturn(Future(Seq(testReliefs)))
-        when(mockAuthConnector.agentReferenceNo(any())).thenReturn(Future.successful(None))
+        mockRetrievingNoAuthRef
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testReliefs))
         val result = testReliefsController.saveDraftReliefs(testAccountRef).apply(fakeRequest)

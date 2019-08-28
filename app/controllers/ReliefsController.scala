@@ -17,17 +17,18 @@
 package controllers
 
 import audit.Auditable
-import connectors.AuthConnector
 import javax.inject.{Inject, Named, Singleton}
 import models.ReliefsTaxAvoidance
 import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.ReliefsService
+import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.Audit
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import utils.AuthFunctionality
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -40,22 +41,19 @@ class ReliefsControllerImpl @Inject()(val cc: ControllerComponents,
   val audit: Audit = new Audit(s"ATED:$appName", auditConnector)
 }
 
-trait ReliefsController extends BackendController with Auditable {
+trait ReliefsController extends BackendController with Auditable with AuthFunctionality {
 
   def reliefsService: ReliefsService
 
   def authConnector: AuthConnector
 
   def saveDraftReliefs(atedRefNo: String): Action[JsValue] = Action.async(parse.json) { implicit request =>
-    val agentRefNoFuture = authConnector.agentReferenceNo
-    withJsonBody[ReliefsTaxAvoidance] { draftRelief =>
-      val saveDraftReliefsFuture = reliefsService.saveDraftReliefs(atedRefNo, draftRelief)
-      for {
-        reliefs <- saveDraftReliefsFuture
-        agentRefNo <- agentRefNoFuture
-      } yield {
-        auditSaveDraftReliefs(atedRefNo, draftRelief, agentRefNo)
-        Ok(Json.toJson(reliefs))
+    retrieveAgentRefNumberFor { refNo =>
+      withJsonBody[ReliefsTaxAvoidance] { draftRelief =>
+        reliefsService.saveDraftReliefs(atedRefNo, draftRelief) map { reliefs =>
+          auditSaveDraftReliefs(atedRefNo, draftRelief, refNo)
+          Ok(Json.toJson(reliefs))
+        }
       }
     }
   }
