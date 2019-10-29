@@ -134,7 +134,9 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable {
     }
   }
 
-  def submitEditedLiabilityReturns(atedReferenceNo: String, editedLiabilityReturns: EditLiabilityReturnsRequestModel, disposal: Boolean = false): Future[HttpResponse] = {
+  def submitEditedLiabilityReturns(atedReferenceNo: String,
+                                   editedLiabilityReturns: EditLiabilityReturnsRequestModel,
+                                   disposal: Boolean = false): Future[HttpResponse] = {
     implicit val headerCarrier = createHeaderCarrier
     val putUrl = s"""$serviceUrl/$baseURI/$submitEditedLiabilityReturnsURI/$atedReferenceNo"""
 
@@ -149,7 +151,7 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable {
           response
         case status =>
           metrics.incrementFailedCounter(MetricsEnum.EtmpSubmitEditedLiabilityReturns)
-          Logger.warn(s"[EtmpReturnsConnector][submitEditedLiabilityReturns] - status: $status")
+          Logger.warn(s"[EtmpReturnsConnector][submitEditedLiabilityReturns] - status: $status, reason - ${response.json}")
           doHeaderEvent("getSummaryReturnsFailed", response.allHeaders)
           doFailedAudit("submitEditedLiabilityReturnsFailed", putUrl, Some(jsonData.toString), response.body)
           response
