@@ -58,7 +58,7 @@ trait ReturnSummaryService {
 
     val disposeLiabilityDraftsSeq: Seq[DraftReturns] = disposeLiabilityDrafts.map {
       x => DraftReturns(x.formBundleReturn.periodKey.trim.toInt, x.id.toString,
-        x.formBundleReturn.propertyDetails.address.addressLine1 + " " + x.formBundleReturn.propertyDetails.address.addressLine1,
+        x.formBundleReturn.propertyDetails.address.addressLine1 + " " + x.formBundleReturn.propertyDetails.address.addressLine2,
         x.calculated.fold(None: Option[BigDecimal])(y => Some(y.liabilityAmount)), TypeDisposeLiabilityDraft)
     }
 
