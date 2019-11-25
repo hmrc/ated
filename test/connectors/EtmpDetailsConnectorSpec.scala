@@ -25,7 +25,8 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfter
 import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import uk.gov.hmrc.http._
@@ -37,7 +38,7 @@ import utils.SessionUtils
 
 import scala.concurrent.Future
 
-class EtmpDetailsConnectorSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfter {
+class EtmpDetailsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfter {
 
   val mockWSHttp: HttpClient = mock[HttpClient]
   val mockAuditConnector: AuditConnector = mock[AuditConnector]
@@ -157,7 +158,7 @@ class EtmpDetailsConnectorSpec extends PlaySpec with OneServerPerSuite with Mock
         val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
         implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-        when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any())(any(), any(), any(), any()))
+        when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any(), any())(any(), any(), any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
 
         val result = connector.updateSubscriptionData("ATED-123", updatedData)
@@ -170,7 +171,7 @@ class EtmpDetailsConnectorSpec extends PlaySpec with OneServerPerSuite with Mock
         val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
         implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-        when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any())(any(), any(), any(), any()))
+        when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any(), any())(any(), any(), any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
 
         val result = connector.updateSubscriptionData("ATED-123", updatedDataNoPostcode)
@@ -183,7 +184,7 @@ class EtmpDetailsConnectorSpec extends PlaySpec with OneServerPerSuite with Mock
         val notFoundResponse = Json.parse( """{}""")
         implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-        when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any())(any(), any(), any(), any()))
+        when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any(), any())(any(), any(), any(), any()))
           .thenReturn(Future.successful(HttpResponse(NOT_FOUND, Some(notFoundResponse))))
 
         val result = connector.updateSubscriptionData("ATED-123", updatedData)
@@ -204,7 +205,7 @@ class EtmpDetailsConnectorSpec extends PlaySpec with OneServerPerSuite with Mock
         val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
         implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-        when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any())(any(), any(), any(), any()))
+        when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any(), any())(any(), any(), any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
 
         val result = connector.updateRegistrationDetails("ATED-123", "SAFE-123", updatedData)
@@ -217,7 +218,7 @@ class EtmpDetailsConnectorSpec extends PlaySpec with OneServerPerSuite with Mock
         val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
         implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-        when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any())(any(), any(), any(), any()))
+        when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any(), any())(any(), any(), any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
 
         val result = connector.updateRegistrationDetails("ATED-123", "SAFE-123", updatedDataWithPostcode)
@@ -230,7 +231,7 @@ class EtmpDetailsConnectorSpec extends PlaySpec with OneServerPerSuite with Mock
         val notFoundResponse = Json.parse( """{}""")
         implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-        when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any())(any(), any(), any(), any()))
+        when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any(), any())(any(), any(), any(), any()))
           .thenReturn(Future.successful(HttpResponse(NOT_FOUND, Some(notFoundResponse))))
 
         val result = connector.updateRegistrationDetails("ATED-123", "SAFE-123", updatedData)
