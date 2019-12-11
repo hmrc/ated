@@ -21,10 +21,11 @@ import metrics.{MetricsEnum, ServiceMetrics}
 import models.PropertyDetails
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.Logger
-import play.api.libs.json.OFormat
+import play.api.libs.json.{Format, JsNull, JsObject, JsString, JsValue, Json, OFormat, Writes}
+import play.api.libs.json.JodaWrites.jodaDateWrites
 import play.modules.reactivemongo.{MongoDbConnection, ReactiveMongoComponent}
 import reactivemongo.api.Cursor.FailOnError
-import reactivemongo.api.DB
+import reactivemongo.api.{Cursor, DB}
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
@@ -33,7 +34,7 @@ import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 sealed trait PropertyDetailsCache
 case object PropertyDetailsCached extends PropertyDetailsCache
@@ -49,6 +50,8 @@ trait PropertyDetailsMongoRepository extends ReactiveRepository[PropertyDetails,
   def fetchPropertyDetailsById(atedRefNo: String, id: String): Future[Seq[PropertyDetails]]
   def deletePropertyDetails(atedRefNo: String): Future[PropertyDetailsDelete]
   def deletePropertyDetailsByfieldName(atedRefNo: String, id: String): Future[PropertyDetailsDelete]
+  def updateTimeStamp(propertyDetails: PropertyDetails, date: DateTime): Future[PropertyDetailsCache]
+  def getExpiredPropertyDetails(batchSize: Int): Future[Seq[PropertyDetails]]
   def metrics: ServiceMetrics
 }
 
@@ -82,6 +85,28 @@ class PropertyDetailsReactiveMongoRepository(mongo: () => DB, val metrics: Servi
     )
   }
 
+  def updateTimeStamp(propertyDetails: PropertyDetails, date: DateTime): Future[PropertyDetailsCache] = {
+    val query = BSONDocument("periodKey" -> propertyDetails.periodKey, "atedRefNo" -> propertyDetails.atedRefNo, "id" -> propertyDetails.id)
+    collection.update(query, propertyDetails.copy(timeStamp = date), upsert = false, multi = false) map { res =>
+      if (res.ok) {
+        PropertyDetailsCached
+      } else {
+        Logger.error(s"[updateTimeStamp: PropertyDetails] Mongo failed to update, problem occurred in collect - ex: $res")
+        PropertyDetailsCacheError
+      }
+    }
+  }
+
+  def getExpiredPropertyDetails(batchSize: Int): Future[Seq[PropertyDetails]] = {
+    implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
+    val query = BSONDocument("timeStamp" -> Json.obj("$lt" -> DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(28)))
+    val logOnError = Cursor.ContOnError[Seq[PropertyDetails]]((_, ex) =>
+      Logger.error(s"[getExpiredPropertyDetails] Mongo failed, problem occurred in collect - ex: ${ex.getMessage}")
+    )
+    collection.find(query)
+      .cursor[PropertyDetails]()
+      .collect[Seq](batchSize, logOnError)
+  }
 
   def cachePropertyDetails(propertyDetails: PropertyDetails): Future[PropertyDetailsCache] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryInsertPropDetails)
@@ -100,7 +125,6 @@ class PropertyDetailsReactiveMongoRepository(mongo: () => DB, val metrics: Servi
         PropertyDetailsCacheError
     }
   }
-
 
   def fetchPropertyDetails(atedRefNo: String): Future[Seq[PropertyDetails]] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchPropDetails)

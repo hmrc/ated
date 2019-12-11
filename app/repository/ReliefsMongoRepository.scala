@@ -21,9 +21,10 @@ import metrics.{MetricsEnum, ServiceMetrics}
 import models.ReliefsTaxAvoidance
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.Logger
+import play.api.libs.json.{Format, Json}
 import play.modules.reactivemongo.{MongoDbConnection, ReactiveMongoComponent}
 import reactivemongo.api.Cursor.FailOnError
-import reactivemongo.api.DB
+import reactivemongo.api.{Cursor, DB}
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
@@ -57,6 +58,8 @@ trait ReliefsMongoRepository extends ReactiveRepository[ReliefsTaxAvoidance, BSO
   def fetchReliefs(atedRefNo: String): Future[Seq[ReliefsTaxAvoidance]]
   def deleteReliefs(atedRefNo: String): Future[ReliefDelete]
   def deleteDraftReliefByYear(atedRefNo: String, periodKey: Int): Future[ReliefDelete]
+  def updateTimeStamp(relief: ReliefsTaxAvoidance, date: DateTime): Future[ReliefCached]
+  def deleteExpiredReliefs(batchSize: Int): Future[Int]
   def metrics: ServiceMetrics
 }
 
@@ -72,6 +75,40 @@ class ReliefsReactiveMongoRepository(mongo: () => DB, val metrics: ServiceMetric
       Index(Seq("timestamp" -> IndexType.Ascending), Some("reliefDraftExpiry"), options = BSONDocument("expireAfterSeconds" -> 60 * 60 * 24 * 28), sparse = true, background = true)
     )
   }
+
+  def updateTimeStamp(relief: ReliefsTaxAvoidance, date: DateTime): Future[ReliefCached] = {
+    val query = BSONDocument("periodKey" -> relief.periodKey, "atedRefNo" -> relief.atedRefNo)
+    collection.update(query, relief.copy(timeStamp = date), upsert = false, multi = false) map { res =>
+      if (res.ok) {
+        ReliefCached
+      } else {
+        Logger.error(s"[updateTimeStamp: Relief] Mongo failed to update, problem occurred in collect - ex: $res")
+        ReliefCachedError
+      }
+    }
+  }
+
+  def deleteExpiredReliefs(batchSize: Int): Future[Int] = {
+    implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
+    val query = BSONDocument("timeStamp" -> Json.obj("$lt" -> DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(28)))
+    val logOnError = Cursor.ContOnError[Seq[ReliefsTaxAvoidance]]((_, ex) =>
+      Logger.error(s"[getExpiredReliefs] Mongo failed, problem occurred in collect - ex: ${ex.getMessage}")
+    )
+    val foundReliefs = collection.find(query)
+      .cursor[ReliefsTaxAvoidance]()
+      .collect[Seq](batchSize, logOnError)
+
+    collection.remove(query) map {res =>
+      if (res.ok) {
+        ReliefCached
+      } else {
+        Logger.error(s"[getExpiredReliefs] Mongo failed to remove an outdated Relief - ex: $res")
+        ReliefCachedError
+      }
+    }
+    foundReliefs map (_.size)
+  }
+
 
   def cacheRelief(relief: ReliefsTaxAvoidance): Future[ReliefCached] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryInsertRelief)
