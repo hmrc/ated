@@ -21,10 +21,10 @@ import metrics.{MetricsEnum, ServiceMetrics}
 import models.DisposeLiabilityReturn
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.Logger
-import play.api.libs.json.OFormat
+import play.api.libs.json.{Format, Json, OFormat}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.Cursor.FailOnError
-import reactivemongo.api.DB
+import reactivemongo.api.{Cursor, DB}
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
@@ -47,6 +47,8 @@ trait DisposeLiabilityReturnMongoRepository extends ReactiveRepository[DisposeLi
   def cacheDisposeLiabilityReturns(disposeLiabilityReturn: DisposeLiabilityReturn): Future[DisposeLiabilityReturnCache]
   def fetchDisposeLiabilityReturns(atedRefNo: String): Future[Seq[DisposeLiabilityReturn]]
   def deleteDisposeLiabilityReturns(atedRefNo: String): Future[DisposeLiabilityReturnDelete]
+  def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: DateTime): Future[DisposeLiabilityReturnDelete]
+  def deleteExpiredLiabilityReturns(batchSize: Int): Future[Int]
   def metrics: ServiceMetrics
 }
 
@@ -66,8 +68,11 @@ trait DisposeLiabilityReturnMongoWrapper {
 }
 
 class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics: ServiceMetrics)(implicit crypto: CompositeSymmetricCrypto)
-  extends ReactiveRepository[DisposeLiabilityReturn, BSONObjectID]("disposeLiabilityReturns", mongo, DisposeLiabilityReturn.formats, ReactiveMongoFormats.objectIdFormats)
-    with DisposeLiabilityReturnMongoRepository {
+  extends ReactiveRepository[DisposeLiabilityReturn, BSONObjectID](collectionName = "disposeLiabilityReturns",
+                                                                   mongo,
+                                                                   DisposeLiabilityReturn.formats,
+                                                                   ReactiveMongoFormats.objectIdFormats
+                                                                  ) with DisposeLiabilityReturnMongoRepository {
 
   implicit val format: OFormat[DisposeLiabilityReturn] = DisposeLiabilityReturn.formats
 
@@ -78,6 +83,39 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics
       Index(Seq("atedRefNo" -> IndexType.Ascending), name = Some("atedRefIndex")),
       Index(Seq("timestamp" -> IndexType.Ascending), Some("dispLiabilityDraftExpiry"), options = BSONDocument("expireAfterSeconds" -> 60 * 60 * 24 * 28), sparse = true, background = true)
     )
+  }
+
+  override def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: DateTime): Future[DisposeLiabilityReturnDelete] = {
+    val query = BSONDocument("atedRefNo" -> liabilityReturn.atedRefNo, "id" -> liabilityReturn.id)
+    collection.update(query, liabilityReturn.copy(timeStamp = date), upsert = false, multi = false) map { res =>
+      if (res.ok) {
+        DisposeLiabilityReturnDeleted
+      } else {
+        Logger.error(s"[updateTimeStamp: LiabilityReturn] Mongo failed to update, problem occurred in collect - ex: $res")
+        DisposeLiabilityReturnDeleteError
+      }
+    }
+  }
+
+  def deleteExpiredLiabilityReturns(batchSize: Int): Future[Int] = {
+    val query = BSONDocument("timeStamp" -> Json.obj("$lt" -> DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(28).toString()))
+    val logOnError = Cursor.ContOnError[Seq[DisposeLiabilityReturn]]((_, ex) =>
+      Logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed, problem occurred in collect - ex: ${ex.getMessage}")
+    )
+    val foundLiabilityReturns = collection.find(query)
+      .cursor[DisposeLiabilityReturn]()
+      .collect[Seq](batchSize, logOnError)
+
+    collection.remove(query) map {res =>
+      if (res.ok) {
+        ReliefCached
+      } else {
+        Logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated Relief - ex: $res")
+        ReliefCachedError
+      }
+    }
+
+    foundLiabilityReturns map (_.size)
   }
 
 

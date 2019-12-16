@@ -21,6 +21,7 @@ import metrics.{ServiceMetrics, ServiceMetricsImpl}
 import play.api.inject.{Binding, Module}
 import play.api.{Configuration, Environment}
 import repository._
+import scheduler._
 import services._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
@@ -29,6 +30,10 @@ import uk.gov.hmrc.play.bootstrap.http.{DefaultHttpClient, HttpClient}
 class ServiceBindings extends Module {
   override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] =
     Seq(
+      bind(classOf[DeletePropertyDetailsService]).to[DefaultDeletePropertyDetailsService].eagerly(),
+      bind(classOf[DeleteReliefsService]).to[DefaultDeleteReliefsService].eagerly(),
+      bind(classOf[DeleteLiabilityReturnsService]).to[DefaultDeleteLiabilityReturnsService].eagerly(),
+      bind(classOf[LockRepositoryProvider]).to[DefaultLockRepositoryProvider].eagerly(),
       bind(classOf[AuthConnector]).to(classOf[DefaultAuthConnector]),
       bind(classOf[EmailConnector]).to(classOf[EmailConnectorImpl]),
       bind(classOf[EtmpDetailsConnector]).to(classOf[EtmpDetailsConnectorImpl]),
