@@ -8,6 +8,7 @@ import play.api.http.Status._
 import play.api.libs.json.Json
 import play.api.libs.ws.WSResponse
 import play.api.test.FutureAwaits
+import repository.{ReliefsMongoRepository, ReliefsMongoWrapper}
 import scheduler.DeleteReliefsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -49,6 +50,13 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
       |}""".stripMargin
   )
 
+  class Setup {
+    val repo: ReliefsMongoRepository = app.injector.instanceOf[ReliefsMongoWrapper].apply()
+
+    await(repo.drop)
+    await(repo.ensureIndexes)
+  }
+
   "deleteReliefsService" should {
     def createRelief: Future[WSResponse] = hitApplicationEndpoint("/ated/ATE1234567XX/ated/reliefs/save")
       .post(Json.toJson(reliefTaxAvoidance("ThisGetsOverwritten")))
@@ -57,94 +65,94 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
       .post(Json.toJson(reliefTaxAvoidance("SoDoesThis")))
 
     "not delete any drafts" when {
-      "the draft has only just been added" in {
+      "the draft has only just been added" in new Setup {
         stubAuthPost
-        val result = for {
-          _ <- createRelief
-          deleteCount <- deleteReliefsService.invoke
-          retrieve <- hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get()
-        } yield (deleteCount, retrieve)
 
-        val (deleteCount, foundDraft) = await(result)
+        await(createRelief)
+        val deleteCount = await(deleteReliefsService.invoke)
+        val retrieve = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
+
         deleteCount mustBe 0
-        foundDraft.status mustBe OK
+        retrieve.status mustBe OK
       }
 
-      "the draft has been stored for 27 days" in {
+      "the draft has been stored for 27 days" in new Setup {
         stubAuthPost
-        val result = for {
-          _ <- createRelief
-          _ <- deleteReliefsService.repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), date27DaysAgo)
-          deleteCount <- deleteReliefsService.invoke
-          retrieve <- hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get()
-        } yield (deleteCount, retrieve)
 
-        val (deleteCount, foundDraft) = await(result)
+        await(createRelief)
+        await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), date27DaysAgo))
+        val deleteCount = await(deleteReliefsService.invoke)
+        val foundDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
+
         deleteCount mustBe 0
         foundDraft.status mustBe OK
       }
     }
 
     "delete the relief drafts" when {
-      "the draft has been stored for 28 days" in {
+      "the draft has been stored for 28 days" in new Setup {
         stubAuthPost
-        val result = for {
-          _ <- createRelief
-          _ <- deleteReliefsService.repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), date28DaysAgo)
-          deleteCount <- deleteReliefsService.invoke
-          retrieve <- hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get()
-        } yield (deleteCount, retrieve)
+  
+        await(createRelief)
+        await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), date28DaysAgo))
 
-        val (deleteCount, deletedDraft) = await(result)
+        await(repo.collection.count()) mustBe 1
+
+        val deleteCount = await(deleteReliefsService.invoke)
+        val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
+
         deleteCount mustBe 1
         deletedDraft.status mustBe NOT_FOUND
       }
 
-      "the draft has been stored for 29 days" in {
+      "the draft has been stored for 29 days" in new Setup {
         stubAuthPost
-        val result = for {
-          _ <- createRelief
-          _ <- deleteReliefsService.repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), date29DaysAgo)
-          deleteCount <- deleteReliefsService.invoke
-          retrieve <- hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get()
-        } yield (deleteCount, retrieve)
 
-        val (deleteCount, deletedDraft) = await(result)
+        await(createRelief)
+        await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), date29DaysAgo))
+
+        await(repo.collection.count()) mustBe 1
+
+        val deleteCount = await(deleteReliefsService.invoke)
+        val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
+
         deleteCount mustBe 1
         deletedDraft.status mustBe NOT_FOUND
       }
     }
 
-    "only delete outdated reliefs when multiple reliefs exist" in {
+    "only delete outdated reliefs when multiple reliefs exist" in new Setup {
       stubAuthPost
-      val result = for {
-        _ <- createRelief
-        _ <- createRelief2
-        _ <- deleteReliefsService.repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), date29DaysAgo)
-        deleteCount <- deleteReliefsService.invoke
-        retrieve <- hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get()
-        retrieve2 <- hitApplicationEndpoint(s"/ated/ATE7654321XX/ated/reliefs/$periodKey").get()
-      } yield (deleteCount, retrieve, retrieve2)
 
-      val (deleteCount, deletedDraft, foundDraft) = await(result)
+      await(createRelief)
+      await(createRelief2)
+      await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), date29DaysAgo))
+
+      await(repo.collection.count()) mustBe 2
+
+      val deleteCount = await(deleteReliefsService.invoke)
+      val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
+      val foundDraft = await(hitApplicationEndpoint(s"/ated/ATE7654321XX/ated/reliefs/$periodKey").get())
+
       deleteCount mustBe 1
       deletedDraft.status mustBe NOT_FOUND
       foundDraft.status mustBe OK
     }
 
-    "delete multiple drafts when the batchSize is >1" in {
+    "delete multiple drafts when the batchSize is >1" in new Setup {
       stubAuthPost
-      val result = for {
-        _ <- createRelief
-        _ <- createRelief2
-        _ <- deleteReliefsService.repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), date29DaysAgo)
-        _ <- deleteReliefsService.repo.updateTimeStamp(reliefTaxAvoidance("ATE7654321XX"), date29DaysAgo)
-        deleteCount <- deleteReliefsService.invoke
-        retrieve <- hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get()
-        retrieve2 <- hitApplicationEndpoint(s"/ated/ATE7654321XX/ated/reliefs/$periodKey").get()
-      } yield (deleteCount, retrieve, retrieve2)
 
-      val (deleteCount, deletedDraft, foundDraft) = await(result)
+      await(createRelief)
+      await(createRelief2)
+      await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), date29DaysAgo))
+      await(repo.updateTimeStamp(reliefTaxAvoidance("ATE7654321XX"), date29DaysAgo))
+
+      await(repo.collection.count()) mustBe 2
+
+      val deleteCount = await(deleteReliefsService.invoke)
+      val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
+      val foundDraft = await(hitApplicationEndpoint(s"/ated/ATE7654321XX/ated/reliefs/$periodKey").get())
+
       deleteCount mustBe 2
       deletedDraft.status mustBe NOT_FOUND
       foundDraft.status mustBe NOT_FOUND

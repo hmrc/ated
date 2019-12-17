@@ -16,7 +16,7 @@
 
 package repository
 
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 import metrics.{MetricsEnum, ServiceMetrics}
 import models.ReliefsTaxAvoidance
 import org.joda.time.{DateTime, DateTimeZone}
@@ -42,6 +42,7 @@ sealed trait ReliefDelete
 case object ReliefDeleted extends ReliefDelete
 case object ReliefDeletedError extends ReliefDelete
 
+@Singleton
 class ReliefsMongoWrapperImpl @Inject()(val mongo: ReactiveMongoComponent,
                                         val serviceMetrics: ServiceMetrics) extends ReliefsMongoWrapper
 
@@ -80,6 +81,7 @@ class ReliefsReactiveMongoRepository(mongo: () => DB, val metrics: ServiceMetric
     val query = BSONDocument("periodKey" -> relief.periodKey, "atedRefNo" -> relief.atedRefNo)
     collection.update(query, relief.copy(timeStamp = date), upsert = false, multi = false) map { res =>
       if (res.ok) {
+        Logger.info(s"[updateTimestamp] Updated timestamp for ${relief.atedRefNo}")
         ReliefCached
       } else {
         Logger.error(s"[updateTimeStamp: Relief] Mongo failed to update, problem occurred in collect - ex: $res")

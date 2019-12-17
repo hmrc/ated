@@ -16,7 +16,7 @@
 
 package repository
 
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 import metrics.{MetricsEnum, ServiceMetrics}
 import models.DisposeLiabilityReturn
 import org.joda.time.{DateTime, DateTimeZone}
@@ -52,6 +52,7 @@ trait DisposeLiabilityReturnMongoRepository extends ReactiveRepository[DisposeLi
   def metrics: ServiceMetrics
 }
 
+@Singleton
 class DisposeLiabilityReturnMongoWrapperImpl @Inject()(val mongo: ReactiveMongoComponent,
                                                        val serviceMetrics: ServiceMetrics,
                                                        val crypto: ApplicationCrypto) extends DisposeLiabilityReturnMongoWrapper
@@ -89,6 +90,7 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics
     val query = BSONDocument("atedRefNo" -> liabilityReturn.atedRefNo, "id" -> liabilityReturn.id)
     collection.update(query, liabilityReturn.copy(timeStamp = date), upsert = false, multi = false) map { res =>
       if (res.ok) {
+        Logger.info(s"[updateTimestamp] Updated timestamp for ${liabilityReturn.id}")
         DisposeLiabilityReturnDeleted
       } else {
         Logger.error(s"[updateTimeStamp: LiabilityReturn] Mongo failed to update, problem occurred in collect - ex: $res")
