@@ -11,6 +11,7 @@ import scheduler.DeleteLiabilityReturnsService
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
 import play.api.libs.json.JodaWrites._
 import play.api.libs.json.JodaReads._
+import repository.{DisposeLiabilityReturnMongoRepository, DisposeLiabilityReturnMongoWrapper, PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -57,6 +58,12 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
   val liabilityReturn2 = DisposeLiabilityReturn(atedRefNo = "ATE7654321XX", id = "010101", formBundle)
   val disposeLiability = DisposeLiability(Option(LocalDate.now()), periodKey)
 
+  class Setup {
+    val repo: DisposeLiabilityReturnMongoRepository = app.injector.instanceOf[DisposeLiabilityReturnMongoWrapper].apply()
+
+    await(repo.drop)
+    await(repo.ensureIndexes)
+  }
 
   "deleteLiabilityReturnsService" should {
     def createAndRetrieveLiabilityReturn: Future[WSResponse] = hitApplicationEndpoint("/ated/ATE1234567XX/dispose-liability/101010").get()
@@ -68,32 +75,26 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
     def updateLiabilityReturn2() = hitApplicationEndpoint("/ated/ATE7654321XX/dispose-liability/010101/update-date").post(Json.toJson(disposeLiability))
 
     "not delete any drafts" when {
-      "the draft has only just been added" in {
+      "the draft has only just been added" in new Setup {
         stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE1234567XX/form-bundle/101010", OK, Json.toJson(formBundle).toString)
 
-        val result = for {
-          insert <- createAndRetrieveLiabilityReturn
-          deleteCount <- deleteLiabilityReturnsService.invoke
-          retrieve <- createAndRetrieveLiabilityReturn
-        } yield (insert, deleteCount, retrieve)
+        val insert = await(createAndRetrieveLiabilityReturn)
+        val deleteCount = await(deleteLiabilityReturnsService.invoke)
+        val foundDraft = await(createAndRetrieveLiabilityReturn)
 
-        val (insert, deleteCount, foundDraft) = await(result)
         insert.status mustBe OK
         deleteCount mustBe 0
         foundDraft.status mustBe OK
       }
 
-      "the draft has been stored for 27 days" in {
+      "the draft has been stored for 27 days" in new Setup {
         stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE1234567XX/form-bundle/101010", OK, Json.toJson(formBundle).toString)
 
-        val result = for {
-          insert <- createAndRetrieveLiabilityReturn
-          _ <- deleteLiabilityReturnsService.repo.updateTimeStamp(liabilityReturn, date27DaysAgo)
-          deleteCount <- deleteLiabilityReturnsService.invoke
-          retrieve <- createAndRetrieveLiabilityReturn
-        } yield (insert, deleteCount, retrieve)
+        val insert = await(createAndRetrieveLiabilityReturn)
+        await(repo.updateTimeStamp(liabilityReturn, date27DaysAgo))
+        val deleteCount = await(deleteLiabilityReturnsService.invoke)
+        val foundDraft = await(createAndRetrieveLiabilityReturn)
 
-        val (insert, deleteCount, foundDraft) = await(result)
         insert.status mustBe OK
         deleteCount mustBe 0
         foundDraft.status mustBe OK
@@ -101,69 +102,71 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
     }
 
     "delete the liability return drafts" when {
-      "the draft has been stored for 28 days" in {
+      "the draft has been stored for 28 days" in new Setup {
         stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE1234567XX/form-bundle/101010", OK, Json.toJson(formBundle).toString)
 
-        val result = for {
-          _ <- createAndRetrieveLiabilityReturn
-          _ <- deleteLiabilityReturnsService.repo.updateTimeStamp(liabilityReturn, date28DaysAgo)
-          deleteCount <- deleteLiabilityReturnsService.invoke
-          retrieve <- updateLiabilityReturn()
-        } yield (deleteCount, retrieve)
+        await(createAndRetrieveLiabilityReturn)
+        await(repo.updateTimeStamp(liabilityReturn, date28DaysAgo))
 
-        val (deleteCount, retrieve) = await(result)
+        await(repo.collection.count()) mustBe 1
+
+        val deleteCount = await(deleteLiabilityReturnsService.invoke)
+        val retrieve = await(updateLiabilityReturn())
+
         deleteCount mustBe 1
         retrieve.status mustBe NOT_FOUND
       }
 
-      "the draft has been stored for 29 days" in {
+      "the draft has been stored for 29 days" in new Setup {
         stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE1234567XX/form-bundle/101010", OK, Json.toJson(formBundle).toString)
 
-        val result = for {
-          _ <- createAndRetrieveLiabilityReturn
-          _ <- deleteLiabilityReturnsService.repo.updateTimeStamp(liabilityReturn, date29DaysAgo)
-          deleteCount <- deleteLiabilityReturnsService.invoke
-          retrieve <- updateLiabilityReturn()
-        } yield (deleteCount, retrieve)
+        await(createAndRetrieveLiabilityReturn)
+        await(repo.updateTimeStamp(liabilityReturn, date29DaysAgo))
 
-        val (deleteCount, retrieve) = await(result)
+        await(repo.collection.count()) mustBe 1
+
+        val deleteCount = await(deleteLiabilityReturnsService.invoke)
+        val retrieve = await(updateLiabilityReturn())
+
         deleteCount mustBe 1
         retrieve.status mustBe NOT_FOUND
       }
     }
 
-    "only delete outdated reliefs when multiple reliefs exist" in {
+    "only delete outdated reliefs when multiple reliefs exist" in new Setup {
       stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE1234567XX/form-bundle/101010", OK, Json.toJson(formBundle).toString)
       stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE7654321XX/form-bundle/010101", OK, Json.toJson(formBundle).toString)
-      val result = for {
-        _ <- createAndRetrieveLiabilityReturn
-        _ <- createAndRetrieveLiabilityReturn2
-        _ <- deleteLiabilityReturnsService.repo.updateTimeStamp(liabilityReturn, date29DaysAgo)
-        deleteCount <- deleteLiabilityReturnsService.invoke
-        retrieve <- updateLiabilityReturn()
-        retrieve2 <- updateLiabilityReturn2()
-      } yield (deleteCount, retrieve, retrieve2)
 
-      val (deleteCount, deletedDraft, foundDraft) = await(result)
+      await(createAndRetrieveLiabilityReturn)
+      await(createAndRetrieveLiabilityReturn2)
+      await(repo.updateTimeStamp(liabilityReturn, date29DaysAgo))
+
+      await(repo.collection.count()) mustBe 2
+
+      val deleteCount = await(deleteLiabilityReturnsService.invoke)
+      val deletedDraft = await(updateLiabilityReturn())
+      val foundDraft = await(updateLiabilityReturn2())
+
       deleteCount mustBe 1
       deletedDraft.status mustBe NOT_FOUND
       foundDraft.status mustBe OK
     }
 
-    "delete multiple drafts when the batchSize is >1" in {
+    "delete multiple drafts when the batchSize is >1" in new Setup {
       stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE1234567XX/form-bundle/101010", OK, Json.toJson(formBundle).toString)
       stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE7654321XX/form-bundle/010101", OK, Json.toJson(formBundle).toString)
-      val result = for {
-        _ <- createAndRetrieveLiabilityReturn
-        _ <- createAndRetrieveLiabilityReturn2
-        _ <- deleteLiabilityReturnsService.repo.updateTimeStamp(liabilityReturn, date28DaysAgo)
-        _ <- deleteLiabilityReturnsService.repo.updateTimeStamp(liabilityReturn2, date29DaysAgo)
-        deleteCount <- deleteLiabilityReturnsService.invoke
-        retrieve <- updateLiabilityReturn()
-        retrieve2 <- updateLiabilityReturn2()
-      } yield (deleteCount, retrieve, retrieve2)
 
-      val (deleteCount, deletedDraft, deletedDraft2) = await(result)
+      await(createAndRetrieveLiabilityReturn)
+      await(createAndRetrieveLiabilityReturn2)
+      await(repo.updateTimeStamp(liabilityReturn, date28DaysAgo))
+      await(repo.updateTimeStamp(liabilityReturn2, date29DaysAgo))
+
+      await(repo.collection.count()) mustBe 2
+
+      val deleteCount = await(deleteLiabilityReturnsService.invoke)
+      val deletedDraft = await(updateLiabilityReturn())
+      val deletedDraft2 = await(updateLiabilityReturn2())
+
       deleteCount mustBe 2
       deletedDraft.status mustBe NOT_FOUND
       deletedDraft2.status mustBe NOT_FOUND

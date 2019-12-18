@@ -16,17 +16,16 @@
 
 package repository
 
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 import metrics.{MetricsEnum, ServiceMetrics}
 import models.PropertyDetails
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.Logger
-import play.api.libs.json.{Format, JsNull, JsObject, JsString, JsValue, Json, OFormat, Writes}
-import play.api.libs.json.JodaWrites.jodaDateWrites
-import play.modules.reactivemongo.{MongoDbConnection, ReactiveMongoComponent}
+import play.api.libs.json.{Format, Json, OFormat}
+import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.Cursor.FailOnError
-import reactivemongo.api.{Cursor, DB}
 import reactivemongo.api.indexes.{Index, IndexType}
+import reactivemongo.api.{Cursor, DB}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
@@ -34,7 +33,7 @@ import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 sealed trait PropertyDetailsCache
 case object PropertyDetailsCached extends PropertyDetailsCache
@@ -55,6 +54,7 @@ trait PropertyDetailsMongoRepository extends ReactiveRepository[PropertyDetails,
   def metrics: ServiceMetrics
 }
 
+@Singleton
 class PropertyDetailsMongoWrapperImpl @Inject()(val mongo: ReactiveMongoComponent,
                                                 val serviceMetrics: ServiceMetrics,
                                                 val crypto: ApplicationCrypto) extends PropertyDetailsMongoWrapper
@@ -89,6 +89,7 @@ class PropertyDetailsReactiveMongoRepository(mongo: () => DB, val metrics: Servi
     val query = BSONDocument("periodKey" -> propertyDetails.periodKey, "atedRefNo" -> propertyDetails.atedRefNo, "id" -> propertyDetails.id)
     collection.update(query, propertyDetails.copy(timeStamp = date), upsert = false, multi = false) map { res =>
       if (res.ok) {
+        Logger.info(s"[updateTimestamp] Updated timestamp for ${propertyDetails.id}")
         PropertyDetailsCached
       } else {
         Logger.error(s"[updateTimeStamp: PropertyDetails] Mongo failed to update, problem occurred in collect - ex: $res")
