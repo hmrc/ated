@@ -11,7 +11,7 @@ import scheduler.DeleteLiabilityReturnsService
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
 import play.api.libs.json.JodaWrites._
 import play.api.libs.json.JodaReads._
-import repository.{DisposeLiabilityReturnMongoRepository, DisposeLiabilityReturnMongoWrapper}
+import repository.{DisposeLiabilityReturnMongoRepository, DisposeLiabilityReturnMongoWrapper, PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -65,23 +65,22 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
     await(repo.ensureIndexes)
   }
 
-	def createAndRetrieveLiabilityReturn: Future[WSResponse] = hitApplicationEndpoint("/ated/ATE1234567XX/dispose-liability/101010").get()
+  "deleteLiabilityReturnsService" should {
+    def createAndRetrieveLiabilityReturn: Future[WSResponse] = hitApplicationEndpoint("/ated/ATE1234567XX/dispose-liability/101010").get()
 
-	def createAndRetrieveLiabilityReturn2: Future[WSResponse] = hitApplicationEndpoint("/ated/ATE7654321XX/dispose-liability/010101").get()
+    def createAndRetrieveLiabilityReturn2: Future[WSResponse] = hitApplicationEndpoint("/ated/ATE7654321XX/dispose-liability/010101").get()
 
-	def updateLiabilityReturn() = hitApplicationEndpoint("/ated/ATE1234567XX/dispose-liability/101010/update-date").post(Json.toJson(disposeLiability))
+    def updateLiabilityReturn() = hitApplicationEndpoint("/ated/ATE1234567XX/dispose-liability/101010/update-date").post(Json.toJson(disposeLiability))
 
-	def updateLiabilityReturn2() = hitApplicationEndpoint("/ated/ATE7654321XX/dispose-liability/010101/update-date").post(Json.toJson(disposeLiability))
+    def updateLiabilityReturn2() = hitApplicationEndpoint("/ated/ATE7654321XX/dispose-liability/010101/update-date").post(Json.toJson(disposeLiability))
 
-
-	"deleteLiabilityReturnsService" should {
     "not delete any drafts" when {
       "the draft has only just been added" in new Setup {
         stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE1234567XX/form-bundle/101010", OK, Json.toJson(formBundle).toString)
 
-        val insert: WSResponse = await(createAndRetrieveLiabilityReturn)
-        val deleteCount: Int = await(deleteLiabilityReturnsService.invoke)
-        val foundDraft: WSResponse = await(createAndRetrieveLiabilityReturn)
+        val insert = await(createAndRetrieveLiabilityReturn)
+        val deleteCount = await(deleteLiabilityReturnsService.invoke)
+        val foundDraft = await(createAndRetrieveLiabilityReturn)
 
         insert.status mustBe OK
         deleteCount mustBe 0
@@ -91,10 +90,10 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
       "the draft has been stored for 27 days" in new Setup {
         stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE1234567XX/form-bundle/101010", OK, Json.toJson(formBundle).toString)
 
-        val insert: WSResponse = await(createAndRetrieveLiabilityReturn)
+        val insert = await(createAndRetrieveLiabilityReturn)
         await(repo.updateTimeStamp(liabilityReturn, date27DaysAgo))
-        val deleteCount: Int = await(deleteLiabilityReturnsService.invoke)
-        val foundDraft: WSResponse = await(createAndRetrieveLiabilityReturn)
+        val deleteCount = await(deleteLiabilityReturnsService.invoke)
+        val foundDraft = await(createAndRetrieveLiabilityReturn)
 
         insert.status mustBe OK
         deleteCount mustBe 0
@@ -111,8 +110,8 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
 
         await(repo.collection.count()) mustBe 1
 
-        val deleteCount: Int = await(deleteLiabilityReturnsService.invoke)
-        val retrieve: WSResponse = await(updateLiabilityReturn())
+        val deleteCount = await(deleteLiabilityReturnsService.invoke)
+        val retrieve = await(updateLiabilityReturn())
 
         deleteCount mustBe 1
         retrieve.status mustBe NOT_FOUND
@@ -126,8 +125,8 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
 
         await(repo.collection.count()) mustBe 1
 
-        val deleteCount: Int = await(deleteLiabilityReturnsService.invoke)
-        val retrieve: WSResponse = await(updateLiabilityReturn())
+        val deleteCount = await(deleteLiabilityReturnsService.invoke)
+        val retrieve = await(updateLiabilityReturn())
 
         deleteCount mustBe 1
         retrieve.status mustBe NOT_FOUND
@@ -144,9 +143,9 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
 
       await(repo.collection.count()) mustBe 2
 
-      val deleteCount: Int = await(deleteLiabilityReturnsService.invoke)
-      val deletedDraft: WSResponse = await(updateLiabilityReturn())
-      val foundDraft: WSResponse = await(updateLiabilityReturn2())
+      val deleteCount = await(deleteLiabilityReturnsService.invoke)
+      val deletedDraft = await(updateLiabilityReturn())
+      val foundDraft = await(updateLiabilityReturn2())
 
       deleteCount mustBe 1
       deletedDraft.status mustBe NOT_FOUND
@@ -164,9 +163,9 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
 
       await(repo.collection.count()) mustBe 2
 
-      val deleteCount: Int = await(deleteLiabilityReturnsService.invoke)
-      val deletedDraft: WSResponse = await(updateLiabilityReturn())
-      val deletedDraft2: WSResponse = await(updateLiabilityReturn2())
+      val deleteCount = await(deleteLiabilityReturnsService.invoke)
+      val deletedDraft = await(updateLiabilityReturn())
+      val deletedDraft2 = await(updateLiabilityReturn2())
 
       deleteCount mustBe 2
       deletedDraft.status mustBe NOT_FOUND

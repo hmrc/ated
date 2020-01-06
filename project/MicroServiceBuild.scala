@@ -13,12 +13,12 @@ private object AppDependencies {
 
   val compile: Seq[ModuleID] = Seq(
     ws,
-		"com.enragedginger" %% "akka-quartz-scheduler" % "1.8.1-akka-2.5.x",
+		"com.enragedginger" %% "akka-quartz-scheduler" % "1.8.0-akka-2.5.x",
     "uk.gov.hmrc"       %% "bootstrap-play-26"     % "1.3.0",
     "uk.gov.hmrc"       %% "domain"                % "5.6.0-play-26",
-    "uk.gov.hmrc"       %% "simple-reactivemongo"  % "7.22.0-play-26",
+    "uk.gov.hmrc"       %% "simple-reactivemongo"  % "7.20.0-play-26",
     "uk.gov.hmrc"       %% "json-encryption"       % "4.4.0-play-26",
-    "uk.gov.hmrc"       %% "auth-client"           % "2.32.0-play-26",
+    "uk.gov.hmrc"       %% "auth-client"           % "2.31.0-play-26",
 		"uk.gov.hmrc"			  %% "mongo-lock"					   % "6.15.0-play-26",
 		"com.typesafe.play" %% "play-json-joda"        % "2.6.10"
   )
@@ -34,7 +34,7 @@ private object AppDependencies {
         "org.scalatest"           %% "scalatest"          % "3.0.5"             % scope,
         "org.scalatestplus.play"  %% "scalatestplus-play" % "3.1.2"             % scope,
         "org.pegdown"              % "pegdown"            % "1.6.0"             % scope,
-        "org.mockito"              % "mockito-core"       % "3.2.4"             % scope,
+        "org.mockito"              % "mockito-core"       % "3.0.0"            % scope,
         "com.typesafe.play"       %% "play-test"          % PlayVersion.current % scope,
         "uk.gov.hmrc"             %% "reactivemongo-test" % "4.15.0-play-26"    % scope
       )
@@ -48,7 +48,7 @@ private object AppDependencies {
 				"org.pegdown" 					 % "pegdown" 							 % 	"1.6.0"								  % scope,
 				"com.typesafe.play"			 %% "play-test" 				 	 % 	PlayVersion.current 		% scope,
 				"org.scalatestplus.play" %% "scalatestplus-play"	 % 	"3.1.2" 								% scope,
-				"com.github.tomakehurst" % "wiremock-jre8"				 % 	"2.25.1" 								% scope
+				"com.github.tomakehurst" % "wiremock-jre8"				 % 	"2.23.2" 								% scope
 			)
 		}.test
 	}

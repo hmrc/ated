@@ -57,20 +57,20 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
     await(repo.ensureIndexes)
   }
 
-	def createRelief: Future[WSResponse] = hitApplicationEndpoint("/ated/ATE1234567XX/ated/reliefs/save")
-		.post(Json.toJson(reliefTaxAvoidance("ThisGetsOverwritten")))
+  "deleteReliefsService" should {
+    def createRelief: Future[WSResponse] = hitApplicationEndpoint("/ated/ATE1234567XX/ated/reliefs/save")
+      .post(Json.toJson(reliefTaxAvoidance("ThisGetsOverwritten")))
 
-	def createRelief2: Future[WSResponse] = hitApplicationEndpoint("/ated/ATE7654321XX/ated/reliefs/save")
-		.post(Json.toJson(reliefTaxAvoidance("SoDoesThis")))
+    def createRelief2: Future[WSResponse] = hitApplicationEndpoint("/ated/ATE7654321XX/ated/reliefs/save")
+      .post(Json.toJson(reliefTaxAvoidance("SoDoesThis")))
 
-	"deleteReliefsService" should {
     "not delete any drafts" when {
       "the draft has only just been added" in new Setup {
         stubAuthPost
 
         await(createRelief)
-        val deleteCount: Int = await(deleteReliefsService.invoke)
-        val retrieve: WSResponse = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
+        val deleteCount = await(deleteReliefsService.invoke)
+        val retrieve = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
 
         deleteCount mustBe 0
         retrieve.status mustBe OK
@@ -81,8 +81,8 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
 
         await(createRelief)
         await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), date27DaysAgo))
-        val deleteCount: Int = await(deleteReliefsService.invoke)
-        val foundDraft: WSResponse = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
+        val deleteCount = await(deleteReliefsService.invoke)
+        val foundDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
 
         deleteCount mustBe 0
         foundDraft.status mustBe OK
@@ -92,14 +92,14 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
     "delete the relief drafts" when {
       "the draft has been stored for 28 days" in new Setup {
         stubAuthPost
-
+  
         await(createRelief)
         await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), date28DaysAgo))
 
         await(repo.collection.count()) mustBe 1
 
-        val deleteCount: Int = await(deleteReliefsService.invoke)
-        val deletedDraft: WSResponse = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
+        val deleteCount = await(deleteReliefsService.invoke)
+        val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
 
         deleteCount mustBe 1
         deletedDraft.status mustBe NOT_FOUND
@@ -113,8 +113,8 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
 
         await(repo.collection.count()) mustBe 1
 
-        val deleteCount: Int = await(deleteReliefsService.invoke)
-        val deletedDraft: WSResponse = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
+        val deleteCount = await(deleteReliefsService.invoke)
+        val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
 
         deleteCount mustBe 1
         deletedDraft.status mustBe NOT_FOUND
@@ -130,9 +130,9 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
 
       await(repo.collection.count()) mustBe 2
 
-      val deleteCount: Int = await(deleteReliefsService.invoke)
-      val deletedDraft: WSResponse = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
-      val foundDraft: WSResponse = await(hitApplicationEndpoint(s"/ated/ATE7654321XX/ated/reliefs/$periodKey").get())
+      val deleteCount = await(deleteReliefsService.invoke)
+      val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
+      val foundDraft = await(hitApplicationEndpoint(s"/ated/ATE7654321XX/ated/reliefs/$periodKey").get())
 
       deleteCount mustBe 1
       deletedDraft.status mustBe NOT_FOUND
@@ -149,13 +149,14 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
 
       await(repo.collection.count()) mustBe 2
 
-      val deleteCount: Int = await(deleteReliefsService.invoke)
-      val deletedDraft: WSResponse = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
-      val foundDraft: WSResponse = await(hitApplicationEndpoint(s"/ated/ATE7654321XX/ated/reliefs/$periodKey").get())
+      val deleteCount = await(deleteReliefsService.invoke)
+      val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
+      val foundDraft = await(hitApplicationEndpoint(s"/ated/ATE7654321XX/ated/reliefs/$periodKey").get())
 
       deleteCount mustBe 2
       deletedDraft.status mustBe NOT_FOUND
       foundDraft.status mustBe NOT_FOUND
     }
+
   }
 }
