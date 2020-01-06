@@ -123,6 +123,7 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
         await(createAndRetrieveLiabilityReturn)
         await(repo.updateTimeStamp(liabilityReturn, date29DaysAgo))
 
+
         await(repo.collection.count()) mustBe 1
 
         val deleteCount = await(deleteLiabilityReturnsService.invoke)

@@ -150,9 +150,12 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
       await(repo.collection.count()) mustBe 2
 
       val deleteCount = await(deleteReliefsService.invoke)
+
+      await(repo.collection.count()) mustBe 0
+
       val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
       val foundDraft = await(hitApplicationEndpoint(s"/ated/ATE7654321XX/ated/reliefs/$periodKey").get())
-
+      
       deleteCount mustBe 2
       deletedDraft.status mustBe NOT_FOUND
       foundDraft.status mustBe NOT_FOUND

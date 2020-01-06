@@ -93,13 +93,14 @@ object ReliefsTaxAvoidance {
   import play.api.libs.json.JodaReads.DefaultJodaLocalDateReads
 
   val reliefTaxAvoidanceReads: Reads[ReliefsTaxAvoidance] = (
+      (JsPath \ "atedRefNo").read[String] and
       (JsPath \ "periodKey").read[Int] and
       (JsPath \ "reliefs").read[Reliefs] and
       (JsPath \ "taxAvoidance").read[TaxAvoidance] and
       (JsPath \ "periodStartDate").read[LocalDate] and
       (JsPath \ "periodEndDate").read[LocalDate]
-    )((periodKey, reliefs, taxAvoidance, periodStartDate, periodEndDate) =>
-    ReliefsTaxAvoidance(atedRefNo = "", periodKey = periodKey, reliefs = reliefs, taxAvoidance = taxAvoidance,
+    )((atedRefNo, periodKey, reliefs, taxAvoidance, periodStartDate, periodEndDate) =>
+    ReliefsTaxAvoidance(atedRefNo = atedRefNo, periodKey = periodKey, reliefs = reliefs, taxAvoidance = taxAvoidance,
       periodStartDate = periodStartDate, periodEndDate = periodEndDate))
 
   val reliefTaxAvoidanceWrites: OWrites[ReliefsTaxAvoidance] = (
