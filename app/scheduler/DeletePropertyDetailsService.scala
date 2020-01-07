@@ -50,15 +50,8 @@ trait DeletePropertyDetailsService extends ScheduledService[Int] {
   val lockKeeper: LockKeeper
   val documentBatchSize: Int
 
-  private def deleteOldPropertyDetails(implicit ec: ExecutionContext): Future[Int] = {
-    val deletedDetails = repo.getExpiredPropertyDetails(documentBatchSize) map {_ map { propertyDetail =>
-       repo.deletePropertyDetails(propertyDetail.atedRefNo)
-    }}
-    deletedDetails flatMap {Future.sequence(_)} map(_.size)
-  }
-
 	def invoke(implicit ec: ExecutionContext): Future[Int] = {
-    lockKeeper.tryLock(deleteOldPropertyDetails) map {
+    lockKeeper.tryLock(repo.deleteExpiredPropertyDetails(documentBatchSize)) map {
       case Some(result) =>
 				Logger.info(s"[deleteOldPropertyDetails] Deleted $result draft documents past the 28 day limit")
         result

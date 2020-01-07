@@ -18,7 +18,7 @@ package repository
 
 import javax.inject.{Inject, Singleton}
 import metrics.{MetricsEnum, ServiceMetrics}
-import models.ReliefsTaxAvoidance
+import models.{PropertyDetails, ReliefsTaxAvoidance}
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.Logger
 import play.api.libs.json.{Format, Json}
@@ -80,8 +80,8 @@ class ReliefsReactiveMongoRepository(mongo: () => DB, val metrics: ServiceMetric
   def updateTimeStamp(relief: ReliefsTaxAvoidance, date: DateTime): Future[ReliefCached] = {
     val query = BSONDocument("periodKey" -> relief.periodKey, "atedRefNo" -> relief.atedRefNo)
     collection.update(query, relief.copy(timeStamp = date), upsert = false, multi = false) map { res =>
-      if (res.ok) {
-        Logger.info(s"[updateTimestamp] Updated timestamp for ${relief.atedRefNo}")
+      if (res.ok && res.nModified != 0) {
+        Logger.info(s"[updateTimestamp] Updated timestamp for ${relief.atedRefNo} with $date")
         ReliefCached
       } else {
         Logger.error(s"[updateTimeStamp: Relief] Mongo failed to update, problem occurred in collect - ex: $res")
@@ -100,15 +100,19 @@ class ReliefsReactiveMongoRepository(mongo: () => DB, val metrics: ServiceMetric
       .cursor[ReliefsTaxAvoidance]()
       .collect[Seq](batchSize, logOnError)
 
-    collection.remove(query) map {res =>
-      if (res.ok) {
-        ReliefCached
-      } else {
-        Logger.error(s"[getExpiredReliefs] Mongo failed to remove an outdated Relief - ex: $res")
-        ReliefCachedError
-      }
+    foundReliefs flatMap { reliefs =>
+      Future.sequence(reliefs map { relief =>
+        collection.remove(BSONDocument("atedRefNo" -> relief.atedRefNo, "periodKey" -> relief.periodKey)) map { res =>
+          if (res.ok && res.n == 1) {
+            Logger.info(s"${relief.atedRefNo} - ${relief.periodKey}")
+            1
+          } else {
+            Logger.error(s"[deleteExpiredReliefs] Mongo failed to remove an outdated relief - ex: $res")
+            0
+          }
+        }
+      }) map {_.sum}
     }
-    foundReliefs map (_.size)
   }
 
 

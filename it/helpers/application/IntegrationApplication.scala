@@ -26,6 +26,8 @@ trait IntegrationApplication extends GuiceOneServerPerSuite with WireMockConfig 
     "microservice.services.etmp-hod.port"                 -> wireMockPort,
     "microservice.services.datastream.host"               -> wireMockHost,
     "microservice.services.datastream.port"               -> wireMockPort,
+    "auditing.consumer.baseUri.host"                      -> wireMockHost,
+    "auditing.consumer.baseUri.port"                      -> wireMockPort,
     "metrics.rateUnit"                                    -> "SECONDS",
     "metrics.durationUnit"                                -> "SECONDS",
     "metrics.showSamples"                                 -> true,

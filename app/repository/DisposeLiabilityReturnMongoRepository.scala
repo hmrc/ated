@@ -89,8 +89,8 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics
   override def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: DateTime): Future[DisposeLiabilityReturnDelete] = {
     val query = BSONDocument("atedRefNo" -> liabilityReturn.atedRefNo, "id" -> liabilityReturn.id)
     collection.update(query, liabilityReturn.copy(timeStamp = date), upsert = false, multi = false) map { res =>
-      if (res.ok) {
-        Logger.info(s"[updateTimestamp] Updated timestamp for ${liabilityReturn.id}")
+      if (res.ok && res.nModified != 0) {
+        Logger.info(s"[updateTimestamp] Updated timestamp for ${liabilityReturn.id} with $date")
         DisposeLiabilityReturnDeleted
       } else {
         Logger.error(s"[updateTimeStamp: LiabilityReturn] Mongo failed to update, problem occurred in collect - ex: $res")
@@ -104,20 +104,22 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics
     val logOnError = Cursor.ContOnError[Seq[DisposeLiabilityReturn]]((_, ex) =>
       Logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed, problem occurred in collect - ex: ${ex.getMessage}")
     )
-    val foundLiabilityReturns = collection.find(query)
+    val foundLiabilityReturns: Future[Seq[DisposeLiabilityReturn]] = collection.find(query)
       .cursor[DisposeLiabilityReturn]()
       .collect[Seq](batchSize, logOnError)
 
-    collection.remove(query) map {res =>
-      if (res.ok) {
-        ReliefCached
-      } else {
-        Logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated Relief - ex: $res")
-        ReliefCachedError
-      }
+    foundLiabilityReturns flatMap { returns =>
+      Future.sequence(returns map { rtn =>
+        collection.remove(BSONDocument("atedRefNo" -> rtn.atedRefNo, "id" -> rtn.id)) map { res =>
+          if (res.ok && res.n == 1) {
+            1
+          } else {
+            Logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated liability return - ex: $res")
+            0
+          }
+        }
+      }) map {_.sum}
     }
-
-    foundLiabilityReturns map (_.size)
   }
 
 
