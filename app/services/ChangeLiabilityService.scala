@@ -77,7 +77,7 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
                         isPropertyRevalued = Some(false),
                         partAcqDispDate = liabilityReturn.dateOfAcquisition,
                         revaluedValue = liabilityReturn.valueAtAcquisition)),
-                      formBundleReturn = Some(liabilityReturn)
+                      formBundleReturn = None
                     )
                     retrieveDraftPropertyDetails(atedRefNo) map {
                       list =>

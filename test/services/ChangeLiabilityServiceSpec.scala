@@ -111,7 +111,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with OneServerPerSuite with Mo
 
         result.get.title.isDefined must be(true)
         result.get.calculated.isDefined must be(false)
-        result.get.formBundleReturn.isDefined must be(true)
+        result.get.formBundleReturn.isDefined must be(false)
         result.get.value.isDefined must be(true)
         result.get.period.isDefined must be(false)
         result.get.bankDetails.isDefined must be(false)
@@ -127,7 +127,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with OneServerPerSuite with Mo
 
         result.get.title.isDefined must be(true)
         result.get.calculated.isDefined must be(false)
-        result.get.formBundleReturn.isDefined must be(true)
+        result.get.formBundleReturn.isDefined must be(false)
         result.get.value.isDefined must be(true)
         result.get.period.isDefined must be(true)
         result.get.bankDetails.isDefined must be(false)
