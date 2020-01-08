@@ -51,6 +51,9 @@ class ServiceBindings extends Module {
       bind(classOf[SubscriptionDataService]).to(classOf[SubscriptionDataServiceImpl]),
       bind(classOf[DisposeLiabilityReturnMongoWrapper]).to(classOf[DisposeLiabilityReturnMongoWrapperImpl]),
       bind(classOf[PropertyDetailsMongoWrapper]).to(classOf[PropertyDetailsMongoWrapperImpl]),
-      bind(classOf[ReliefsMongoWrapper]).to(classOf[ReliefsMongoWrapperImpl])
+      bind(classOf[ReliefsMongoWrapper]).to(classOf[ReliefsMongoWrapperImpl]),
+      bind(classOf[DeleteOldReliefsJob]).toSelf.eagerly(),
+      bind(classOf[DeleteOldLiabilityReturnsJob]).toSelf.eagerly(),
+      bind(classOf[DeleteOldPropertyDetailsJob]).toSelf.eagerly()
     )
 }
