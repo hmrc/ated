@@ -148,12 +148,10 @@ object PropertyDetailsUtils extends ReliefConstants {
           case (NotOwnedBeforePolicyYear, Some(true), _) => value.newBuildValue
           case (NotOwnedBeforePolicyYear, Some(false), _) => value.notNewBuildValue
           case (_, _, Some(true)) => value.revaluedValue
-          case (_, _, Some(false)) => value.revaluedValue
           case _ => None
         }
     }
   }
-
 
   def getAcquisitionValueAndDate(value: PropertyDetailsValue, periodKey: Int): (Option[BigDecimal], Option[LocalDate]) = {
     val ownedBefore = PropertyDetailsOwnedBefore(value.isOwnedBeforePolicyYear, value.ownedBeforePolicyYearValue)
@@ -164,7 +162,6 @@ object PropertyDetailsUtils extends ReliefConstants {
         value.localAuthRegDate))
       case (NotOwnedBeforePolicyYear, Some(false), _) => (value.notNewBuildValue, value.notNewBuildDate)
       case (_, _, Some(true)) => (value.revaluedValue, value.partAcqDispDate)
-      case (_, _, Some(false)) => (value.revaluedValue, value.partAcqDispDate)
       case _ => (None, None)
     }
   }

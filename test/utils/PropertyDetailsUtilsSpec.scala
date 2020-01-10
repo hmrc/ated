@@ -586,15 +586,6 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants {
       PropertyDetailsUtils.getInitialValueForSubmission(Some(propVal),periodKey) must be (Some(BigDecimal(1111.11)))
     }
 
-    "return the revalued value if this has been not benn revalued and we have no build or ownedBefore answers " in {
-      val propVal = PropertyDetailsValue(
-        isPropertyRevalued = Some(false),
-        revaluedValue = Some(BigDecimal(1111.11)))
-
-      PropertyDetailsUtils.getInitialValueForSubmission(Some(propVal),periodKey) must be (Some(BigDecimal(1111.11)))
-    }
-
-
     "return the owned before value if this has been set, even if it's been revalued" in {
       val propVal = PropertyDetailsValue(isOwnedBeforePolicyYear = Some(true),
         isNewBuild = Some(true),
@@ -712,23 +703,6 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants {
       res._2 must be (Some(new LocalDate("2015-01-01")))
     }
 
-    "return the not new build value, even if it's not been revalued" in {
-      val propVal = PropertyDetailsValue(isOwnedBeforePolicyYear = None,
-        isNewBuild = None,
-        newBuildValue = Some(BigDecimal(3333.33)),
-        newBuildDate = Some(new LocalDate("2014-01-01")),
-        notNewBuildValue = Some(BigDecimal(4444.44)),
-        notNewBuildDate = Some(new LocalDate("2015-01-01")),
-        ownedBeforePolicyYearValue = Some(BigDecimal(2222.22)),
-        isPropertyRevalued = Some(false),
-        revaluedDate = Some(new LocalDate("2013-01-01")),
-        partAcqDispDate = Some(new LocalDate("2013-02-02")),
-        revaluedValue = Some(BigDecimal(1111.11)))
-
-      val res = PropertyDetailsUtils.getAcquisitionData(Some(propVal),periodKey)
-      res._1 must be (Some(BigDecimal(1111.11)))
-      res._2 must be (Some(new LocalDate("2013-02-02")))
-    }
   }
 
 
