@@ -26,18 +26,18 @@ class SchedulingActor extends Actor with ActorLogging {
   override def receive: Receive = {
     case message : ScheduledMessage[_] =>
       Logger.info(s"Received ${message.getClass.getSimpleName}")
-      message.service.invoke
+      message.service.invoke()
   }
 }
 
 object SchedulingActor {
   sealed trait ScheduledMessage[A] {
-    val service: ScheduledService[A]
+    val service: ScheduledService[(Int, Int)]
   }
 
-  case class deletePropertyDetailsDrafts(service: DeletePropertyDetailsService) extends ScheduledMessage[Int]
-	case class deleteReliefDrafts(service: DeleteReliefsService) extends ScheduledMessage[Int]
-	case class deleteLiabilityReturns(service: DeleteLiabilityReturnsService) extends ScheduledMessage[Int]
+  case class deletePropertyDetailsDrafts(service: DeletePropertyDetailsService) extends ScheduledMessage[(Int, Int)]
+	case class deleteReliefDrafts(service: DeleteReliefsService) extends ScheduledMessage[(Int, Int)]
+	case class deleteLiabilityReturns(service: DeleteLiabilityReturnsService) extends ScheduledMessage[(Int, Int )]
 
 
 	def props: Props = Props[SchedulingActor]

@@ -33,7 +33,7 @@ import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
 sealed trait PropertyDetailsCache
 case object PropertyDetailsCached extends PropertyDetailsCache
@@ -48,7 +48,8 @@ trait PropertyDetailsMongoRepository extends ReactiveRepository[PropertyDetails,
   def fetchPropertyDetails(atedRefNo: String): Future[Seq[PropertyDetails]]
   def fetchPropertyDetailsById(atedRefNo: String, id: String): Future[Seq[PropertyDetails]]
   def deletePropertyDetails(atedRefNo: String): Future[PropertyDetailsDelete]
-  def deleteExpiredPropertyDetails(batchSize: Int): Future[Int]
+  def deleteExpired28PropertyDetails(batchSize: Int): Future[Int]
+  def deleteExpired60PropertyDetails(batchSize: Int, datetimeToggle: Boolean = false): Future[Int]
   def deletePropertyDetailsByfieldName(atedRefNo: String, id: String): Future[PropertyDetailsDelete]
   def updateTimeStamp(propertyDetails: PropertyDetails, date: DateTime): Future[PropertyDetailsCache]
   def metrics: ServiceMetrics
@@ -98,10 +99,38 @@ class PropertyDetailsReactiveMongoRepository(mongo: () => DB, val metrics: Servi
     }
   }
 
-  def deleteExpiredPropertyDetails(batchSize: Int): Future[Int] = {
+  def deleteExpired28PropertyDetails(batchSize: Int): Future[Int] = {
     implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
-    val query = BSONDocument("timeStamp" -> Json.obj("$lt" -> DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(28)))
+    val query = BSONDocument("timeStamp" -> Json.obj("$lte" -> DateTime.parse("2020-02-27").withHourOfDay(0).minusDays(29)))
+    val logOnError = Cursor.ContOnError[Seq[PropertyDetails]]((_, ex) =>
+      Logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed, problem occurred in collect - ex: ${ex.getMessage}")
+    )
+    val foundPropertyDetails: Future[Seq[PropertyDetails]] = collection.find(query)
+      .cursor[PropertyDetails]()
+      .collect[Seq](batchSize, logOnError)
 
+    foundPropertyDetails flatMap { propertyDetails =>
+      Future.sequence(propertyDetails map { propDetails =>
+        collection.remove(BSONDocument("atedRefNo" -> propDetails.atedRefNo, "id" -> propDetails.id)) map { res =>
+          if (res.ok && res.n == 1) {
+            1
+          } else {
+            Logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated property details - ex: $res")
+            0
+          }
+        }
+      }) map {_.sum}
+    }
+  }
+
+
+  def deleteExpired60PropertyDetails(batchSize: Int, datetimeToggle: Boolean = false): Future[Int] = {
+    implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
+    val query = if(datetimeToggle) {
+      BSONDocument("timeStamp" -> Json.obj("$lte" -> DateTime.parse("2020-10-10").withHourOfDay(0).minusDays(61)))
+    } else {
+      BSONDocument("timeStamp" -> Json.obj("$lte" -> DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(61)))
+    }
     val logOnError = Cursor.ContOnError[Seq[PropertyDetails]]((_, ex) =>
       Logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed, problem occurred in collect - ex: ${ex.getMessage}")
     )

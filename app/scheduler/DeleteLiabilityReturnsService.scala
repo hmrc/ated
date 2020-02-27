@@ -17,7 +17,7 @@
 package scheduler
 
 import javax.inject.Inject
-import org.joda.time.Duration
+import org.joda.time.{DateTime, Duration}
 import play.api.{Configuration, Environment, Logger}
 import repository.{DisposeLiabilityReturnMongoRepository, DisposeLiabilityReturnMongoWrapper, LockRepositoryProvider}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -32,6 +32,7 @@ class DefaultDeleteLiabilityReturnsService @Inject()(val servicesConfig: Service
                                             val lockRepositoryProvider: LockRepositoryProvider,
                                             val configuration: Configuration
                                             ) extends DeleteLiabilityReturnsService {
+
   override val documentBatchSize: Int = servicesConfig.getInt("schedules.delete-liability-returns-job.cleardown.batchSize")
   lazy val lockoutTimeout: Int = servicesConfig.getInt("schedules.delete-liability-returns-job.lockTimeout")
 
@@ -42,7 +43,7 @@ class DefaultDeleteLiabilityReturnsService @Inject()(val servicesConfig: Service
   }
 }
 
-trait DeleteLiabilityReturnsService extends ScheduledService[Int] {
+trait DeleteLiabilityReturnsService extends ScheduledService[(Int, Int)] {
   lazy val repo: DisposeLiabilityReturnMongoRepository = repository()
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
@@ -50,16 +51,25 @@ trait DeleteLiabilityReturnsService extends ScheduledService[Int] {
   val lockKeeper: LockKeeper
   val documentBatchSize: Int
 
-  private def deleteOldLiabilityReturns(implicit ec: ExecutionContext): Future[Int] = repo.deleteExpiredLiabilityReturns(documentBatchSize)
+  private def deleteOldLiabilityReturns(dateTimeToggle: Boolean = false)(implicit ec: ExecutionContext): Future[(Int, Int)] = {
+    for {
+      doc28Days <- repo.deleteExpired28DayLiabilityReturns(documentBatchSize)
+      doc60Days <- repo.deleteExpired60DayLiabilityReturns(documentBatchSize, dateTimeToggle)
+    } yield {
+        Logger.info(s"[DeleteLiabilityReturnsService][deleteOldLiabilityReturns] Deleted $doc28Days draft documents past the 28 day limit")
+        Logger.info(s"[DeleteLiabilityReturnsService][deleteOldLiabilityReturns] Deleted $doc60Days draft documents past the 60 day limit")
+      (doc28Days, doc60Days)
+      }
+    }
 
-  def invoke(implicit ec: ExecutionContext): Future[Int] = {
-    lockKeeper.tryLock(deleteOldLiabilityReturns) map {
+  def invoke(dateTimeToggle: Boolean = false)(implicit ec: ExecutionContext): Future[(Int, Int)] = {
+    lockKeeper.tryLock(deleteOldLiabilityReturns(dateTimeToggle)) map {
       case Some(result) =>
-        Logger.info(s"[DeleteLiabilityReturnsService] Deleted $result draft documents past the 28 day limit")
+        Logger.info(s"[DeleteLiabilityReturnsService] Deleted $result draft documents past the given day limit")
         result
       case None         =>
         Logger.warn(s"[DeleteLiabilityReturnsService] Failed to acquire lock")
-        0
+        (0,0)
     }
   }
 }
