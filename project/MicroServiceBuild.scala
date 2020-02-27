@@ -14,11 +14,11 @@ private object AppDependencies {
   val compile: Seq[ModuleID] = Seq(
     ws,
 		"com.enragedginger" %% "akka-quartz-scheduler" % "1.8.0-akka-2.5.x",
-    "uk.gov.hmrc"       %% "bootstrap-play-26"     % "1.3.0",
+    "uk.gov.hmrc"       %% "bootstrap-play-26"     % "1.4.0",
     "uk.gov.hmrc"       %% "domain"                % "5.6.0-play-26",
-    "uk.gov.hmrc"       %% "simple-reactivemongo"  % "7.22.0-play-26",
+    "uk.gov.hmrc"       %% "simple-reactivemongo"  % "7.23.0-play-26",
     "uk.gov.hmrc"       %% "json-encryption"       % "4.4.0-play-26",
-    "uk.gov.hmrc"       %% "auth-client"           % "2.32.1-play-26",
+    "uk.gov.hmrc"       %% "auth-client"           % "2.33.0-play-26",
 		"uk.gov.hmrc"			  %% "mongo-lock"					   % "6.18.0-play-26",
 		"com.typesafe.play" %% "play-json-joda"        % "2.6.10"
   )
