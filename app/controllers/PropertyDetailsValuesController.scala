@@ -18,7 +18,8 @@ package controllers
 
 import javax.inject.{Inject, Named, Singleton}
 import models._
-import play.api.mvc.ControllerComponents
+import play.api.libs.json.JsValue
+import play.api.mvc.{Action, ControllerComponents}
 import services.PropertyDetailsValuesService
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.Audit
@@ -35,7 +36,7 @@ class PropertyDetailsValuesControllerImpl @Inject()(val cc: ControllerComponents
   val audit: Audit = new Audit(s"ATED:$appName", auditConnector)
 }
 
-trait PropertyDetailsValuesController extends BackendController  {
+trait PropertyDetailsValuesController extends BackendController {
 
   def propertyDetailsService: PropertyDetailsValuesService
 
@@ -44,7 +45,7 @@ trait PropertyDetailsValuesController extends BackendController  {
       withJsonBody[Boolean] { overLimit =>
         propertyDetailsService.cacheDraftHasValueChanged(atedRefNo, id, overLimit).map { updatedDraftPropertyDetails =>
           updatedDraftPropertyDetails match {
-            case Some(x) => Ok("")
+            case Some(_) => Ok("")
             case None => BadRequest("Invalid Request")
           }
         }
@@ -57,7 +58,7 @@ trait PropertyDetailsValuesController extends BackendController  {
       withJsonBody[Boolean] { overLimit =>
         propertyDetailsService.cacheDraftPropertyDetailsAcquisition(atedRefNo, id, overLimit).map { updatedDraftPropertyDetails =>
           updatedDraftPropertyDetails match {
-            case Some(x) => Ok("")
+            case Some(_) => Ok("")
             case None => BadRequest("Invalid Request")
           }
         }
@@ -69,7 +70,7 @@ trait PropertyDetailsValuesController extends BackendController  {
       withJsonBody[PropertyDetailsRevalued] { draftPropertyDetails =>
         propertyDetailsService.cacheDraftPropertyDetailsRevalued(atedRefNo, id, draftPropertyDetails).map { updatedDraftPropertyDetails =>
           updatedDraftPropertyDetails match {
-            case Some(x) => Ok("")
+            case Some(_) => Ok("")
             case None => BadRequest("Invalid Request")
           }
         }
@@ -81,32 +82,69 @@ trait PropertyDetailsValuesController extends BackendController  {
       withJsonBody[PropertyDetailsOwnedBefore] { draftPropertyDetails =>
         propertyDetailsService.cacheDraftPropertyDetailsOwnedBefore(atedRefNo, id, draftPropertyDetails).map { updatedDraftPropertyDetails =>
           updatedDraftPropertyDetails match {
-            case Some(x) => Ok("")
+            case Some(_) => Ok("")
             case None => BadRequest("Invalid Request")
           }
         }
       }
   }
 
-  def saveDraftPropertyDetailsNewBuild(atedRefNo: String, id: String) = Action.async(parse.json) {
+  def saveDraftPropertyDetailsIsNewBuild(atedRefNo: String, id: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
-      withJsonBody[PropertyDetailsNewBuild] { draftPropertyDetails =>
-        propertyDetailsService.cacheDraftPropertyDetailsNewBuild(atedRefNo, id, draftPropertyDetails).map { updatedDraftPropertyDetails =>
-          updatedDraftPropertyDetails match {
-            case Some(x) => Ok("")
-            case None => BadRequest("Invalid Request")
-          }
+      withJsonBody[PropertyDetailsIsNewBuild] { draftPropertyDetails =>
+        propertyDetailsService.cacheDraftPropertyDetailsIsNewBuild(atedRefNo, id, draftPropertyDetails).map {
+          case Some(_) => Ok("")
+          case None => BadRequest("Invalid Request")
         }
       }
   }
 
+  def saveDraftPropertyDetailsNewBuildDates(atedRefNo: String, id: String) = Action.async(parse.json) {
+    implicit request =>
+      withJsonBody[PropertyDetailsNewBuildDates] { draftPropertyDetails =>
+        propertyDetailsService.cacheDraftPropertyDetailsNewBuildDates(atedRefNo, id, draftPropertyDetails).map {
+          case Some(_) => Ok("")
+          case None => BadRequest("Invalid Request")
+        }
+      }
+  }
+
+  def saveDraftPropertyDetailsNewBuildValue(atedRefNo: String, id: String) = Action.async(parse.json) {
+    implicit request =>
+      withJsonBody[PropertyDetailsNewBuildValue] { draftPropertyDetails =>
+        propertyDetailsService.cacheDraftPropertyDetailsNewBuildValue(atedRefNo, id, draftPropertyDetails).map {
+          case Some(_) => Ok("")
+          case None => BadRequest("Invalid Request")
+        }
+      }
+  }
+
+  def saveDraftPropertyDetailsValueAcquired(atedRefNo: String, id: String) = Action.async(parse.json) {
+    implicit request =>
+      withJsonBody[PropertyDetailsValueOnAcquisition] { draftPropertyDetails =>
+        propertyDetailsService.cacheDraftPropertyDetailsValueAcquired(atedRefNo, id, draftPropertyDetails).map {
+          case Some(_) => Ok("")
+          case None => BadRequest("Invalid Request")
+        }
+      }
+  }
+
+  def saveDraftPropertyDetailsDatesAcquired(atedRefNo: String, id: String) = Action.async(parse.json) {
+    implicit request =>
+      withJsonBody[PropertyDetailsDateOfAcquisition] { draftPropertyDetails =>
+        propertyDetailsService.cacheDraftPropertyDetailsDatesAcquired(atedRefNo, id, draftPropertyDetails).map {
+          case Some(_) => Ok("")
+          case None => BadRequest("Invalid Request")
+        }
+      }
+  }
 
   def saveDraftPropertyDetailsProfessionallyValued(atedRefNo: String, id: String) = Action.async(parse.json) {
     implicit request =>
       withJsonBody[PropertyDetailsProfessionallyValued] { draftPropertyDetails =>
         propertyDetailsService.cacheDraftPropertyDetailsProfessionallyValued(atedRefNo, id, draftPropertyDetails).map { updatedDraftPropertyDetails =>
           updatedDraftPropertyDetails match {
-            case Some(x) => Ok("")
+            case Some(_) => Ok("")
             case None => BadRequest("Invalid Request")
           }
         }
