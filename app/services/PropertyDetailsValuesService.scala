@@ -21,11 +21,11 @@ import javax.inject.Inject
 import models._
 import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
 import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.http.HeaderCarrier
 import utils.ReliefConstants
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.http.HeaderCarrier
 
 class PropertyDetailsValuesServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnector,
                                                  val authConnector: AuthConnector,
@@ -36,7 +36,9 @@ class PropertyDetailsValuesServiceImpl @Inject()(val etmpConnector: EtmpReturnsC
 trait PropertyDetailsValuesService extends ReliefConstants {
 
   def etmpConnector: EtmpReturnsConnector
+
   def authConnector: AuthConnector
+
   def propertyDetailsCache: PropertyDetailsMongoRepository
 
   def cacheDraftPropertyDetailsOwnedBefore(atedRefNo: String, id: String, updatedDetails: PropertyDetailsOwnedBefore)
@@ -46,7 +48,7 @@ trait PropertyDetailsValuesService extends ReliefConstants {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
         foundPropertyDetails =>
           val updatedValued = foundPropertyDetails.value match {
-            case Some(x) =>
+            case Some(_) =>
               foundPropertyDetails.value.map(_.copy(
                 isOwnedBeforePolicyYear = updatedDetails.isOwnedBeforePolicyYear,
                 ownedBeforePolicyYearValue = updatedDetails.ownedBeforePolicyYearValue
@@ -57,18 +59,20 @@ trait PropertyDetailsValuesService extends ReliefConstants {
       }
       Future.successful(updatedPropertyDetails)
     }
+
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
 
 
   def cacheDraftHasValueChanged(atedRefNo: String, id: String, newValue: Boolean)
-                                          (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+                               (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
         foundPropertyDetails =>
-          if (foundPropertyDetails.value.flatMap(_.hasValueChanged).contains(newValue))
+          if (foundPropertyDetails.value.flatMap(_.hasValueChanged).contains(newValue)) {
             foundPropertyDetails
+          }
           else {
             val updatedValue = foundPropertyDetails.value.map(_.copy(hasValueChanged = Some(newValue)))
             foundPropertyDetails.copy(value = updatedValue, calculated = None)
@@ -76,12 +80,13 @@ trait PropertyDetailsValuesService extends ReliefConstants {
       }
       Future.successful(updatedPropertyDetails)
     }
+
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
 
 
   def cacheDraftPropertyDetailsAcquisition(atedRefNo: String, id: String, newValue: Boolean)
-                                    (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+                                          (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -101,21 +106,22 @@ trait PropertyDetailsValuesService extends ReliefConstants {
       }
       Future.successful(updatedPropertyDetails)
     }
+
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
 
   def cacheDraftPropertyDetailsRevalued(atedRefNo: String, id: String, updatedDetails: PropertyDetailsRevalued)
-                                          (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+                                       (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
         foundPropertyDetails =>
           if (updatedDetails.isPropertyRevalued == foundPropertyDetails.value.flatMap(_.isPropertyRevalued) &&
-              updatedDetails.revaluedDate == foundPropertyDetails.value.flatMap(_.revaluedDate) &&
-              updatedDetails.revaluedValue == foundPropertyDetails.value.flatMap(_.revaluedValue) &&
-              updatedDetails.partAcqDispDate == foundPropertyDetails.value.flatMap(_.partAcqDispDate))
+            updatedDetails.revaluedDate == foundPropertyDetails.value.flatMap(_.revaluedDate) &&
+            updatedDetails.revaluedValue == foundPropertyDetails.value.flatMap(_.revaluedValue) &&
+            updatedDetails.partAcqDispDate == foundPropertyDetails.value.flatMap(_.partAcqDispDate)) {
             foundPropertyDetails
-          else {
+          } else {
             val updatedValued = foundPropertyDetails.value.map(_.copy(
               isPropertyRevalued = updatedDetails.isPropertyRevalued,
               revaluedDate = updatedDetails.revaluedDate,
@@ -127,42 +133,123 @@ trait PropertyDetailsValuesService extends ReliefConstants {
       }
       Future.successful(updatedPropertyDetails)
     }
+
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
 
-
-  def cacheDraftPropertyDetailsNewBuild(atedRefNo: String, id: String, updatedDetails: PropertyDetailsNewBuild)
-                                          (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+  def cacheDraftPropertyDetailsIsNewBuild(atedRefNo: String, id: String, updatedDetails: PropertyDetailsIsNewBuild)
+                                         (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
         foundPropertyDetails =>
-          if (updatedDetails.isNewBuild == foundPropertyDetails.value.flatMap(_.isNewBuild) &&
-              updatedDetails.newBuildValue == foundPropertyDetails.value.flatMap(_.newBuildValue) &&
-              updatedDetails.newBuildDate == foundPropertyDetails.value.flatMap(_.newBuildDate) &&
-              updatedDetails.localAuthRegDate == foundPropertyDetails.value.flatMap(_.localAuthRegDate) &&
-              updatedDetails.notNewBuildValue == foundPropertyDetails.value.flatMap(_.notNewBuildValue) &&
-              updatedDetails.notNewBuildDate == foundPropertyDetails.value.flatMap(_.notNewBuildDate))
+          if (updatedDetails.isNewBuild == foundPropertyDetails.value.flatMap(_.isNewBuild)) {
             foundPropertyDetails
+          }
           else {
             val updatedValued = foundPropertyDetails.value.map(_.copy(
-              isNewBuild = updatedDetails.isNewBuild,
-              newBuildValue = updatedDetails.newBuildValue,
-              newBuildDate = updatedDetails.newBuildDate,
-              localAuthRegDate = updatedDetails.localAuthRegDate,
-              notNewBuildValue = updatedDetails.notNewBuildValue,
-              notNewBuildDate = updatedDetails.notNewBuildDate
+              isNewBuild = updatedDetails.isNewBuild
             ))
             foundPropertyDetails.copy(value = updatedValued, calculated = None)
           }
       }
       Future.successful(updatedPropertyDetails)
     }
+
+    cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
+  }
+
+  def cacheDraftPropertyDetailsNewBuildDates(atedRefNo: String, id: String, updatedDetails: PropertyDetailsNewBuildDates)
+                                            (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+
+    def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
+      val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
+        foundPropertyDetails =>
+          if (updatedDetails.newBuildOccupyDate == foundPropertyDetails.value.flatMap(_.newBuildDate) &&
+            updatedDetails.newBuildRegisterDate == foundPropertyDetails.value.flatMap(_.localAuthRegDate)) {
+            foundPropertyDetails
+          }
+          else {
+            val updatedValue = foundPropertyDetails.value.map(_.copy(
+              newBuildDate = updatedDetails.newBuildOccupyDate,
+              localAuthRegDate = updatedDetails.newBuildRegisterDate
+            ))
+            foundPropertyDetails.copy(value = updatedValue, calculated = None)
+          }
+      }
+      Future.successful(updatedPropertyDetails)
+    }
+
+    cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
+
+  }
+
+  def cacheDraftPropertyDetailsNewBuildValue(atedRefNo: String, id: String, updatedDetails: PropertyDetailsNewBuildValue)
+                                            (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+
+    def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
+      val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
+        foundPropertyDetails =>
+          if (updatedDetails.newBuildValue == foundPropertyDetails.value.flatMap(_.newBuildValue)) {
+            foundPropertyDetails
+          } else {
+            val updatedValue = foundPropertyDetails.value.map(_.copy(
+              newBuildValue = updatedDetails.newBuildValue
+            ))
+            foundPropertyDetails.copy(value = updatedValue, calculated = None)
+          }
+      }
+      Future.successful(updatedPropertyDetails)
+    }
+
+    cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
+  }
+
+  def cacheDraftPropertyDetailsValueAcquired(atedRefNo: String, id: String, updatedDetails: PropertyDetailsValueOnAcquisition)
+                                            (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+
+    def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
+      val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
+        foundPropertyDetails =>
+          if (updatedDetails.acquiredValue == foundPropertyDetails.value.flatMap(_.notNewBuildValue)) {
+            foundPropertyDetails
+          } else {
+            val updatedValue = foundPropertyDetails.value.map(_.copy(
+              notNewBuildValue = updatedDetails.acquiredValue
+            ))
+            foundPropertyDetails.copy(value = updatedValue, calculated = None)
+          }
+      }
+      Future.successful(updatedPropertyDetails)
+    }
+
+    cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
+
+  }
+
+  def cacheDraftPropertyDetailsDatesAcquired(atedRefNo: String, id: String, updatedDetails: PropertyDetailsDateOfAcquisition)
+                                            (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+
+    def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
+      val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
+        foundPropertyDetails =>
+          if (updatedDetails.acquiredDate == foundPropertyDetails.value.flatMap(_.notNewBuildDate)) {
+            foundPropertyDetails
+          } else {
+            val updatdeValue = foundPropertyDetails.value.map(_.copy(
+              notNewBuildDate = updatedDetails.acquiredDate
+            ))
+            foundPropertyDetails.copy(value = updatdeValue, calculated = None)
+          }
+      }
+      Future.successful(updatedPropertyDetails)
+    }
+
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
 
   def cacheDraftPropertyDetailsProfessionallyValued(atedRefNo: String, id: String, updatedDetails: PropertyDetailsProfessionallyValued)
-                                          (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+                                                   (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -179,12 +266,12 @@ trait PropertyDetailsValuesService extends ReliefConstants {
       }
       Future.successful(updatedPropertyDetails)
     }
+
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
 
   private def cacheDraftPropertyDetails(atedRefNo: String, updatePropertyDetails: Seq[PropertyDetails] => Future[Option[PropertyDetails]])
                                        (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
-
     for {
       propertyDetailsList <- propertyDetailsCache.fetchPropertyDetails(atedRefNo)
       newPropertyDetails <- updatePropertyDetails(propertyDetailsList)
@@ -193,7 +280,8 @@ trait PropertyDetailsValuesService extends ReliefConstants {
           val filteredPropertyDetailsList = propertyDetailsList.filterNot(_.id == x.id)
           val updatedList = filteredPropertyDetailsList :+ x
           updatedList.map { updateProp =>
-            propertyDetailsCache.cachePropertyDetails(updateProp).map(_ => newPropertyDetails)}.head
+            propertyDetailsCache.cachePropertyDetails(updateProp).map(_ => newPropertyDetails)
+          }.head
         case None => Future.successful(None)
       }
     } yield cacheResponse

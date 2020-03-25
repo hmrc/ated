@@ -46,6 +46,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
   val mockAuthConnector = mock[AuthConnector]
 
   trait Setup {
+
     class TestPropertyDetailsService extends PropertyDetailsValuesService {
       override val propertyDetailsCache = mockPropertyDetailsCache
       override val etmpConnector = mockEtmpConnector
@@ -91,9 +92,9 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
     """.stripMargin
 
   implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
-  lazy val propertyDetails1 = PropertyDetailsBuilder.getFullPropertyDetails("1", Some("something"))
-  lazy val propertyDetails2 = PropertyDetailsBuilder.getFullPropertyDetails("2", Some("something else"))
-  lazy val propertyDetails3 = PropertyDetailsBuilder.getFullPropertyDetails("3", Some("something more"), liabilityAmount = Some(BigDecimal(999.99)))
+  lazy val propertyDetails1: PropertyDetails = PropertyDetailsBuilder.getFullPropertyDetails("1", Some("something"))
+  lazy val propertyDetails2: PropertyDetails = PropertyDetailsBuilder.getFullPropertyDetails("2", Some("something else"))
+  lazy val propertyDetails3: PropertyDetails = PropertyDetailsBuilder.getFullPropertyDetails("3", Some("something more"), liabilityAmount = Some(BigDecimal(999.99)))
 
   "Cache Draft HasValue Change" must {
 
@@ -128,7 +129,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
-      newProp.get.value.isDefined must be (true)
+      newProp.get.value.isDefined must be(true)
       newProp.get.value.get.hasValueChanged must be(Some(true))
       newProp.get.value.get.revaluedValue must be(Some(BigDecimal(1111.11)))
 
@@ -149,7 +150,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
-      newProp.get.value.isDefined must be (true)
+      newProp.get.value.isDefined must be(true)
       newProp.get.value.get.hasValueChanged must be(Some(false))
       newProp.get.value.get.revaluedValue must be(Some(1111.11))
 
@@ -190,7 +191,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
-      newProp.get.value.isDefined must be (true)
+      newProp.get.value.isDefined must be(true)
       newProp.get.value.get.anAcquisition must be(Some(true))
       newProp.get.value.get.revaluedValue must be(Some(BigDecimal(1111.11)))
     }
@@ -209,9 +210,9 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
-      newProp.get.value.isDefined must be (true)
+      newProp.get.value.isDefined must be(true)
       newProp.get.value.get.anAcquisition must be(Some(false))
-      newProp.get.value.get.revaluedValue.isDefined must be (false)
+      newProp.get.value.get.revaluedValue.isDefined must be(false)
     }
   }
 
@@ -258,8 +259,8 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
     "Saving existing property details revalued updates an existing list" in new Setup {
 
       val updateValue = new PropertyDetailsRevalued(isPropertyRevalued = Some(true),
-                revaluedValue = Some(BigDecimal(222.22)),
-                revaluedDate = Some(new LocalDate("1970-01-01")))
+        revaluedValue = Some(BigDecimal(222.22)),
+        revaluedDate = Some(new LocalDate("1970-01-01")))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
@@ -285,7 +286,6 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
     }
 
   }
-
 
   "Save property details OwnedBefore" must {
 
@@ -358,23 +358,16 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
 
   }
 
-  "Save property details NewBuild" must {
-
-    "Saving existing property details NewBuild doesnt update the list if no values have changed" in new Setup {
-
-      val updateValue = new PropertyDetailsNewBuild(isNewBuild = propertyDetails3.value.get.isNewBuild,
-        newBuildValue = propertyDetails3.value.get.newBuildValue,
-        newBuildDate = propertyDetails3.value.get.newBuildDate,
-        notNewBuildValue = propertyDetails3.value.get.notNewBuildValue,
-        notNewBuildDate = propertyDetails3.value.get.notNewBuildDate
-      )
+  "Cache property details IsNewBuild" must {
+    "Should not update IsNewBuild value if it has not been changed" in new Setup {
+      val updateValue = new PropertyDetailsIsNewBuild(isNewBuild = propertyDetails3.value.get.isNewBuild)
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuild(accountRef,
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsIsNewBuild(accountRef,
         propertyDetails3.id,
         updateValue)
 
@@ -384,32 +377,20 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
       newProp.get.period.isDefined must be(true)
       newProp.get.period must be(propertyDetails3.period)
-      newProp.get.calculated.isDefined must be(true)
-
       newProp.get.value.isDefined must be(true)
-      val newValue = newProp.get.value.get
-      newValue.anAcquisition must be(Some(true))
-      newValue.isOwnedBeforePolicyYear.isDefined must be(true)
-      newValue.ownedBeforePolicyYearValue.isDefined must be(true)
-      newValue.isPropertyRevalued.isDefined must be(true)
-      newValue.revaluedValue.isDefined must be(true)
-      newValue.revaluedDate.isDefined must be(true)
-      newValue.isValuedByAgent.isDefined must be(true)
 
-      newValue.isNewBuild must be(propertyDetails3.value.get.isNewBuild)
-      newValue.newBuildValue must be(propertyDetails3.value.get.newBuildValue)
-      newValue.newBuildDate must be(propertyDetails3.value.get.newBuildDate)
-      newValue.notNewBuildValue must be(propertyDetails3.value.get.notNewBuildValue)
-      newValue.notNewBuildDate must be(propertyDetails3.value.get.notNewBuildDate)
+      val newValue = newProp.get.value.get
+      newValue.isNewBuild.isDefined must be(true)
+      newValue.isNewBuild must be(updateValue.isNewBuild)
     }
 
-    "Saving existing property details NewBuild updates an existing list if a value has changed" in new Setup {
+  }
 
-      val updateValue = new PropertyDetailsNewBuild(isNewBuild = Some(true),
-        newBuildValue = Some(BigDecimal(222.22)),
-        newBuildDate = Some(new LocalDate("1970-01-01")),
-        notNewBuildValue = Some(BigDecimal(333.33)),
-        notNewBuildDate = Some(new LocalDate("1971-01-01"))
+  "Cache property details new build dates" must {
+    "not update the held value if it has not been changed" in new Setup {
+      val updateValue = new PropertyDetailsNewBuildDates(
+        newBuildOccupyDate = propertyDetails3.value.get.newBuildDate,
+        newBuildRegisterDate = propertyDetails3.value.get.localAuthRegDate
       )
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
@@ -417,7 +398,35 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuild(accountRef,
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuildDates(accountRef,
+        propertyDetails3.id,
+        updateValue)
+
+      val newProp = await(result)
+      newProp.isDefined must be(true)
+      newProp.get.periodKey must be(propertyDetails3.periodKey)
+      newProp.get.addressProperty must be(propertyDetails3.addressProperty)
+      newProp.get.period.isDefined must be(true)
+      newProp.get.period must be(propertyDetails3.period)
+      newProp.get.value.isDefined must be(true)
+
+      val newValue = newProp.get.value.get
+      newValue.newBuildDate must be(updateValue.newBuildOccupyDate)
+      newValue.localAuthRegDate must be(updateValue.newBuildRegisterDate)
+    }
+
+    "update the value in the cache if it has been changed" in new Setup {
+      val updatedNewBuildDate = Some(LocalDate.parse("2015-01-01"))
+      val updatedLocalAuthRegDate = Some(LocalDate.parse("2015-01-01"))
+      val updateValue = new PropertyDetailsNewBuildDates()
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
+
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuildDates(accountRef,
         propertyDetails3.id,
         updateValue)
 
@@ -439,15 +448,239 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
       newValue.revaluedDate.isDefined must be(true)
       newValue.isValuedByAgent.isDefined must be(true)
 
-      newValue.isNewBuild must be(Some(true))
-      newValue.newBuildValue must be(Some(BigDecimal(222.22)))
-      newValue.newBuildDate must be(Some(new LocalDate("1970-01-01")))
-      newValue.notNewBuildValue must be(Some(BigDecimal(333.33)))
-      newValue.notNewBuildDate must be(Some(new LocalDate("1971-01-01")))
-
+      newValue.newBuildDate must be(updateValue.newBuildOccupyDate)
+      newValue.localAuthRegDate must be(updateValue.newBuildRegisterDate)
 
     }
 
+  }
+
+  "Cache property details NewBuildValue" must {
+    "not update the list of values if non of the values have changed" in new Setup {
+      val updateValue = new PropertyDetailsNewBuildValue(
+        newBuildValue = propertyDetails3.value.get.newBuildValue
+      )
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuildValue(
+        accountRef,
+        propertyDetails3.id,
+        updateValue
+      )
+
+      val newProp = await(result)
+      newProp.isDefined must be(true)
+      newProp.get.periodKey must be(propertyDetails3.periodKey)
+      newProp.get.addressProperty must be(propertyDetails3.addressProperty)
+      newProp.get.period.isDefined must be(true)
+      newProp.get.period must be(propertyDetails3.period)
+      newProp.get.calculated.isDefined must be(true)
+
+      newProp.get.value.isDefined must be(true)
+      val newValue = newProp.get.value.get
+      newValue.anAcquisition must be(Some(true))
+      newValue.isOwnedBeforePolicyYear.isDefined must be(true)
+      newValue.ownedBeforePolicyYearValue.isDefined must be(true)
+      newValue.isPropertyRevalued.isDefined must be(true)
+      newValue.revaluedValue.isDefined must be(true)
+      newValue.revaluedDate.isDefined must be(true)
+      newValue.isValuedByAgent.isDefined must be(true)
+
+      newValue.newBuildValue must be(updateValue.newBuildValue)
+    }
+
+    "update the list of values if the value of the new build has been changed" in new Setup {
+      val updateValue = new PropertyDetailsNewBuildValue(
+        newBuildValue = Some(12321.12)
+      )
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuildValue(
+        accountRef,
+        propertyDetails3.id,
+        updateValue
+      )
+
+      val newProp = await(result)
+      newProp.isDefined must be(true)
+      newProp.get.periodKey must be(propertyDetails3.periodKey)
+      newProp.get.addressProperty must be(propertyDetails3.addressProperty)
+      newProp.get.period.isDefined must be(true)
+      newProp.get.period must be(propertyDetails3.period)
+      newProp.get.calculated.isDefined must be(false)
+
+      newProp.get.value.isDefined must be(true)
+      val newValue = newProp.get.value.get
+      newValue.anAcquisition must be(Some(true))
+      newValue.isOwnedBeforePolicyYear.isDefined must be(true)
+      newValue.ownedBeforePolicyYearValue.isDefined must be(true)
+      newValue.isPropertyRevalued.isDefined must be(true)
+      newValue.revaluedValue.isDefined must be(true)
+      newValue.revaluedDate.isDefined must be(true)
+      newValue.isValuedByAgent.isDefined must be(true)
+
+      newValue.newBuildValue must be(updateValue.newBuildValue)
+    }
+
+  }
+
+  "Cache property details value on acquisition" must {
+    "not update the cache when the value on acquisition has not changed" in new Setup {
+      val updateValue = new PropertyDetailsValueOnAcquisition(
+        acquiredValue = propertyDetails3.value.get.notNewBuildValue
+      )
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsValueAcquired(
+        accountRef,
+        propertyDetails3.id,
+        updateValue
+      )
+
+      val newProp = await(result)
+      newProp.isDefined must be(true)
+      newProp.get.periodKey must be(propertyDetails3.periodKey)
+      newProp.get.addressProperty must be(propertyDetails3.addressProperty)
+      newProp.get.period.isDefined must be(true)
+      newProp.get.period must be(propertyDetails3.period)
+      newProp.get.calculated.isDefined must be(true)
+
+      newProp.get.value.isDefined must be(true)
+      val newValue = newProp.get.value.get
+      newValue.anAcquisition must be(Some(true))
+      newValue.isOwnedBeforePolicyYear.isDefined must be(true)
+      newValue.ownedBeforePolicyYearValue.isDefined must be(true)
+      newValue.isPropertyRevalued.isDefined must be(true)
+      newValue.revaluedValue.isDefined must be(true)
+      newValue.revaluedDate.isDefined must be(true)
+      newValue.isValuedByAgent.isDefined must be(true)
+
+      newValue.notNewBuildValue must be(updateValue.acquiredValue)
+    }
+    "update the value of the cache when the value on acquistion has changed" in new Setup {
+
+      val updateValue = new PropertyDetailsValueOnAcquisition(
+        acquiredValue = Some(120000.000)
+      )
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsValueAcquired(
+        accountRef,
+        propertyDetails3.id,
+        updateValue
+      )
+
+      val newProp = await(result)
+      newProp.isDefined must be(true)
+      newProp.get.periodKey must be(propertyDetails3.periodKey)
+      newProp.get.addressProperty must be(propertyDetails3.addressProperty)
+      newProp.get.period.isDefined must be(true)
+      newProp.get.period must be(propertyDetails3.period)
+      newProp.get.calculated.isDefined must be(false)
+
+      newProp.get.value.isDefined must be(true)
+      val newValue = newProp.get.value.get
+      newValue.anAcquisition must be(Some(true))
+      newValue.isOwnedBeforePolicyYear.isDefined must be(true)
+      newValue.ownedBeforePolicyYearValue.isDefined must be(true)
+      newValue.isPropertyRevalued.isDefined must be(true)
+      newValue.revaluedValue.isDefined must be(true)
+      newValue.revaluedDate.isDefined must be(true)
+      newValue.isValuedByAgent.isDefined must be(true)
+
+      newValue.notNewBuildValue must be(updateValue.acquiredValue)
+    }
+  }
+
+  "Cache property details date of acquisition" must {
+    "not update the cache when the value of acquisition has not changed" in new Setup {
+      val updateValue = PropertyDetailsDateOfAcquisition(
+        propertyDetails3.value.get.notNewBuildDate
+      )
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsDatesAcquired(
+        accountRef,
+        propertyDetails3.id,
+        updateValue
+      )
+
+      val newProp = await(result)
+      newProp.isDefined must be(true)
+      newProp.get.periodKey must be(propertyDetails3.periodKey)
+      newProp.get.addressProperty must be(propertyDetails3.addressProperty)
+      newProp.get.period.isDefined must be(true)
+      newProp.get.period must be(propertyDetails3.period)
+      newProp.get.calculated.isDefined must be(true)
+
+      newProp.get.value.isDefined must be(true)
+      val newValue = newProp.get.value.get
+      newValue.anAcquisition must be(Some(true))
+      newValue.isOwnedBeforePolicyYear.isDefined must be(true)
+      newValue.ownedBeforePolicyYearValue.isDefined must be(true)
+      newValue.isPropertyRevalued.isDefined must be(true)
+      newValue.revaluedValue.isDefined must be(true)
+      newValue.revaluedDate.isDefined must be(true)
+      newValue.isValuedByAgent.isDefined must be(true)
+
+      newValue.notNewBuildDate must be(updateValue.acquiredDate)
+
+    }
+
+    "update the value of the cache when the date of acquistion has changed" in new Setup {
+      val updateValue = PropertyDetailsDateOfAcquisition(Some(new LocalDate("2012-01-01")))
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsDatesAcquired(
+        accountRef,
+        propertyDetails3.id,
+        updateValue
+      )
+
+      val newProp = await(result)
+      newProp.isDefined must be(true)
+      newProp.get.periodKey must be(propertyDetails3.periodKey)
+      newProp.get.addressProperty must be(propertyDetails3.addressProperty)
+      newProp.get.period.isDefined must be(true)
+      newProp.get.period must be(propertyDetails3.period)
+      newProp.get.calculated.isDefined must be(false)
+
+      newProp.get.value.isDefined must be(true)
+      val newValue = newProp.get.value.get
+      newValue.anAcquisition must be(Some(true))
+      newValue.isOwnedBeforePolicyYear.isDefined must be(true)
+      newValue.ownedBeforePolicyYearValue.isDefined must be(true)
+      newValue.isPropertyRevalued.isDefined must be(true)
+      newValue.revaluedValue.isDefined must be(true)
+      newValue.revaluedDate.isDefined must be(true)
+      newValue.isValuedByAgent.isDefined must be(true)
+
+      newValue.notNewBuildDate must be(updateValue.acquiredDate)
+    }
   }
 
   "Save property details ProfessionallyValued" must {

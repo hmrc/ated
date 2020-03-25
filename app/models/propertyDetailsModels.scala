@@ -150,8 +150,38 @@ object PropertyDetailsNewBuild {
   implicit val formats = Json.format[PropertyDetailsNewBuild]
 }
 
-case class PropertyDetailsFullTaxPeriod(isFullPeriod: Option[Boolean] = None)
+case class PropertyDetailsIsNewBuild(isNewBuild: Option[Boolean] = None)
 
+object PropertyDetailsIsNewBuild {
+  implicit val formats = Json.format[PropertyDetailsIsNewBuild]
+}
+
+case class PropertyDetailsNewBuildDates(newBuildOccupyDate: Option[LocalDate] = None,
+                                        newBuildRegisterDate: Option[LocalDate] = None)
+
+object PropertyDetailsNewBuildDates {
+  implicit val formats = Json.format[PropertyDetailsNewBuildDates]
+}
+
+case class PropertyDetailsNewBuildValue(newBuildValue: Option[BigDecimal] = None)
+
+object PropertyDetailsNewBuildValue {
+  implicit val formats = Json.format[PropertyDetailsNewBuildValue]
+}
+
+case class PropertyDetailsValueOnAcquisition(acquiredValue: Option[BigDecimal] = None)
+
+object PropertyDetailsValueOnAcquisition {
+  implicit val formats = Json.format[PropertyDetailsValueOnAcquisition]
+}
+
+case class PropertyDetailsDateOfAcquisition(acquiredDate: Option[LocalDate] = None)
+
+object PropertyDetailsDateOfAcquisition {
+  implicit val formats = Json.format[PropertyDetailsDateOfAcquisition]
+}
+
+case class PropertyDetailsFullTaxPeriod(isFullPeriod: Option[Boolean] = None)
 
 object PropertyDetailsFullTaxPeriod {
   implicit val formats = Json.format[PropertyDetailsFullTaxPeriod]
