@@ -51,8 +51,7 @@ trait DisposeLiabilityReturnMongoRepository extends ReactiveRepository[DisposeLi
   def fetchDisposeLiabilityReturns(atedRefNo: String): Future[Seq[DisposeLiabilityReturn]]
   def deleteDisposeLiabilityReturns(atedRefNo: String): Future[DisposeLiabilityReturnDelete]
   def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: DateTime): Future[DisposeLiabilityReturnDelete]
-  def deleteExpired28DayLiabilityReturns(batchSize: Int): Future[Int]
-  def deleteExpired60DayLiabilityReturns(batchSize: Int, dateTimeToggle: Boolean = false): Future[Int]
+  def deleteExpired60DayLiabilityReturns(batchSize: Int): Future[Int]
   def metrics: ServiceMetrics
 }
 
@@ -103,35 +102,9 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics
     }
   }
 
-  def deleteExpired28DayLiabilityReturns(batchSize: Int): Future[Int] = {
-    val query = BSONDocument("timeStamp" -> Json.obj("$lte" -> DateTime.parse("2020-02-27").withHourOfDay(0).minusDays(29).toString()))
-    val logOnError = Cursor.ContOnError[Seq[DisposeLiabilityReturn]]((_, ex) =>
-      Logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed, problem occurred in collect - ex: ${ex.getMessage}")
-    )
-    val foundLiabilityReturns: Future[Seq[DisposeLiabilityReturn]] = collection.find(query)
-      .cursor[DisposeLiabilityReturn]()
-      .collect[Seq](batchSize, logOnError)
+  def deleteExpired60DayLiabilityReturns(batchSize: Int): Future[Int] = {
+    val query = BSONDocument("timeStamp" -> Json.obj("$lte" -> DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(61).toString()))
 
-    foundLiabilityReturns flatMap { returns =>
-      Future.sequence(returns map { rtn =>
-        collection.remove(BSONDocument("atedRefNo" -> rtn.atedRefNo, "id" -> rtn.id)) map { res =>
-          if (res.ok && res.n == 1) {
-            1
-          } else {
-            Logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated liability return - ex: $res")
-            0
-          }
-        }
-      }) map {_.sum}
-    }
-  }
-
-  def deleteExpired60DayLiabilityReturns(batchSize: Int, datetimeToggle: Boolean = false): Future[Int] = {
-    val query = if(datetimeToggle) {
-      BSONDocument("timeStamp" -> Json.obj("$lte" -> DateTime.parse("2020-10-10").withHourOfDay(0).minusDays(61).toString()))
-    } else {
-      BSONDocument("timeStamp" -> Json.obj("$lte" -> DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(61).toString()))
-    }
     val logOnError = Cursor.ContOnError[Seq[DisposeLiabilityReturn]]((_, ex) =>
       Logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed, problem occurred in collect - ex: ${ex.getMessage}")
     )

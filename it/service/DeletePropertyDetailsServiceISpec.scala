@@ -22,12 +22,7 @@ class DeletePropertyDetailsServiceISpec extends IntegrationSpec with AssertionHe
   implicit val formats: OFormat[PropertyDetails] = Json.format[PropertyDetails]
 
   val documentUpdateService: DeletePropertyDetailsService = app.injector.instanceOf[DeletePropertyDetailsService]
-  val date27DaysAgo: DateTime = DateTime.parse("2020-02-27").withHourOfDay(0).minusDays(27)
-  val date28DaysAgo: DateTime = date27DaysAgo.minusDays(1)
-  val date28DaysHrsMinsAgo: DateTime = date27DaysAgo.minusDays(1).minusHours(23).minusMinutes(59)
-  val date29DaysAgo: DateTime = date27DaysAgo.minusDays(2)
-  val date29DaysMinsAgo: DateTime = date27DaysAgo.minusDays(2).minusMinutes(1)
-  val date59DaysAgo: DateTime = DateTime.parse("2020-10-10").withHourOfDay(0).minusDays(59)
+  val date59DaysAgo: DateTime = DateTime.now.withHourOfDay(0).minusDays(59)
   val date60DaysAgo: DateTime = date59DaysAgo.minusDays(1)
   val date60DaysHrsMinsAgo: DateTime = date59DaysAgo.minusDays(1).minusHours(23).minusMinutes(59)
   val date61DaysAgo: DateTime = date59DaysAgo.minusDays(2)
@@ -71,12 +66,6 @@ class DeletePropertyDetailsServiceISpec extends IntegrationSpec with AssertionHe
     await(repo.ensureIndexes)
   }
 
-  def createDraftProperty: Future[WSResponse] = hitApplicationEndpoint("/ated/ATE1234567XX/property-details/create/2019")
-    .post(Json.toJson(address))
-
-  def createDraftProperty2: Future[WSResponse] = hitApplicationEndpoint("/ated/ATE7654321XX/property-details/create/2019")
-    .post(Json.toJson(address.copy(line_1 = "New Line 1")))
-
   def createDraftProperty60: Future[WSResponse] = hitApplicationEndpoint("/ated/ATE1234568XX/property-details/create/2020")
     .post(Json.toJson(address))
 
@@ -85,104 +74,13 @@ class DeletePropertyDetailsServiceISpec extends IntegrationSpec with AssertionHe
 
   "documentUpdateService" should {
     "not delete any drafts" when {
-      "the draft has only just been added" in new Setup {
-        val draft = await(createDraftProperty)
-        val deleteCount = await(documentUpdateService.invoke())
-        val foundDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/property-details/retrieve/${(draft.json \ "id").as[String]}").get())
-
-        deleteCount mustBe (0,0)
-        foundDraft.status mustBe OK
-      }
-
-      "the draft has been stored for 27 days" in new Setup {
-        val draft = await(createDraftProperty)
-        await(repo.updateTimeStamp(createPropertyDetails(draft.json, address), date27DaysAgo))
-        val deleteCount = await(documentUpdateService.invoke())
-        val foundDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/property-details/retrieve/${(draft.json \ "id").as[String]}").get())
-
-        deleteCount mustBe (0,0)
-        foundDraft.status mustBe OK
-      }
-
-      "the draft has been stored for exactly 28 days 23hrs and 59mins" in new Setup {
-        val draft = await(createDraftProperty)
-        await(repo.updateTimeStamp(createPropertyDetails(draft.json, address), date28DaysHrsMinsAgo))
-
-        await(repo.collection.count()) mustBe 1
-
-        val deleteCount = await(documentUpdateService.invoke())
-        val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/property-details/retrieve/${(draft.json \ "id").as[String]}").get())
-
-        deleteCount mustBe (0,0)
-        deletedDraft.status mustBe OK
-      }
-    }
-
-    "delete draft property details" when {
-      "the draft have been stored longer than 29 days" in new Setup {
-        val draft = await(createDraftProperty)
-        await(repo.updateTimeStamp(createPropertyDetails(draft.json, address), date29DaysAgo))
-
-        await(repo.collection.count()) mustBe 1
-
-        val deleteCount = await(documentUpdateService.invoke())
-        val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/property-details/retrieve/${(draft.json \ "id").as[String]}").get())
-
-        deleteCount mustBe (1,0)
-        deletedDraft.status mustBe NOT_FOUND
-			}
-
-      "the draft have been stored longer than 29 days and 1 min" in new Setup {
-        val draft = await(createDraftProperty)
-        await(repo.updateTimeStamp(createPropertyDetails(draft.json, address), date29DaysMinsAgo))
-
-        await(repo.collection.count()) mustBe 1
-
-        val deleteCount = await(documentUpdateService.invoke())
-        val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/property-details/retrieve/${(draft.json \ "id").as[String]}").get())
-
-        deleteCount mustBe (1,0)
-        deletedDraft.status mustBe NOT_FOUND
-      }
-    }
-
-    "only delete outdated drafts when multiple drafts exist" in new Setup {
-      val draft = await(createDraftProperty)
-      val draft2 = await(createDraftProperty2)
-      await(repo.updateTimeStamp(createPropertyDetails(draft.json, address), date29DaysAgo))
-
-      await(repo.collection.count()) mustBe 2
-
-      val deleteCount = await(documentUpdateService.invoke())
-      val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/property-details/retrieve/${(draft.json \ "id").as[String]}").get())
-      val foundDraft = await(hitApplicationEndpoint(s"/ated/ATE7654321XX/property-details/retrieve/${(draft2.json \ "id").as[String]}").get())
-
-      deleteCount mustBe (1,0)
-      deletedDraft.status mustBe NOT_FOUND
-      foundDraft.status mustBe OK
-    }
-
-    "delete multiple drafts when the batch size is >1" in new Setup {
-      val draft = await(createDraftProperty)
-      val draft2 = await(createDraftProperty2)
-      await(repo.updateTimeStamp(createPropertyDetails(draft.json, address), date29DaysAgo))
-      await(repo.updateTimeStamp(createPropertyDetails(draft2.json, address), date29DaysAgo))
-
-      await(repo.collection.count()) mustBe 2
-
-      val deleteCount = await(documentUpdateService.invoke())
-
-      deleteCount mustBe (2,0)
-    }
-
-    "not delete any drafts" when {
       "the draft has only just been added for 60days" in new Setup {
         val draft = await(createDraftProperty60)
         await(repo.updateTimeStamp(createPropertyDetails60(draft.json, address), DateTime.parse("2020-10-10")))
-        val deleteCount = await(documentUpdateService.invoke(datetimeToggle = true))
+        val deleteCount = await(documentUpdateService.invoke())
         val foundDraft = await(hitApplicationEndpoint(s"/ated/ATE1234568XX/property-details/retrieve/${(draft.json \ "id").as[String]}").get())
 
-        deleteCount mustBe (0,0)
+        deleteCount mustBe 0
         foundDraft.status mustBe OK
       }
 
@@ -192,7 +90,7 @@ class DeletePropertyDetailsServiceISpec extends IntegrationSpec with AssertionHe
         val deleteCount = await(documentUpdateService.invoke())
         val foundDraft = await(hitApplicationEndpoint(s"/ated/ATE1234568XX/property-details/retrieve/${(draft.json \ "id").as[String]}").get())
 
-        deleteCount mustBe (0,0)
+        deleteCount mustBe 0
         foundDraft.status mustBe OK
       }
 
@@ -202,10 +100,10 @@ class DeletePropertyDetailsServiceISpec extends IntegrationSpec with AssertionHe
 
         await(repo.collection.count()) mustBe 1
 
-        val deleteCount = await(documentUpdateService.invoke(datetimeToggle = true))
+        val deleteCount = await(documentUpdateService.invoke())
         val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234568XX/property-details/retrieve/${(draft.json \ "id").as[String]}").get())
 
-        deleteCount mustBe (0,0)
+        deleteCount mustBe 0
         deletedDraft.status mustBe OK
       }
     }
@@ -217,10 +115,10 @@ class DeletePropertyDetailsServiceISpec extends IntegrationSpec with AssertionHe
 
         await(repo.collection.count()) mustBe 1
 
-        val deleteCount = await(documentUpdateService.invoke(datetimeToggle = true))
+        val deleteCount = await(documentUpdateService.invoke())
         val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234568XX/property-details/retrieve/${(draft.json \ "id").as[String]}").get())
 
-        deleteCount mustBe (0,1)
+        deleteCount mustBe 1
         deletedDraft.status mustBe NOT_FOUND
       }
 
@@ -230,10 +128,10 @@ class DeletePropertyDetailsServiceISpec extends IntegrationSpec with AssertionHe
 
         await(repo.collection.count()) mustBe 1
 
-        val deleteCount = await(documentUpdateService.invoke(datetimeToggle = true))
+        val deleteCount = await(documentUpdateService.invoke())
         val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234568XX/property-details/retrieve/${(draft.json \ "id").as[String]}").get())
 
-        deleteCount mustBe (0,1)
+        deleteCount mustBe 1
         deletedDraft.status mustBe NOT_FOUND
       }
     }
@@ -246,11 +144,11 @@ class DeletePropertyDetailsServiceISpec extends IntegrationSpec with AssertionHe
 
       await(repo.collection.count()) mustBe 2
 
-      val deleteCount = await(documentUpdateService.invoke(datetimeToggle = true))
+      val deleteCount = await(documentUpdateService.invoke())
       val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234568XX/property-details/retrieve/${(draft.json \ "id").as[String]}").get())
       val foundDraft = await(hitApplicationEndpoint(s"/ated/ATE7654322XX/property-details/retrieve/${(draft2.json \ "id").as[String]}").get())
 
-      deleteCount mustBe (0,1)
+      deleteCount mustBe 1
       deletedDraft.status mustBe NOT_FOUND
       foundDraft.status mustBe OK
     }
@@ -263,9 +161,9 @@ class DeletePropertyDetailsServiceISpec extends IntegrationSpec with AssertionHe
 
       await(repo.collection.count()) mustBe 2
 
-      val deleteCount = await(documentUpdateService.invoke(datetimeToggle = true))
+      val deleteCount = await(documentUpdateService.invoke())
 
-      deleteCount mustBe (0,2)
+      deleteCount mustBe 2
     }
   }
 }
