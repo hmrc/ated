@@ -42,7 +42,7 @@ class DefaultDeletePropertyDetailsService @Inject()(val servicesConfig: Services
   }
 }
 
-trait DeletePropertyDetailsService extends ScheduledService[(Int, Int)] {
+trait DeletePropertyDetailsService extends ScheduledService[Int] {
   lazy val repo: PropertyDetailsMongoRepository = repository()
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
@@ -50,25 +50,18 @@ trait DeletePropertyDetailsService extends ScheduledService[(Int, Int)] {
   val lockKeeper: LockKeeper
   val documentBatchSize: Int
 
-  private def deleteOldPropertyDetails(dateTimeToggle: Boolean = false)(implicit ec: ExecutionContext): Future[(Int, Int)] = {
-    for {
-      doc28Days <- repo.deleteExpired28PropertyDetails(documentBatchSize)
-      doc60Days <- repo.deleteExpired60PropertyDetails(documentBatchSize, dateTimeToggle)
-    } yield {
-      Logger.info(s"[DeleteLiabilityReturnsService][deleteOldLiabilityReturns] Deleted $doc28Days draft documents past the 28 day limit")
-      Logger.info(s"[DeleteLiabilityReturnsService][deleteOldLiabilityReturns] Deleted $doc60Days draft documents past the 60 day limit")
-      (doc28Days, doc60Days)
-    }
+  private def deleteOldPropertyDetails()(implicit ec: ExecutionContext): Future[Int] = {
+    repo.deleteExpired60PropertyDetails(documentBatchSize)
   }
 
-	def invoke(datetimeToggle: Boolean = false)(implicit ec: ExecutionContext): Future[(Int, Int)] = {
-    lockKeeper.tryLock(deleteOldPropertyDetails(datetimeToggle)) map {
+	def invoke()(implicit ec: ExecutionContext): Future[Int] = {
+    lockKeeper.tryLock(deleteOldPropertyDetails()) map {
       case Some(result) =>
 				Logger.info(s"[deleteOldPropertyDetails] Deleted $result draft documents past the given day limit")
         result
       case None         =>
 				Logger.warn(s"[deleteOldPropertyDetails] Failed to acquire lock")
-        (0,0)
+        0
     }
   }
 }

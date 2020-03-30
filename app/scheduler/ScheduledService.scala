@@ -19,5 +19,5 @@ package scheduler
 import scala.concurrent.{ExecutionContext, Future}
 
 trait ScheduledService[R] {
-  def invoke(datetimeToggle: Boolean = false)(implicit ec : ExecutionContext) : Future[R]
+  def invoke()(implicit ec : ExecutionContext) : Future[R]
 }

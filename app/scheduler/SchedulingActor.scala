@@ -32,12 +32,12 @@ class SchedulingActor extends Actor with ActorLogging {
 
 object SchedulingActor {
   sealed trait ScheduledMessage[A] {
-    val service: ScheduledService[(Int, Int)]
+    val service: ScheduledService[Int]
   }
 
-  case class deletePropertyDetailsDrafts(service: DeletePropertyDetailsService) extends ScheduledMessage[(Int, Int)]
-	case class deleteReliefDrafts(service: DeleteReliefsService) extends ScheduledMessage[(Int, Int)]
-	case class deleteLiabilityReturns(service: DeleteLiabilityReturnsService) extends ScheduledMessage[(Int, Int )]
+  case class deletePropertyDetailsDrafts(service: DeletePropertyDetailsService) extends ScheduledMessage[Int]
+	case class deleteReliefDrafts(service: DeleteReliefsService) extends ScheduledMessage[Int]
+	case class deleteLiabilityReturns(service: DeleteLiabilityReturnsService) extends ScheduledMessage[Int]
 
 
 	def props: Props = Props[SchedulingActor]

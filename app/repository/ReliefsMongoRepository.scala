@@ -60,8 +60,7 @@ trait ReliefsMongoRepository extends ReactiveRepository[ReliefsTaxAvoidance, BSO
   def deleteReliefs(atedRefNo: String): Future[ReliefDelete]
   def deleteDraftReliefByYear(atedRefNo: String, periodKey: Int): Future[ReliefDelete]
   def updateTimeStamp(relief: ReliefsTaxAvoidance, date: DateTime): Future[ReliefCached]
-  def deleteExpired28Reliefs(batchSize: Int): Future[Int]
-  def deleteExpired60Reliefs(batchSize: Int, datetimeToggle: Boolean = false): Future[Int]
+  def deleteExpired60Reliefs(batchSize: Int): Future[Int]
   def metrics: ServiceMetrics
 }
 
@@ -91,38 +90,10 @@ class ReliefsReactiveMongoRepository(mongo: () => DB, val metrics: ServiceMetric
     }
   }
 
-  def deleteExpired28Reliefs(batchSize: Int): Future[Int] = {
+  def deleteExpired60Reliefs(batchSize: Int): Future[Int] = {
     implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
-    val query = BSONDocument("timeStamp" -> Json.obj("$lte" -> DateTime.parse("2020-02-27").withHourOfDay(0).minusDays(29)))
-    val logOnError = Cursor.ContOnError[Seq[ReliefsTaxAvoidance]]((_, ex) =>
-      Logger.error(s"[getExpiredReliefs] Mongo failed, problem occurred in collect - ex: ${ex.getMessage}")
-    )
-    val foundReliefs = collection.find(query)
-      .cursor[ReliefsTaxAvoidance]()
-      .collect[Seq](batchSize, logOnError)
+    val query = BSONDocument("timeStamp" -> Json.obj("$lte" -> DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(61)))
 
-    foundReliefs flatMap { reliefs =>
-      Future.sequence(reliefs map { relief =>
-        collection.remove(BSONDocument("atedRefNo" -> relief.atedRefNo, "periodKey" -> relief.periodKey)) map { res =>
-          if (res.ok && res.n == 1) {
-            Logger.info(s"${relief.atedRefNo} - ${relief.periodKey}")
-            1
-          } else {
-            Logger.error(s"[deleteExpiredReliefs] Mongo failed to remove an outdated relief - ex: $res")
-            0
-          }
-        }
-      }) map {_.sum}
-    }
-  }
-
-  def deleteExpired60Reliefs(batchSize: Int, datetimeToggle: Boolean = false): Future[Int] = {
-    implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
-    val query = if(datetimeToggle) {
-      BSONDocument("timeStamp" -> Json.obj("$lte" -> DateTime.parse("2020-10-10").withHourOfDay(0).minusDays(61)))
-    } else {
-      BSONDocument("timeStamp" -> Json.obj("$lte" -> DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(61)))
-    }
     val logOnError = Cursor.ContOnError[Seq[ReliefsTaxAvoidance]]((_, ex) =>
       Logger.error(s"[getExpiredReliefs] Mongo failed, problem occurred in collect - ex: ${ex.getMessage}")
     )
