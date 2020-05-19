@@ -39,18 +39,20 @@ class ChangeLiabilityServiceImpl @Inject()(val propertyDetailsMongoWrapper: Prop
   val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetailsMongoWrapper()
 }
 
+case class NoLiabilityAmountException(message: String) extends Exception
+
 trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConstants with NotificationService with AuthFunctionality {
 
   def subscriptionDataService: SubscriptionDataService
 
-  def convertSubmittedReturnToCachedDraft(atedRefNo: String, oldFormBundleNo: String, fromSelectedPrevReturn: Option[Boolean] = None, period: Option[Int] = None)(implicit hc: HeaderCarrier) = {
+  def convertSubmittedReturnToCachedDraft(atedRefNo: String, oldFormBundleNo: String, fromSelectedPrevReturn: Option[Boolean] = None, period: Option[Int] = None)(implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
     for {
       cachedData <- retrieveDraftPropertyDetail(atedRefNo, oldFormBundleNo)
       cachedChangeLiability <- {
         cachedData match {
           case Some(x) if fromSelectedPrevReturn.isEmpty | fromSelectedPrevReturn.contains(false) => Future.successful(Option(x))
           case _ =>
-            etmpConnector.getFormBundleReturns(atedRefNo, oldFormBundleNo.toString) map {
+            etmpConnector.getFormBundleReturns(atedRefNo, oldFormBundleNo) map {
               response =>
                 response.status match {
                   case OK =>
@@ -85,7 +87,7 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
                         updatedList.map(updateProp => propertyDetailsCache.cachePropertyDetails(updateProp))
                     }
                     Some(changeLiability)
-                  case status => None
+                  case _ => None
                 }
             }
         }
@@ -109,7 +111,10 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
         response =>
           response.status match {
             case OK => getLiabilityAmount(response.json)
-            case status => throw new InternalServerException("[ChangeLiabilityService][getAmountDueOrRefund] No Liability Amount Found")
+            case BAD_REQUEST =>
+              throw NoLiabilityAmountException("[ChangeLiabilityService][getAmountDueOrRefund] No Liability Amount Found")
+            case status =>
+              throw new InternalServerException(s"[ChangeLiabilityService][getAmountDueOrRefund] Error - status: $status")
           }
       }
       case None => throw new InternalServerException("[ChangeLiabilityService][getAmountDueOrRefund] Invalid Data for the request")
