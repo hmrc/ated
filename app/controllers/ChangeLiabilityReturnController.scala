@@ -21,8 +21,8 @@ import models.PropertyDetails
 import play.api.Logger
 import play.api.libs.json.{Json, OFormat}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import services.ChangeLiabilityService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
+import services.{ChangeLiabilityService, NoLiabilityAmountException}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -51,12 +51,14 @@ trait ChangeLiabilityReturnController extends BackendController {
     }
   }
 
-  def calculateDraftChangeLiability(atedRef: String, oldFormBundleNo: String) = Action.async { implicit request =>
-    changeLiabilityService.calculateDraftChangeLiability(atedRef, oldFormBundleNo).map { updateResponse =>
-      updateResponse match {
-        case Some(x) => Ok(Json.toJson(updateResponse))
-        case None => BadRequest(Json.toJson(updateResponse))
-      }
+  def calculateDraftChangeLiability(atedRef: String, oldFormBundleNo: String): Action[AnyContent] = Action.async { implicit request =>
+    changeLiabilityService.calculateDraftChangeLiability(atedRef, oldFormBundleNo).map {
+      case updateResponse @ Some(_) => Ok(Json.toJson(updateResponse))
+      case updateResponse @ None => BadRequest(Json.toJson(updateResponse))
+    } recover {
+      case ex: NoLiabilityAmountException =>
+        Logger.warn("NoLiabilityAmountException: " + ex.message)
+        NoContent
     }
   }
 
@@ -64,7 +66,7 @@ trait ChangeLiabilityReturnController extends BackendController {
     changeLiabilityService.submitChangeLiability(atedRef, oldFormBundleNo) map { response =>
       response.status match {
         case OK => Ok(response.body)
-        case status =>
+        case _ =>
           Logger.warn(s"[ChangeLiabilityReturnController][submitChangeLiabilityReturn] - status = ${response.status} && response.body = ${response.body}")
           InternalServerError(response.body)
       }

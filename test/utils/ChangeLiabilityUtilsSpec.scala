@@ -191,9 +191,26 @@ class ChangeLiabilityUtilsSpec extends PlaySpec with OneServerPerSuite {
     }
 
     "createChangeLiabilityReturnRequest" must {
+      "return a change liability return request if all values are supplied" in {
+        val calc1 = ChangeLiabilityReturnBuilder.generateCalculated
+        val cL1 = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(2015, "123456789012")
+        val cL2 = cL1.copy(calculated = Some(calc1))
+        val result1 = ChangeLiabilityUtils.createChangeLiabilityReturnRequest(cL2, "mode")
+        result1.isDefined mustBe true
+      }
+
       "return None, if calculated is cached with wrong data, like valuationDateToUse is empty" in {
         val calc1 = ChangeLiabilityReturnBuilder.generateCalculated
         val calc2 = calc1.copy(valuationDateToUse = None)
+        val cL1 = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(2015, "123456789012")
+        val cL2 = cL1.copy(calculated = Some(calc2))
+        val result1 = ChangeLiabilityUtils.createChangeLiabilityReturnRequest(cL2, "mode")
+        result1 must be(None)
+      }
+
+      "return None, if calculated with no line items to send" in {
+        val calc1 = ChangeLiabilityReturnBuilder.generateCalculated
+        val calc2 = calc1.copy(liabilityPeriods = Seq(), reliefPeriods = Seq())
         val cL1 = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(2015, "123456789012")
         val cL2 = cL1.copy(calculated = Some(calc2))
         val result1 = ChangeLiabilityUtils.createChangeLiabilityReturnRequest(cL2, "mode")

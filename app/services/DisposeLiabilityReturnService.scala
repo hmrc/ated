@@ -179,10 +179,10 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
 
   def getPreCalculationAmounts(atedRefNo: String, x: FormBundleReturn, disposalDate: DisposeLiability, oldFormBNo: String, agentRefNo: Option[String] = None)
                               (implicit hc: HeaderCarrier): Future[DisposeCalculated] = {
-    def generateEditReturnRequest = {
+    def generateEditReturnRequest: EditLiabilityReturnsRequestModel = {
       val liabilityReturn = EditLiabilityReturnsRequest(oldFormBundleNumber = oldFormBNo,
         mode = PreCalculation,
-        periodKey = x.periodKey.toString,
+        periodKey = x.periodKey,
         propertyDetails = getEtmpPropertyDetails(x.propertyDetails),
         dateOfAcquisition = x.dateOfAcquisition,
         valueAtAcquisition = x.valueAtAcquisition,
@@ -205,7 +205,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
               .fold(DisposeCalculated(BigDecimal(0), BigDecimal(0)))(a => DisposeCalculated(liabilityAmount = a.liabilityAmount,
                 amountDueOrRefund = a.amountDueOrRefund))
           case status =>
-            Logger.warn(s"[DisposeLiabilityReturnService][getPreCalculationAmounts] - response status = ${response.status}, response body = ${response.body}")
+            Logger.warn(s"[DisposeLiabilityReturnService][getPreCalculationAmounts] - response status = $status, response body = ${response.body}")
             throw new RuntimeException("pre-calculation-request returned wrong status")
         }
     }
@@ -216,7 +216,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
       disposeLiabilityReturnList <- retrieveDraftDisposeLiabilityReturns(atedRefNo)
       updatedListAfterDelete <- {
         disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
-          case Some(x) =>
+          case Some(_) =>
             val filteredList = disposeLiabilityReturnList.filterNot(_.id == oldFormBundleNo)
             filteredList.map { dispLiab => disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(dispLiab).flatMap(x => Future.successful(filteredList)) }.head
           case None => Future.successful(Nil)
@@ -235,7 +235,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
       def generateEditReturnRequest(x: DisposeLiabilityReturn, agentRefNo: Option[String] = None) = {
         val liabilityReturn = EditLiabilityReturnsRequest(oldFormBundleNumber = oldFormBundleNo,
           mode = Post,
-          periodKey = x.formBundleReturn.periodKey.toString,
+          periodKey = x.formBundleReturn.periodKey,
           propertyDetails = getEtmpPropertyDetails(x.formBundleReturn.propertyDetails),
           dateOfAcquisition = x.formBundleReturn.dateOfAcquisition,
           valueAtAcquisition = x.formBundleReturn.valueAtAcquisition,

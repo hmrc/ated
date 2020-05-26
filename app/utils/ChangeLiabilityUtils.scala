@@ -82,7 +82,7 @@ object ChangeLiabilityUtils extends ReliefConstants {
   }
 
 
-  def changeLiabilityCalculated(changeLiability: PropertyDetails, liabilityAmount: Option[BigDecimal] = None) = {
+  def changeLiabilityCalculated(changeLiability: PropertyDetails, liabilityAmount: Option[BigDecimal] = None): PropertyDetailsCalculated = {
 
     val valueToUse = changeLiabilityInitialValueForPeriod(changeLiability)
     val (acquisitionValueToUse, acquisitionDateToUse) = getAcquisitionData(changeLiability)
@@ -182,19 +182,21 @@ object ChangeLiabilityUtils extends ReliefConstants {
     }
   }
 
-  def createPreCalculationRequest(propertyDetails: PropertyDetails, agentRefNo: Option[String] = None) =
+  def createPreCalculationRequest(propertyDetails: PropertyDetails, agentRefNo: Option[String] = None): Option[EditLiabilityReturnsRequestModel] =
     createChangeLiabilityReturnRequest(propertyDetails, PreCalculation, agentRefNo)
 
-  def createPostRequest(propertyDetails: PropertyDetails, agentRefNo: Option[String] = None) =
+  def createPostRequest(propertyDetails: PropertyDetails, agentRefNo: Option[String] = None): Option[EditLiabilityReturnsRequestModel] =
     createChangeLiabilityReturnRequest(propertyDetails, Post, agentRefNo)
 
   def createChangeLiabilityReturnRequest(propertyDetails: PropertyDetails, mode: String, agentRefNo: Option[String] = None)
   : Option[EditLiabilityReturnsRequestModel] = {
       propertyDetails.calculated match {
-        case Some(c) =>
-          (c.valuationDateToUse, c.professionalValuation) match {
-            case (Some(dateOfVal), Some(professionallyValued)) =>
-              val liabilityReturns = createLiabilityReturns(propertyDetails, c, mode, agentRefNo, dateOfVal, professionallyValued)
+        case Some(propertyCalc) =>
+          val numberOfPeriods = propertyCalc.reliefPeriods.size + propertyCalc.liabilityPeriods.size
+
+          (propertyCalc.valuationDateToUse, propertyCalc.professionalValuation, numberOfPeriods) match {
+            case (Some(dateOfVal), Some(professionallyValued), periods) if periods > 0 =>
+              val liabilityReturns = createLiabilityReturns(propertyDetails, propertyCalc, mode, dateOfVal, professionallyValued)
               Some(EditLiabilityReturnsRequestModel(SessionUtils.getUniqueAckNo, agentRefNo, liabilityReturns))
             case _ => None
           }
@@ -202,26 +204,26 @@ object ChangeLiabilityUtils extends ReliefConstants {
       }
   }
 
-  private def createLiabilityReturns(a: PropertyDetails, c: PropertyDetailsCalculated,
-                                     mode: String, agentRefNo: Option[String] = None,
+  private def createLiabilityReturns(details: PropertyDetails, propertyDetailsCalc: PropertyDetailsCalculated,
+                                     mode: String,
                                      valuationDateToUse : LocalDate,
-                                     professionallyValued : Boolean) = {
+                                     professionallyValued : Boolean): Seq[EditLiabilityReturnsRequest] = {
 
     val liabilityReturn = EditLiabilityReturnsRequest(
-      oldFormBundleNumber = a.id,
+      oldFormBundleNumber = details.id,
       mode = mode,
-      periodKey = "" + a.periodKey,
-      propertyDetails = getEtmpPropertyDetails(a),
-      dateOfAcquisition = c.acquistionDateToUse,
-      valueAtAcquisition = c.acquistionValueToUse,
+      periodKey = "" + details.periodKey,
+      propertyDetails = getEtmpPropertyDetails(details),
+      dateOfAcquisition = propertyDetailsCalc.acquistionDateToUse,
+      valueAtAcquisition = propertyDetailsCalc.acquistionValueToUse,
       dateOfValuation = valuationDateToUse,
-      taxAvoidanceScheme = getTaxAvoidanceScheme(a),
-      taxAvoidancePromoterReference = getTaxAvoidancePromoterReference(a),
+      taxAvoidanceScheme = getTaxAvoidanceScheme(details),
+      taxAvoidancePromoterReference = getTaxAvoidancePromoterReference(details),
       professionalValuation = professionallyValued,
       localAuthorityCode = None,
-      ninetyDayRuleApplies = getNinetyDayRuleApplies(a),
-      lineItem = getLineItems(c),
-      bankDetails = getEtmpBankDetails(a.bankDetails))
+      ninetyDayRuleApplies = getNinetyDayRuleApplies(details),
+      lineItem = getLineItems(propertyDetailsCalc),
+      bankDetails = getEtmpBankDetails(details.bankDetails))
 
     List(liabilityReturn)
   }

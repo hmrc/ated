@@ -23,8 +23,8 @@ import uk.gov.hmrc.http.InternalServerException
 
 object PropertyDetailsUtils extends ReliefConstants {
 
-  val _2012ValuationPolicyDate = Some(new LocalDate("2012-04-01"))
-  val _2017ValuationPolicyDate = Some(new LocalDate("2017-04-01"))
+  val _2012ValuationPolicyDate: Option[LocalDate] = Some(new LocalDate("2012-04-01"))
+  val _2017ValuationPolicyDate: Option[LocalDate] = Some(new LocalDate("2017-04-01"))
 
   def propertyDetailsCalculated(propertyDetails: PropertyDetails): PropertyDetailsCalculated = {
 
@@ -50,12 +50,14 @@ object PropertyDetailsUtils extends ReliefConstants {
 
   }
 
-  def createLiabilityPeriods(periodKey: Int, propertyDetailsPeriod: Option[PropertyDetailsPeriod], initialValue: BigDecimal, updateValue: Option[(LocalDate, BigDecimal)] = None): Seq[CalculatedPeriod] = {
+  def createLiabilityPeriods(periodKey: Int, propertyDetailsPeriod: Option[PropertyDetailsPeriod],
+                             initialValue: BigDecimal,
+                             updateValue: Option[(LocalDate, BigDecimal)] = None): Seq[CalculatedPeriod] = {
     propertyDetailsPeriod.map { periodVal =>
       val totalPeriods = periodVal.liabilityPeriods.size + periodVal.reliefPeriods.size
       if (periodVal.isFullPeriod.contains(true) && totalPeriods == 0) {
-        val startDate = new LocalDate(s"${periodKey}-04-01")
-        val endDate = new LocalDate(s"${periodKey}-04-01").plusYears(1).minusDays(1)
+        val startDate = new LocalDate(s"$periodKey-04-01")
+        val endDate = new LocalDate(s"$periodKey-04-01").plusYears(1).minusDays(1)
         val period = LineItem(TypeLiability, startDate, endDate)
         createCalculatedPeriod(period, initialValue, updateValue)
       } else {
@@ -177,7 +179,7 @@ object PropertyDetailsUtils extends ReliefConstants {
   }
 
   def getLineItemValues(propertyDetailsValue: Option[PropertyDetailsValue], initialValue: Option[BigDecimal]): (BigDecimal, Option[(LocalDate, BigDecimal)]) = {
-    def getUpdateValue(initialValue: BigDecimal) = {
+    def getUpdateValue(initialValue: BigDecimal): Option[(LocalDate, BigDecimal)] = {
       propertyDetailsValue.flatMap {
         value =>
           (value.isPropertyRevalued, value.revaluedValue, value.partAcqDispDate) match {
@@ -198,19 +200,19 @@ object PropertyDetailsUtils extends ReliefConstants {
 
   def getAdditionalDetails(propertyDetails: PropertyDetails): Option[String] = {
     propertyDetails.period.flatMap(_.supportingInfo) match {
-      case Some(x) if (!x.trim().isEmpty) => Some(x)
+      case Some(x) if !x.trim().isEmpty => Some(x)
       case _ => None
     }
   }
 
   def getTitleNumber(propertyDetails: PropertyDetails): Option[String] = {
     propertyDetails.title.map(_.titleNumber) match {
-      case Some(x) if (!x.trim().isEmpty) => Some(x)
+      case Some(x) if !x.trim().isEmpty => Some(x)
       case _ => None
     }
   }
 
-  def getLineItems(propertyCalc: PropertyDetailsCalculated) = {
+  def getLineItems(propertyCalc: PropertyDetailsCalculated): Seq[EtmpLineItems] = {
     implicit val localDateOrdering: Ordering[LocalDate] = Ordering.by(_.toDate.getTime)
     implicit val lineItemOrdering: Ordering[EtmpLineItems] = Ordering.by(_.dateFrom)
 
@@ -255,17 +257,17 @@ object PropertyDetailsUtils extends ReliefConstants {
 
     def createDisposeLineItem(item: FormBundleProperty): Seq[EtmpLineItems] = {
       dateOfDisposal match {
-        case Some(x) if (x.isAfter(disposalEndDate)) =>
+        case Some(x) if x.isAfter(disposalEndDate) =>
           throw new InternalServerException("[PropertyDetailsUtils][disposeLineItems] - Disposal Date is after the end of the period")
-        case Some(x) if (x.equals(item.dateFrom)) => {
+        case Some(x) if x.equals(item.dateFrom) => {
           List(EtmpLineItems(propertyValue = item.propertyValue,
             dateFrom = item.dateFrom,
             dateTo = disposalEndDate,
             `type` = TypeDeEnveloped, None
           ))
         }
-        case Some(x) if (x.isBefore(item.dateFrom)) => Nil
-        case Some(x) if (x.isAfter(item.dateFrom) && !x.isAfter(item.dateTo)) =>
+        case Some(x) if x.isBefore(item.dateFrom) => Nil
+        case Some(x) if x.isAfter(item.dateFrom) && !x.isAfter(item.dateTo) =>
           List(
             EtmpLineItems(propertyValue = item.propertyValue,
               dateFrom = item.dateFrom,
@@ -289,13 +291,13 @@ object PropertyDetailsUtils extends ReliefConstants {
       }
     }
 
-    lineItems.flatMap(createDisposeLineItem(_))
+    lineItems.flatMap(createDisposeLineItem)
   }
 
   private def calculateEarliestDate(firstOccDate: Option[LocalDate], localAuthRegDate: Option[LocalDate]): Option[LocalDate] = {
     (firstOccDate, localAuthRegDate) match {
-      case (Some(a), Some(b)) if (a.isBefore(b) || a.isEqual(b)) => Some(a)
-      case (Some(a), Some(b)) => Some(b)
+      case (Some(a), Some(b)) if a.isBefore(b) || a.isEqual(b) => Some(a)
+      case (Some(_), Some(b)) => Some(b)
       case _ => None
     }
   }
