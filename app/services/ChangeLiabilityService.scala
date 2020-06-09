@@ -117,7 +117,7 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
               throw new InternalServerException(s"[ChangeLiabilityService][getAmountDueOrRefund] Error - status: $status")
           }
       }
-      case None => throw new InternalServerException("[ChangeLiabilityService][getAmountDueOrRefund] Invalid Data for the request")
+      case None => throw NoLiabilityAmountException("[ChangeLiabilityService][getAmountDueOrRefund] Invalid Data for the request")
     }
   }
 

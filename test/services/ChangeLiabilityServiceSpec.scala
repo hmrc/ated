@@ -155,8 +155,8 @@ class ChangeLiabilityServiceSpec extends PlaySpec with OneServerPerSuite with Mo
         val respJson = Json.toJson(respModel)
         when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())).thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(respJson))))
         mockRetrievingNoAuthRef
-        val thrown = the[InternalServerException] thrownBy await(testChangeLiabilityReturnService.calculateDraftChangeLiability(atedRefNo, formBundle1))
-        thrown.getMessage must include("[ChangeLiabilityService][getAmountDueOrRefund] Invalid Data for the request")
+        val thrown = the[NoLiabilityAmountException] thrownBy await(testChangeLiabilityReturnService.calculateDraftChangeLiability(atedRefNo, formBundle1))
+        thrown.message must include("[ChangeLiabilityService][getAmountDueOrRefund] Invalid Data for the request")
       }
 
       "calculate the change liabilty details, when calculated object is present" in new Setup {
@@ -279,8 +279,8 @@ class ChangeLiabilityServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       }
 
       "throw an exception if calculated is not found in cache" in new Setup {
-        val thrown = the[InternalServerException] thrownBy await(testChangeLiabilityReturnService.getAmountDueOrRefund(atedRefNo, "1", changeLiability1))
-        thrown.getMessage must include("Invalid Data for the request")
+        val thrown = the[NoLiabilityAmountException] thrownBy await(testChangeLiabilityReturnService.getAmountDueOrRefund(atedRefNo, "1", changeLiability1))
+        thrown.message must include("[ChangeLiabilityService][getAmountDueOrRefund] Invalid Data for the request")
       }
 
 

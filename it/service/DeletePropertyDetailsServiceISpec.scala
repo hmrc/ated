@@ -24,7 +24,7 @@ class DeletePropertyDetailsServiceISpec extends IntegrationSpec with AssertionHe
   val documentUpdateService: DeletePropertyDetailsService = app.injector.instanceOf[DeletePropertyDetailsService]
   val date59DaysAgo: DateTime = DateTime.now.withHourOfDay(0).minusDays(59)
   val date60DaysAgo: DateTime = date59DaysAgo.minusDays(1)
-  val date60DaysHrsMinsAgo: DateTime = date59DaysAgo.minusDays(1).minusHours(23).minusMinutes(59)
+  val date60DaysHrsMinsAgo: DateTime = date59DaysAgo.minusDays(1).minusHours(22).minusMinutes(59)
   val date61DaysAgo: DateTime = date59DaysAgo.minusDays(2)
   val date61DaysMinsAgo: DateTime = date59DaysAgo.minusDays(2).minusMinutes(1)
 
