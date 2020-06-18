@@ -25,7 +25,8 @@ case class DraftReturns(periodKey: Int, // periodKey so that we know which draft
                         id: String,
                         description: String,
                         charge: Option[BigDecimal] = None,
-                        returnType: String // can be - relief, chargeable, dispose, move-to-relief,change
+                        returnType: String, // can be - relief, chargeable, dispose, move-to-relief,change
+                        lastModified: LocalDate
                        )
 
 

@@ -83,8 +83,8 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
         val propDetailsSeq = Seq(propDetails)
         val dispLiab = Seq(disposeLiability1)
 
-        val expected = SummaryReturnsModel(None, List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", None, "Liability")), None),
-          PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")), None)))
+        val expected = SummaryReturnsModel(None, List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", None, "Liability", LocalDate.now())), None),
+          PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability", LocalDate.now())), None)))
 
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(reliefDrafts))
@@ -135,8 +135,8 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
 
         val years = 6
 
-        val expected = SummaryReturnsModel(Some(10000), List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", None, "Liability")), None),
-          PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")),
+        val expected = SummaryReturnsModel(Some(10000), List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", None, "Liability", LocalDate.now())), None),
+          PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability", LocalDate.now())),
             Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", new LocalDate("2014-09-05"), new LocalDate("2014-10-05"), new LocalDate("2014-05-05"), None, None)),
               List(SubmittedLiabilityReturns("12345", "line1 line2", 1000, new LocalDate("2014-09-05"), new LocalDate("2014-10-05"), new LocalDate("2014-05-05"),
                 true, "pay-123")))))))
@@ -176,8 +176,8 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
 
         val expected = SummaryReturnsModel(Some(10000),
           List(
-            PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", None, "Liability")), None),
-            PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")),
+            PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", None, "Liability", LocalDate.now())), None),
+            PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability", LocalDate.now())),
               Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", new LocalDate("2014-09-05"), new LocalDate("2014-10-05"), new LocalDate("2014-05-05"), None, None)),
                   List(
                     SubmittedLiabilityReturns("12346", "line1 line2", 1000, new LocalDate("2014-09-05"), new LocalDate("2014-10-05"), new LocalDate("2014-05-05"), true, "pay-123")
@@ -214,8 +214,8 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
 
         val years = 6
 
-        val expected = SummaryReturnsModel(Some(0), List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", None, "Liability")), None),
-          PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")),
+        val expected = SummaryReturnsModel(Some(0), List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", None, "Liability", LocalDate.now())), None),
+          PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability", LocalDate.now())),
             Some(SubmittedReturns(periodKey, List(), List())))))
 
         when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))).
@@ -241,8 +241,8 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
 
         val years = 6
 
-        val expected = SummaryReturnsModel(Some(0), List(PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789099", "addr1 addr2", None, "Change_Liability"),
-          DraftReturns(periodKey, "123456789012", "line1 line2", Some(1000), "Dispose_Liability")),
+        val expected = SummaryReturnsModel(Some(0), List(PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789099", "addr1 addr2", None, "Change_Liability", LocalDate.now()),
+          DraftReturns(periodKey, "123456789012", "line1 line2", Some(1000), "Dispose_Liability", LocalDate.now())),
           Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", new LocalDate("2014-09-05"), new LocalDate("2014-10-05"),
             new LocalDate("2014-05-05"), None, None)), List())))))
 
@@ -273,9 +273,9 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
         when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).
           thenReturn(Future.successful(dispLiab))
 
-        val expected = SummaryReturnsModel(None, List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", Some(1000), "Liability")), None),
-          PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "", "Rental businesses", None, "Relief"),
-            DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")), None)))
+        val expected = SummaryReturnsModel(None, List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", Some(1000), "Liability", LocalDate.now())), None),
+          PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "", "Rental businesses", None, "Relief", LocalDate.now()),
+            DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability", LocalDate.now())), None)))
 
         val result = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
         await(result) must be(expected)
