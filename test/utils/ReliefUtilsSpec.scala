@@ -129,7 +129,7 @@ class ReliefUtilsSpec extends PlaySpec with ReliefConstants {
 
   "convertDraftReliefsToDraftDescription" must {
     "Return empty Seq, if we have no reliefs object" in {
-      implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
+      implicit val hc = HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
       val reliefs = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
       val reliefsRequest = ReliefUtils.convertDraftReliefsToDraftDescription(reliefs)
@@ -138,7 +138,7 @@ class ReliefUtilsSpec extends PlaySpec with ReliefConstants {
     }
 
     "Return Rental Business, if rental business is true" in {
-      implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
+      implicit val hc = HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
       val reliefs = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey, Reliefs(periodKey, rentalBusiness = true))
       val reliefsRequest = ReliefUtils.convertDraftReliefsToDraftDescription(reliefs)
@@ -146,7 +146,7 @@ class ReliefUtilsSpec extends PlaySpec with ReliefConstants {
       reliefsRequest must be(Seq("Rental businesses"))
     }
     "Return Farmhouses, if farmHouses is true" in {
-      implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
+      implicit val hc = HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
       val reliefs = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey, Reliefs(periodKey, farmHouses = true))
       val reliefsRequest = ReliefUtils.convertDraftReliefsToDraftDescription(reliefs)
@@ -155,7 +155,7 @@ class ReliefUtilsSpec extends PlaySpec with ReliefConstants {
     }
 
     "Return Property developers, if propertyDeveloper is true" in {
-      implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
+      implicit val hc = HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
       val reliefs = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey, Reliefs(periodKey, propertyDeveloper = true))
       val reliefsRequest = ReliefUtils.convertDraftReliefsToDraftDescription(reliefs)
@@ -164,7 +164,7 @@ class ReliefUtilsSpec extends PlaySpec with ReliefConstants {
     }
 
     "Return Employee occupation, if employeeOccupation is true" in {
-      implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
+      implicit val hc = HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
       val reliefs = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey, Reliefs(periodKey, employeeOccupation = true))
       val reliefsRequest = ReliefUtils.convertDraftReliefsToDraftDescription(reliefs)
@@ -173,7 +173,7 @@ class ReliefUtilsSpec extends PlaySpec with ReliefConstants {
     }
 
     "Return Property trading, if propertyTrading is true" in {
-      implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
+      implicit val hc = HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
       val reliefs = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey, Reliefs(periodKey, propertyTrading = true))
       val reliefsRequest = ReliefUtils.convertDraftReliefsToDraftDescription(reliefs)
@@ -181,8 +181,17 @@ class ReliefUtilsSpec extends PlaySpec with ReliefConstants {
       reliefsRequest must be(Seq("Property trading"))
     }
 
+    "Return equity release, if equity release is true" in {
+      implicit val hc = HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
+
+      val reliefs = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey, Reliefs(periodKey, equityRelease = true))
+      val reliefsRequest = ReliefUtils.convertDraftReliefsToDraftDescription(reliefs)
+
+      reliefsRequest must be(Seq("Equity Release"))
+    }
+
     "Return Seq(Lending, Open to the public, Social housing), if socialHousing, openToPublic, lending are true" in {
-      implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
+      implicit val hc =  HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
       val reliefs = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey, Reliefs(periodKey, socialHousing = true, openToPublic = true, lending = true, equityRelease = true))
       val reliefsRequest = ReliefUtils.convertDraftReliefsToDraftDescription(reliefs)

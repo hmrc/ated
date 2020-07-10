@@ -121,7 +121,7 @@ trait ReliefUtils extends ReliefConstants {
       x.reliefs.propertyTrading.option(PropTrading),
       x.reliefs.rentalBusiness.option(RentalBusiness),
       x.reliefs.socialHousing.option(SocialHouse),
-      x.reliefs.socialHousing.option(EquityRelease)
+      x.reliefs.equityRelease.option(EquityRelease)
     ).flatten
   }
 
