@@ -142,11 +142,10 @@ trait ReturnSummaryService {
       property =>
         val address = property.addressLine1 + " " + property.addressLine2
 
-        val latestDate = property.`return`.headOption.map(_.dateOfSubmission)
         val orderedReturns = property.`return`.sorted.reverse.map(
           f => SubmittedLiabilityReturns(f.formBundleNumber, address, f.liabilityAmount, f.dateFrom, f.dateTo, f.dateOfSubmission, f.changeAllowed, f.paymentReference)
         )
-        orderedReturns match {
+        orderedReturns.toList match {
           case head :: second :: tail =>
             (head.dateOfSubmission == second.dateOfSubmission, head.changeAllowed, second.changeAllowed) match {
               case (true, true, false) => (List(head), second :: tail)
@@ -155,7 +154,7 @@ trait ReturnSummaryService {
               case _ => (List(head), second :: tail)
             }
           case head :: tail => (List(head), tail)
-          case _ => (Nil, Nil)
+          case Nil => (Nil, Nil)
         }
     }
 
