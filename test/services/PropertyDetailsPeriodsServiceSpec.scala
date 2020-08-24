@@ -25,8 +25,9 @@ import org.joda.time.LocalDate
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.{OneAppPerSuite, PlaySpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.test.Helpers._
 import reactivemongo.api.commands.WriteResult
 import repository.{PropertyDetailsCached, PropertyDetailsMongoRepository}
@@ -37,7 +38,7 @@ import uk.gov.hmrc.mongo.DatabaseUpdate
 
 import scala.concurrent.Future
 
-class PropertyDetailsPeriodsServiceSpec extends PlaySpec with OneAppPerSuite with MockitoSugar with BeforeAndAfterEach {
+class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuite with MockitoSugar with BeforeAndAfterEach {
 
   val mockPropertyDetailsCache = mock[PropertyDetailsMongoRepository]
   val mockWriteResult = mock[WriteResult]

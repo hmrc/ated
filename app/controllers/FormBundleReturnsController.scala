@@ -19,7 +19,7 @@ package controllers
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.FormBundleService
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -32,7 +32,7 @@ class FormBundleReturnsControllerImpl @Inject()(
 trait FormBundleReturnsController extends BackendController {
   def formBundleService: FormBundleService
 
-  def getFormBundleReturns(accountRef: String, formBundle: String): Action[AnyContent] = Action.async { implicit request =>
+  def getFormBundleReturns(accountRef: String, formBundle: String): Action[AnyContent] = Action.async { _ =>
     formBundleService.getFormBundleReturns(accountRef, formBundle) map { responseReceived =>
       responseReceived.status match {
         case OK => Ok(responseReceived.body)

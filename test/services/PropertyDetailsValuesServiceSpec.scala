@@ -25,8 +25,9 @@ import org.joda.time.LocalDate
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.test.Helpers._
 import reactivemongo.api.commands.WriteResult
 import repository.{PropertyDetailsCached, PropertyDetailsMongoRepository}
@@ -37,7 +38,7 @@ import uk.gov.hmrc.mongo.DatabaseUpdate
 
 import scala.concurrent.Future
 
-class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
+class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
   val mockPropertyDetailsCache = mock[PropertyDetailsMongoRepository]
   val mockWriteResult = mock[WriteResult]
@@ -416,8 +417,6 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with OneServerPerSuite w
     }
 
     "update the value in the cache if it has been changed" in new Setup {
-      val updatedNewBuildDate = Some(LocalDate.parse("2015-01-01"))
-      val updatedLocalAuthRegDate = Some(LocalDate.parse("2015-01-01"))
       val updateValue = new PropertyDetailsNewBuildDates()
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))

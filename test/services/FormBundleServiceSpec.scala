@@ -20,15 +20,16 @@ import connectors.EtmpReturnsConnector
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.Json
 import play.api.test.Helpers._
-
-import scala.concurrent.Future
 import uk.gov.hmrc.http.HttpResponse
 
-class FormBundleServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
+import scala.concurrent.Future
+
+class FormBundleServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
   val mockEtmpConnector = mock[EtmpReturnsConnector]
   val atedRefNo = "ATED-123"
@@ -50,7 +51,7 @@ class FormBundleServiceSpec extends PlaySpec with OneServerPerSuite with Mockito
   "FormBundleService" must {
     "getFormBundleReturns" must {
       "return response from connector" in new Setup {
-        when(mockEtmpConnector.getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle))).thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(successResponseJson))))
+        when(mockEtmpConnector.getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle))).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         val response = testFormBundleService.getFormBundleReturns(atedRefNo, formBundle)
         await(response).status must be(OK)
       }

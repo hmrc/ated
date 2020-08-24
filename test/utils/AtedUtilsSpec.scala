@@ -16,7 +16,7 @@
 
 package utils
 
-import models.{ClientsAgent, EtmpLiabilityReturns, IndividualRelationship, OrganisationRelationship, RelationshipDetails}
+import models.{ClientsAgent, IndividualRelationship, OrganisationRelationship, RelationshipDetails}
 import org.joda.time.LocalDate
 import org.scalatestplus.play.PlaySpec
 import uk.gov.hmrc.http.HeaderCarrier

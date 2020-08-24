@@ -18,10 +18,10 @@ package builders
 
 import models._
 import org.joda.time.LocalDate
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
-import uk.gov.hmrc.crypto.Protected
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 
-object PropertyDetailsBuilder  extends PlaySpec with OneServerPerSuite  {
+object PropertyDetailsBuilder  extends PlaySpec with GuiceOneServerPerSuite {
 
   def getPropertyDetailsValueRevalued(): Option[PropertyDetailsValue] = {
     Some(new PropertyDetailsValue(anAcquisition = Some(true),

@@ -18,7 +18,7 @@ package scheduler
 
 import javax.inject.Inject
 import org.joda.time.Duration
-import play.api.{Configuration, Environment, Logger}
+import play.api.{Configuration, Environment, Logging}
 import repository.{LockRepositoryProvider, PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
@@ -42,7 +42,7 @@ class DefaultDeletePropertyDetailsService @Inject()(val servicesConfig: Services
   }
 }
 
-trait DeletePropertyDetailsService extends ScheduledService[Int] {
+trait DeletePropertyDetailsService extends ScheduledService[Int] with Logging {
   lazy val repo: PropertyDetailsMongoRepository = repository()
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
@@ -50,17 +50,17 @@ trait DeletePropertyDetailsService extends ScheduledService[Int] {
   val lockKeeper: LockKeeper
   val documentBatchSize: Int
 
-  private def deleteOldPropertyDetails()(implicit ec: ExecutionContext): Future[Int] = {
+  private def deleteOldPropertyDetails(): Future[Int] = {
     repo.deleteExpired60PropertyDetails(documentBatchSize)
   }
 
 	def invoke()(implicit ec: ExecutionContext): Future[Int] = {
     lockKeeper.tryLock(deleteOldPropertyDetails()) map {
       case Some(result) =>
-				Logger.info(s"[deleteOldPropertyDetails] Deleted $result draft documents past the given day limit")
+				logger.info(s"[deleteOldPropertyDetails] Deleted $result draft documents past the given day limit")
         result
       case None         =>
-				Logger.warn(s"[deleteOldPropertyDetails] Failed to acquire lock")
+				logger.warn(s"[deleteOldPropertyDetails] Failed to acquire lock")
         0
     }
   }

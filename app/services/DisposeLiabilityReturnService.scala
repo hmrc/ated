@@ -19,7 +19,7 @@ package services
 import connectors.{EmailConnector, EtmpReturnsConnector}
 import javax.inject.Inject
 import models._
-import play.api.Logger
+import play.api.Logging
 import play.api.http.Status._
 import play.api.libs.json.Json
 import repository.{DisposeLiabilityReturnMongoRepository, DisposeLiabilityReturnMongoWrapper}
@@ -41,7 +41,7 @@ class DisposeLiabilityReturnServiceImpl @Inject()(val etmpReturnsConnector: Etmp
   val disposeLiabilityReturnRepository: DisposeLiabilityReturnMongoRepository = disposeLiabilityReturnMongoWrapper()
 }
 
-trait DisposeLiabilityReturnService extends NotificationService with AuthFunctionality {
+trait DisposeLiabilityReturnService extends NotificationService with AuthFunctionality with Logging {
 
   def disposeLiabilityReturnRepository: DisposeLiabilityReturnMongoRepository
 
@@ -51,17 +51,17 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
 
   def subscriptionDataService: SubscriptionDataService
 
-  def retrieveDraftDisposeLiabilityReturns(atedRefNo: String)(implicit hc: HeaderCarrier): Future[Seq[DisposeLiabilityReturn]] = {
+  def retrieveDraftDisposeLiabilityReturns(atedRefNo: String): Future[Seq[DisposeLiabilityReturn]] = {
     disposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(atedRefNo)
   }
 
-  def retrieveDraftDisposeLiabilityReturn(atedRefNo: String, oldFormBundleNo: String)(implicit hc: HeaderCarrier): Future[Option[DisposeLiabilityReturn]] = {
+  def retrieveDraftDisposeLiabilityReturn(atedRefNo: String, oldFormBundleNo: String): Future[Option[DisposeLiabilityReturn]] = {
     retrieveDraftDisposeLiabilityReturns(atedRefNo) map {
       x => x.find(_.id == oldFormBundleNo)
     }
   }
 
-  def retrieveAndCacheDisposeLiabilityReturn(atedRefNo: String, oldFormBundleNo: String)(implicit hc: HeaderCarrier): Future[Option[DisposeLiabilityReturn]] = {
+  def retrieveAndCacheDisposeLiabilityReturn(atedRefNo: String, oldFormBundleNo: String): Future[Option[DisposeLiabilityReturn]] = {
     for {
       cachedData <- retrieveDraftDisposeLiabilityReturn(atedRefNo, oldFormBundleNo)
       cachedDisposeLiability <- {
@@ -69,17 +69,17 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
           case Some(x) =>
             Future.successful(Option(convertBankDetails(x)))
           case None =>
-            etmpReturnsConnector.getFormBundleReturns(atedRefNo, oldFormBundleNo.toString) flatMap {
+            etmpReturnsConnector.getFormBundleReturns(atedRefNo, oldFormBundleNo) flatMap {
               response =>
                 response.status match {
                   case OK =>
                     val formBundleReturn = response.json.as[FormBundleReturn]
                     val dispose = DisposeLiability(dateOfDisposal = None, periodKey = formBundleReturn.periodKey.trim.toInt)
                     val disposeLiability = DisposeLiabilityReturn(atedRefNo = atedRefNo, id = oldFormBundleNo, formBundleReturn = formBundleReturn, disposeLiability = Some(dispose))
-                    disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(disposeLiability).flatMap { cache =>
+                    disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(disposeLiability).flatMap { _ =>
                       retrieveDraftDisposeLiabilityReturn(atedRefNo, oldFormBundleNo)
                     }
-                  case status => Future.successful(None)
+                  case _ => Future.successful(None)
                 }
             }
         }
@@ -90,7 +90,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
   }
 
   def updateDraftDisposeLiabilityReturnDate(atedRefNo: String, oldFormBundleNo: String, updatedDate: DisposeLiability)
-                                           (implicit hc: HeaderCarrier): Future[Option[DisposeLiabilityReturn]] = {
+                                           : Future[Option[DisposeLiabilityReturn]] = {
     for {
       disposeLiabilityReturnList <- retrieveDraftDisposeLiabilityReturns(atedRefNo)
       disposeLiabilityOpt <- {
@@ -107,7 +107,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
   }
 
   def updateDraftDisposeHasBankDetails(atedRefNo: String, oldFormBundleNo: String, hasBankDetails: Boolean)
-                                      (implicit hc: HeaderCarrier): Future[Option[DisposeLiabilityReturn]] = {
+                                      : Future[Option[DisposeLiabilityReturn]] = {
     val disposeLiabilityReturnListFuture = retrieveDraftDisposeLiabilityReturns(atedRefNo)
     for {
       disposeLiabilityReturnList <- disposeLiabilityReturnListFuture
@@ -131,7 +131,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
 
 
   def updateDraftDisposeBankDetails(atedRefNo: String, oldFormBundleNo: String, updatedValue: BankDetails)
-                                   (implicit hc: HeaderCarrier): Future[Option[DisposeLiabilityReturn]] = {
+                                   : Future[Option[DisposeLiabilityReturn]] = {
     import models.BankDetailsConversions._
     val disposeLiabilityReturnListFuture = retrieveDraftDisposeLiabilityReturns(atedRefNo)
     for {
@@ -165,7 +165,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
                 x.disposeLiability.fold(DisposeLiability(periodKey = x.formBundleReturn.periodKey.trim.toInt))(a => a),
                 oldFormBundleNo, agentRefNo) flatMap { calculated =>
                 val updatedReturn = x.copy(calculated = Some(calculated))
-                disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(updatedReturn).flatMap(x => Future.successful(Some(convertBankDetails(updatedReturn))))
+                disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(updatedReturn).flatMap(_ => Future.successful(Some(convertBankDetails(updatedReturn))))
               }
             case None => Future.successful(None)
           }
@@ -178,7 +178,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
 
 
   def getPreCalculationAmounts(atedRefNo: String, x: FormBundleReturn, disposalDate: DisposeLiability, oldFormBNo: String, agentRefNo: Option[String] = None)
-                              (implicit hc: HeaderCarrier): Future[DisposeCalculated] = {
+                              : Future[DisposeCalculated] = {
     def generateEditReturnRequest: EditLiabilityReturnsRequestModel = {
       val liabilityReturn = EditLiabilityReturnsRequest(oldFormBundleNumber = oldFormBNo,
         mode = PreCalculation,
@@ -196,7 +196,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
       EditLiabilityReturnsRequestModel(acknowledgmentReference = getUniqueAckNo, agentReferenceNumber = agentRefNo, liabilityReturn = Seq(liabilityReturn))
     }
 
-    etmpReturnsConnector.submitEditedLiabilityReturns(atedRefNo, editedLiabilityReturns = generateEditReturnRequest, true) map {
+    etmpReturnsConnector.submitEditedLiabilityReturns(atedRefNo, editedLiabilityReturns = generateEditReturnRequest, disposal = true) map {
       response =>
         response.status match {
           case OK =>
@@ -205,20 +205,22 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
               .fold(DisposeCalculated(BigDecimal(0), BigDecimal(0)))(a => DisposeCalculated(liabilityAmount = a.liabilityAmount,
                 amountDueOrRefund = a.amountDueOrRefund))
           case status =>
-            Logger.warn(s"[DisposeLiabilityReturnService][getPreCalculationAmounts] - response status = $status, response body = ${response.body}")
+            logger.warn(s"[DisposeLiabilityReturnService][getPreCalculationAmounts] - response status = $status, response body = ${response.body}")
             throw new RuntimeException("pre-calculation-request returned wrong status")
         }
     }
   }
 
-  def deleteDisposeLiabilityDraft(atedRefNo: String, oldFormBundleNo: String)(implicit hc: HeaderCarrier): Future[Seq[DisposeLiabilityReturn]] = {
+  def deleteDisposeLiabilityDraft(atedRefNo: String, oldFormBundleNo: String): Future[Seq[DisposeLiabilityReturn]] = {
     for {
       disposeLiabilityReturnList <- retrieveDraftDisposeLiabilityReturns(atedRefNo)
       updatedListAfterDelete <- {
         disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
           case Some(_) =>
             val filteredList = disposeLiabilityReturnList.filterNot(_.id == oldFormBundleNo)
-            filteredList.map { dispLiab => disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(dispLiab).flatMap(x => Future.successful(filteredList)) }.head
+            filteredList
+              .map { dispLiab => disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(dispLiab)
+              .flatMap(_ => Future.successful(filteredList)) }.head
           case None => Future.successful(Nil)
         }
       }
@@ -232,7 +234,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
     retrieveAgentRefNumberFor { agentRefNo =>
       val disposeLiabilityReturnListFuture = retrieveDraftDisposeLiabilityReturns(atedRefNo)
 
-      def generateEditReturnRequest(x: DisposeLiabilityReturn, agentRefNo: Option[String] = None) = {
+      def generateEditReturnRequest(x: DisposeLiabilityReturn, agentRefNo: Option[String]) = {
         val liabilityReturn = EditLiabilityReturnsRequest(oldFormBundleNumber = oldFormBundleNo,
           mode = Post,
           periodKey = x.formBundleReturn.periodKey,
@@ -254,7 +256,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
         submitStatus: HttpResponse <- {
           disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
             case Some(x) => etmpReturnsConnector.submitEditedLiabilityReturns(atedRefNo, generateEditReturnRequest(x, agentRefNo), true)
-            case None => Future.successful(HttpResponse(NOT_FOUND, None))
+            case None => Future.successful(HttpResponse(NOT_FOUND, ""))
           }
         }
         subscriptionData <- subscriptionDataService.retrieveSubscriptionData(atedRefNo)
@@ -265,12 +267,11 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
             sendMail(subscriptionData.json, "disposal_return_submit")
             HttpResponse(
               submitStatus.status,
-              responseHeaders = submitStatus.allHeaders,
-              responseJson = Some(Json.toJson(submitStatus.json.as[EditLiabilityReturnsResponseModel])),
-              responseString = Some(Json.prettyPrint(Json.toJson(submitStatus.json.as[EditLiabilityReturnsResponseModel])))
+              json = Json.toJson(submitStatus.json.as[EditLiabilityReturnsResponseModel]),
+              headers = submitStatus.headers,
             )
           case someStatus =>
-            Logger.warn(s"[DisposeLiabilityReturnService][submitDisposeLiability] status = $someStatus body = ${submitStatus.body}")
+            logger.warn(s"[DisposeLiabilityReturnService][submitDisposeLiability] status = $someStatus body = ${submitStatus.body}")
             submitStatus
         }
       }

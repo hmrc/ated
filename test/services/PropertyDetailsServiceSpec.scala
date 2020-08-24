@@ -25,8 +25,9 @@ import models._
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.Json
 import play.api.test.Helpers._
 import reactivemongo.api.commands.WriteResult
@@ -38,7 +39,7 @@ import uk.gov.hmrc.mongo.DatabaseUpdate
 
 import scala.concurrent.Future
 
-class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
+class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
 
   val mockPropertyDetailsCache = mock[PropertyDetailsMongoRepository]
   val mockWriteResult = mock[WriteResult]
@@ -119,7 +120,6 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       await(result).isEmpty must be(true)
     }
     "fetch the cached Property Details when we have an ID and no matching data" in new Setup {
-      implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.any())).thenReturn(Future.successful(Nil))
       val result = testPropertyDetailsService.retrieveDraftPropertyDetail(accountRef, "3")
@@ -160,10 +160,6 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
 
   "Delete property details" must {
     "remove the delete success details if we find one" in new Setup {
-      lazy val propertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1")
-      lazy val propertyDetails2 = PropertyDetailsBuilder.getPropertyDetails("2")
-      lazy val propertyDetails3 = PropertyDetailsBuilder.getPropertyDetails("3")
-
       when(mockPropertyDetailsCache.deletePropertyDetailsByfieldName(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(PropertyDetailsDeleted))
 
@@ -174,10 +170,6 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
     }
 
     "return delete error if we don't find one to delete" in new Setup {
-      lazy val propertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1")
-      lazy val propertyDetails2 = PropertyDetailsBuilder.getPropertyDetails("2")
-      lazy val propertyDetails3 = PropertyDetailsBuilder.getPropertyDetails("3")
-
       when(mockPropertyDetailsCache.deletePropertyDetailsByfieldName(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(PropertyDetailsDeleteError))
 
@@ -190,10 +182,6 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
 
   "Delete property details by property id" must {
     "remove the selected property details if we find one" in new Setup {
-      lazy val propertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1")
-      lazy val propertyDetails2 = PropertyDetailsBuilder.getPropertyDetails("2")
-      lazy val propertyDetails3 = PropertyDetailsBuilder.getPropertyDetails("3")
-
       when(mockPropertyDetailsCache.deletePropertyDetailsByfieldName(ArgumentMatchers.eq(accountRef), ArgumentMatchers.eq("1")))
         .thenReturn(Future.successful(PropertyDetailsDeleted))
 
@@ -299,7 +287,6 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
     "Return the existing Liability Amount if we have it already calculated" in new Setup {
       lazy val calcPropertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1", Some("something"), liabilityAmount = Some(BigDecimal(123.22)))
 
-      val successResponse = Json.parse(jsonEtmpResponse)
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(calcPropertyDetails1)))
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
@@ -323,7 +310,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       lazy val calcPropertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1", Some("something"), liabilityAmount = Some(BigDecimal(123.22))).copy(calculated = None)
 
       val successResponse = Json.parse(jsonEtmpResponse)
-      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(calcPropertyDetails1)))
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
@@ -595,7 +582,6 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
     "return None if form-bundle not-found in cache" in new Setup {
       when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(accountRef)))
         .thenReturn(Future.successful(Nil))
-      val bankDetails = ChangeLiabilityReturnBuilder.generateLiabilityBankDetails
       val result = await(testPropertyDetailsService.cacheDraftHasBankDetails(accountRef, "", true))
       result must be(None)
     }
@@ -648,7 +634,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       lazy val propertyDetailsExample = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
 
       val successResponse = Json.parse(jsonEtmpResponse)
-      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
       val result = testPropertyDetailsService.getLiabilityAmount(accountRef, "1", propertyDetailsExample)
 
       val liabilityAmount = await(result)
@@ -656,11 +642,10 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
     }
 
     "Return None if we have no Liability Amount " in new Setup {
-      implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
       lazy val propertyDetailsExample = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
 
       val successResponse = Json.parse(jsonEtmpResponse)
-      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
       val result = testPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
 
       val liabilityAmount = await(result)
@@ -671,7 +656,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       lazy val propertyDetailsExample = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
 
       val failureResponse = Json.parse( """{ "reason": "Error"}""")
-      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, Some(failureResponse))))
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, failureResponse, Map.empty[String, Seq[String]])))
       val result = testPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
 
       val thrown = the[BadRequestException] thrownBy await(result)
@@ -682,7 +667,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       lazy val propertyDetailsExample = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
 
       val failureResponse = Json.parse( """{ "reason": "Error"}""")
-      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, Some(failureResponse))))
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, failureResponse, Map.empty[String, Seq[String]])))
       val result = testPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
 
       val thrown = the[InternalServerException] thrownBy await(result)
@@ -690,12 +675,11 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       }
 
     "Fail if we have dont have valid details " in new Setup {
-      implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
       lazy val propertyDetailsPopulated = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
       val propertyDetailsExample = propertyDetailsPopulated.copy(period = None, calculated = None)
 
       val failureResponse = Json.parse( """{ "reason": "Error"}""")
-      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, Some(failureResponse))))
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, failureResponse, Map.empty[String, Seq[String]])))
       val thrown = the[InternalServerException] thrownBy testPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
 
       thrown.getMessage must include("Invalid Data for the request")
@@ -712,12 +696,12 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
       when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest]())) thenReturn {
-        Future.successful(HttpResponse(OK, Some(successResponse)))
+        Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]]))
       }
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
       mockRetrievingNoAuthRef
-      when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
+      when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
       when(mockEmailConnector.sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
 
       val result = testPropertyDetailsService.submitDraftPropertyDetail(accountRef, "1")
@@ -730,11 +714,10 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       lazy val propertyDetails2 = PropertyDetailsBuilder.getPropertyDetails("2", Some("something else"))
       lazy val propertyDetails3 = PropertyDetailsBuilder.getPropertyDetails("3", Some("something more"))
 
-      val successResponse = Json.parse(jsonEtmpResponse)
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
       mockRetrievingNoAuthRef
-      when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
+      when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
 
       val result = testPropertyDetailsService.submitDraftPropertyDetail(accountRef, "4")
       await(result).status must be(NOT_FOUND)
@@ -747,11 +730,10 @@ class PropertyDetailsServiceSpec extends PlaySpec with OneServerPerSuite with Mo
       lazy val propertyDetails3 = PropertyDetailsBuilder.getPropertyDetails("3", Some("something more"))
       lazy val propertyDetailsExample = propertyDetails1.copy(period = None)
 
-      val successResponse = Json.parse(jsonEtmpResponse)
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetailsExample, propertyDetails2, propertyDetails3)))
       mockRetrievingNoAuthRef
-      when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
+      when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
 
       val result = testPropertyDetailsService.submitDraftPropertyDetail(accountRef, "1")
       await(result).status must be(NOT_FOUND)

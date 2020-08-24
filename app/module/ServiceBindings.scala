@@ -25,35 +25,37 @@ import scheduler._
 import services._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
-import uk.gov.hmrc.play.bootstrap.http.{DefaultHttpClient, HttpClient}
+import uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient
+import play.api.inject.{bind => playBind}
+import uk.gov.hmrc.http.HttpClient
 
 class ServiceBindings extends Module {
   override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] =
     Seq(
-      bind(classOf[DeletePropertyDetailsService]).to[DefaultDeletePropertyDetailsService].eagerly(),
-      bind(classOf[DeleteReliefsService]).to[DefaultDeleteReliefsService].eagerly(),
-      bind(classOf[DeleteLiabilityReturnsService]).to[DefaultDeleteLiabilityReturnsService].eagerly(),
-      bind(classOf[LockRepositoryProvider]).to[DefaultLockRepositoryProvider].eagerly(),
-      bind(classOf[AuthConnector]).to(classOf[DefaultAuthConnector]),
-      bind(classOf[EmailConnector]).to(classOf[EmailConnectorImpl]),
-      bind(classOf[EtmpDetailsConnector]).to(classOf[EtmpDetailsConnectorImpl]),
-      bind(classOf[EtmpReturnsConnector]).to(classOf[EtmpReturnsConnectorImpl]),
-      bind(classOf[ServiceMetrics]).to(classOf[ServiceMetricsImpl]),
-      bind(classOf[HttpClient]).to(classOf[DefaultHttpClient]),
-      bind(classOf[ChangeLiabilityService]).to(classOf[ChangeLiabilityServiceImpl]),
-      bind(classOf[DisposeLiabilityReturnService]).to(classOf[DisposeLiabilityReturnServiceImpl]),
-      bind(classOf[FormBundleService]).to(classOf[FormBundleServiceImpl]),
-      bind(classOf[PropertyDetailsPeriodService]).to(classOf[PropertyDetailsPeriodServiceImpl]),
-      bind(classOf[PropertyDetailsService]).to(classOf[PropertyDetailsServiceImpl]),
-      bind(classOf[PropertyDetailsValuesService]).to(classOf[PropertyDetailsValuesServiceImpl]),
-      bind(classOf[ReliefsService]).to(classOf[ReliefsServiceImpl]),
-      bind(classOf[ReturnSummaryService]).to(classOf[ReturnSummaryServiceImpl]),
-      bind(classOf[SubscriptionDataService]).to(classOf[SubscriptionDataServiceImpl]),
-      bind(classOf[DisposeLiabilityReturnMongoWrapper]).to(classOf[DisposeLiabilityReturnMongoWrapperImpl]),
-      bind(classOf[PropertyDetailsMongoWrapper]).to(classOf[PropertyDetailsMongoWrapperImpl]),
-      bind(classOf[ReliefsMongoWrapper]).to(classOf[ReliefsMongoWrapperImpl]),
-      bind(classOf[DeleteOldReliefsJob]).toSelf.eagerly(),
-      bind(classOf[DeleteOldLiabilityReturnsJob]).toSelf.eagerly(),
-      bind(classOf[DeleteOldPropertyDetailsJob]).toSelf.eagerly()
+      playBind(classOf[DeletePropertyDetailsService]).to[DefaultDeletePropertyDetailsService].eagerly(),
+      playBind(classOf[DeleteReliefsService]).to[DefaultDeleteReliefsService].eagerly(),
+      playBind(classOf[DeleteLiabilityReturnsService]).to[DefaultDeleteLiabilityReturnsService].eagerly(),
+      playBind(classOf[LockRepositoryProvider]).to[DefaultLockRepositoryProvider].eagerly(),
+      playBind(classOf[AuthConnector]).to(classOf[DefaultAuthConnector]),
+      playBind(classOf[EmailConnector]).to(classOf[EmailConnectorImpl]),
+      playBind(classOf[EtmpDetailsConnector]).to(classOf[EtmpDetailsConnectorImpl]),
+      playBind(classOf[EtmpReturnsConnector]).to(classOf[EtmpReturnsConnectorImpl]),
+      playBind(classOf[ServiceMetrics]).to(classOf[ServiceMetricsImpl]),
+      playBind(classOf[HttpClient]).to(classOf[DefaultHttpClient]),
+      playBind(classOf[ChangeLiabilityService]).to(classOf[ChangeLiabilityServiceImpl]),
+      playBind(classOf[DisposeLiabilityReturnService]).to(classOf[DisposeLiabilityReturnServiceImpl]),
+      playBind(classOf[FormBundleService]).to(classOf[FormBundleServiceImpl]),
+      playBind(classOf[PropertyDetailsPeriodService]).to(classOf[PropertyDetailsPeriodServiceImpl]),
+      playBind(classOf[PropertyDetailsService]).to(classOf[PropertyDetailsServiceImpl]),
+      playBind(classOf[PropertyDetailsValuesService]).to(classOf[PropertyDetailsValuesServiceImpl]),
+      playBind(classOf[ReliefsService]).to(classOf[ReliefsServiceImpl]),
+      playBind(classOf[ReturnSummaryService]).to(classOf[ReturnSummaryServiceImpl]),
+      playBind(classOf[SubscriptionDataService]).to(classOf[SubscriptionDataServiceImpl]),
+      playBind(classOf[DisposeLiabilityReturnMongoWrapper]).to(classOf[DisposeLiabilityReturnMongoWrapperImpl]),
+      playBind(classOf[PropertyDetailsMongoWrapper]).to(classOf[PropertyDetailsMongoWrapperImpl]),
+      playBind(classOf[ReliefsMongoWrapper]).to(classOf[ReliefsMongoWrapperImpl]),
+      playBind(classOf[DeleteOldReliefsJob]).toSelf.eagerly(),
+      playBind(classOf[DeleteOldLiabilityReturnsJob]).toSelf.eagerly(),
+      playBind(classOf[DeleteOldPropertyDetailsJob]).toSelf.eagerly()
     )
 }

@@ -19,14 +19,15 @@ package repository
 import builders.PropertyDetailsBuilder
 import metrics.ServiceMetrics
 import org.scalatest._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import reactivemongo.api.DB
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto}
+import uk.gov.hmrc.crypto.ApplicationCrypto
 import uk.gov.hmrc.mongo.{Awaiting, MongoSpecSupport}
 
 class PropertyDetailsMongoRepositorySpec extends PlaySpec
-  with OneServerPerSuite
+  with GuiceOneServerPerSuite
   with MongoSpecSupport
   with Awaiting
   with MockitoSugar
@@ -51,7 +52,7 @@ class PropertyDetailsMongoRepositorySpec extends PlaySpec
     "Save stuff in mongo" should {
 
       "do it" in {
-        val created = await(repository.cachePropertyDetails(propertyDetails1))
+        await(repository.cachePropertyDetails(propertyDetails1))
       }
 
       "overwrite old object" in {

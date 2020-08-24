@@ -18,12 +18,12 @@ package connectors
 
 import javax.inject.Inject
 import models.SendEmailRequest
-import play.api.Logger
+import play.api.Logging
 import play.api.http.Status._
 import play.api.libs.json.Json
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.HttpClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -38,7 +38,7 @@ class EmailConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
   val sendEmailUri: String = "hmrc/email"
 }
 
-trait EmailConnector extends RawResponseReads {
+trait EmailConnector extends RawResponseReads with Logging {
   val serviceUrl: String
   val sendEmailUri: String
   val http: HttpClient
@@ -55,7 +55,7 @@ trait EmailConnector extends RawResponseReads {
         case ACCEPTED =>
           EmailSent
         case status =>
-          Logger.warn(s"[EmailConnector] Email failed - $status")
+          logger.warn(s"[EmailConnector] Email failed - $status")
           EmailNotSent
       }
     }

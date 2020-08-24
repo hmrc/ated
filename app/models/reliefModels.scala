@@ -17,9 +17,9 @@
 package models
 
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
+import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import play.api.libs.functional.syntax._
 
 case class TaxAvoidance(
                          rentalBusinessScheme: Option[String] = None,
@@ -43,9 +43,6 @@ case class TaxAvoidance(
                        )
 
 object TaxAvoidance {
-  import play.api.libs.json.JodaWrites._
-  import play.api.libs.json.JodaReads._
-
   implicit val formats = Json.format[TaxAvoidance]
 }
 

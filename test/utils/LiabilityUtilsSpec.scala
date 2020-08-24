@@ -17,13 +17,11 @@
 package utils
 
 import builders.PropertyDetailsBuilder
-import models._
 import org.joda.time.LocalDate
 import org.scalatestplus.play.PlaySpec
-import play.api.test.Helpers._
-import org.scalatestplus.play.OneServerPerSuite
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 
-class LiabilityUtilsSpec extends PlaySpec with ReliefConstants with OneServerPerSuite {
+class LiabilityUtilsSpec extends PlaySpec with ReliefConstants with GuiceOneServerPerSuite {
 
   val periodStartDate = new LocalDate("2015-04-01")
   val periodEndDate = new LocalDate("2016-03-30")

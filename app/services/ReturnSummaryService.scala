@@ -21,7 +21,7 @@ import javax.inject.Inject
 import models._
 import org.joda.time.LocalDate
 import play.api.http.Status._
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.http.HttpResponse
 import utils.AtedConstants._
 import utils.ReliefUtils._
 
@@ -49,15 +49,15 @@ trait ReturnSummaryService {
     }.fold(Nil)((accumulatorList, actualList) => accumulatorList ++ actualList)
 
     val liabilityDraftSeq: Seq[DraftReturns] = liabilityDrafts.map {
-      x => DraftReturns(x.periodKey, x.id.toString, x.addressProperty.line_1 + " " + x.addressProperty.line_2,
+      x => DraftReturns(x.periodKey, x.id, x.addressProperty.line_1 + " " + x.addressProperty.line_2,
             x.calculated.fold(None: Option[BigDecimal])(y => y.liabilityAmount),
-            if (x.formBundleReturn.isDefined && x.id.size == 12) TypeChangeLiabilityDraft else TypeLiabilityDraft)
+            if (x.formBundleReturn.isDefined && x.id.length == 12) TypeChangeLiabilityDraft else TypeLiabilityDraft)
                               // 12 chars is the length of the formBundleNo,
                               // if it was 10 then it would be a return created from a previous year
     }
 
     val disposeLiabilityDraftsSeq: Seq[DraftReturns] = disposeLiabilityDrafts.map {
-      x => DraftReturns(x.formBundleReturn.periodKey.trim.toInt, x.id.toString,
+      x => DraftReturns(x.formBundleReturn.periodKey.trim.toInt, x.id,
         x.formBundleReturn.propertyDetails.address.addressLine1 + " " + x.formBundleReturn.propertyDetails.address.addressLine2,
         x.calculated.fold(None: Option[BigDecimal])(y => Some(y.liabilityAmount)), TypeDisposeLiabilityDraft)
     }
@@ -65,7 +65,7 @@ trait ReturnSummaryService {
     reliefDraftSeq ++ liabilityDraftSeq ++ disposeLiabilityDraftsSeq
   }
 
-  def getPartialSummaryReturn(atedRef: String)(implicit hc: HeaderCarrier): Future[SummaryReturnsModel] = {
+  def getPartialSummaryReturn(atedRef: String): Future[SummaryReturnsModel] = {
     val reliefDraftsFuture = reliefsService.retrieveDraftReliefs(atedRef)
     val liabilityDraftsFuture = propertyDetailsService.retrieveDraftPropertyDetails(atedRef)
     val disposeLiabilityDraftsFuture = disposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(atedRef)
@@ -91,8 +91,7 @@ trait ReturnSummaryService {
     }
   }
 
-  //scalastyle:off method.length
-  def getFullSummaryReturns(atedRef: String)(implicit hc: HeaderCarrier): Future[SummaryReturnsModel] = {
+  def getFullSummaryReturns(atedRef: String): Future[SummaryReturnsModel] = {
     val etmpReturnsFuture = etmpConnector.getSummaryReturns(atedRef, years)
     val reliefDraftsFuture = reliefsService.retrieveDraftReliefs(atedRef)
     val liabilityDraftsFuture = propertyDetailsService.retrieveDraftPropertyDetails(atedRef)

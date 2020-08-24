@@ -42,7 +42,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
 
   def subscriptionDataService: SubscriptionDataService
 
-  def retrievePeriodDraftPropertyDetails(atedRefNo: String, periodKey: Int)(implicit hc: HeaderCarrier): Future[Seq[PropertyDetails]] = {
+  def retrievePeriodDraftPropertyDetails(atedRefNo: String, periodKey: Int): Future[Seq[PropertyDetails]] = {
 
     propertyDetailsCache.fetchPropertyDetails(atedRefNo).map {
       propertyDetailsList =>
@@ -51,7 +51,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
   }
 
   def createDraftPropertyDetails(atedRefNo: String, periodKey: Int, updatedAddress: PropertyDetailsAddress)
-                                (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+                                : Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       Future.successful(Some(PropertyDetails(atedRefNo = atedRefNo, periodKey = periodKey, id = createPropertyKey, addressProperty = updatedAddress)))
@@ -60,7 +60,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
   }
 
   def cacheDraftPropertyDetailsAddress(atedRefNo: String, id: String, updatedAddress: PropertyDetailsAddress)
-                                      (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+                                      : Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -73,7 +73,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
   }
 
   def cacheDraftPropertyDetailsTitle(atedRefNo: String, id: String, updatedTitle: PropertyDetailsTitle)
-                                    (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+                                    : Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -114,7 +114,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
 
   def getLiabilityAmount(atedRefNo: String, id: String,
                          propertyDetails: PropertyDetails, agentRefNo: Option[String] = None)
-                        (implicit hc: HeaderCarrier): Future[Option[BigDecimal]] = {
+                        : Future[Option[BigDecimal]] = {
     def getLiabilityAmount(response: JsValue): Option[BigDecimal] = {
       val liabilityResponses = response.as[SubmitEtmpReturnsResponse]
       val result = liabilityResponses.liabilityReturnResponse.flatMap {
@@ -136,7 +136,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
   }
 
   def cacheDraftTaxAvoidance(atedRefNo: String, id: String, updatedDetails: PropertyDetailsTaxAvoidance)
-                            (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+                            : Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -161,13 +161,13 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
   }
 
   def cacheDraftSupportingInfo(atedRefNo: String, id: String, updatedDetails: PropertyDetailsSupportingInfo)
-                              (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+                              : Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
         foundPropertyDetails =>
 
-          if (Some(updatedDetails.supportingInfo) == foundPropertyDetails.period.flatMap(_.supportingInfo))
+          if (foundPropertyDetails.period.flatMap(_.supportingInfo).contains(updatedDetails.supportingInfo))
             foundPropertyDetails
           else {
             val updatedPeriod = foundPropertyDetails.period.map(_.copy(
@@ -182,7 +182,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
   }
 
   def cacheDraftHasBankDetails(atedRefNo: String, id: String, hasBankDetails: Boolean)
-                              (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+                              : Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -201,7 +201,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
   }
 
   def cacheDraftBankDetails(atedRefNo: String, id: String, newBankDetails: BankDetails)
-                           (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+                           : Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       import models.BankDetailsConversions._
@@ -227,9 +227,9 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
               val etmpSubmitReturnRequest = LiabilityUtils.createPostReturnsRequest(id, x, agentRefNo)
               etmpSubmitReturnRequest match {
                 case Some(returnRequest) => etmpConnector.submitReturns(atedRefNo, returnRequest)
-                case None => Future.successful(HttpResponse(NOT_FOUND, None))
+                case None => Future.successful(HttpResponse(NOT_FOUND, ""))
               }
-            case None => Future.successful(HttpResponse(NOT_FOUND, None))
+            case None => Future.successful(HttpResponse(NOT_FOUND, ""))
           }
         }
         subscriptionData <- subscriptionDataService.retrieveSubscriptionData(atedRefNo)
@@ -240,18 +240,17 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
             sendMail(subscriptionData.json, "chargeable_return_submit")
             HttpResponse(
               submitResponse.status,
-              responseHeaders = submitResponse.allHeaders,
-              responseJson = Some(Json.toJson(submitResponse.json.as[SubmitEtmpReturnsResponse])),
-              responseString = Some(Json.prettyPrint(Json.toJson(submitResponse.json.as[SubmitEtmpReturnsResponse])))
+              json = Json.toJson(submitResponse.json.as[SubmitEtmpReturnsResponse]),
+              headers = submitResponse.headers,
             )
-          case someStatus =>
+          case _ =>
             submitResponse
         }
       }
     }
   }
 
-  def deleteChargeableDraft(atedRefNo: String, id: String)(implicit hc: HeaderCarrier): Future[Seq[PropertyDetails]] = {
+  def deleteChargeableDraft(atedRefNo: String, id: String): Future[Seq[PropertyDetails]] = {
     for {
       _ <- propertyDetailsCache.deletePropertyDetailsByfieldName(atedRefNo, id)
       reliefsList <- propertyDetailsCache.fetchPropertyDetailsById(atedRefNo, id)

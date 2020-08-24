@@ -20,7 +20,6 @@ import models.BankDetailsConversions._
 import models._
 import org.joda.time.LocalDate
 import utils.PropertyDetailsUtils._
-import utils.ReliefUtils.{Gb, Post, PreCalculation}
 
 object ChangeLiabilityUtils extends ReliefConstants {
 
@@ -45,7 +44,7 @@ object ChangeLiabilityUtils extends ReliefConstants {
     val reliefPeriods = x.lineItem.filter(_.`type` == TypeRelief).map(lineItem =>
       LineItem(lineItemType = lineItem.`type`, startDate = lineItem.dateFrom, endDate = lineItem.dateTo, description = lineItem.reliefDescription)
     )
-    val isFullPeriod = (x.lineItem.size) match {
+    val isFullPeriod = x.lineItem.size match {
       case 1 =>
         val startDate = new LocalDate(s"${x.periodKey}-04-01")
         val endDate = startDate.plusYears(1).minusDays(1)
@@ -59,7 +58,7 @@ object ChangeLiabilityUtils extends ReliefConstants {
     PropertyDetailsPeriod(
       liabilityPeriods = liabilityPeriods.toList,
       reliefPeriods = reliefPeriods.toList,
-      isTaxAvoidance = x.taxAvoidanceScheme.fold(Some(false))(a => Some(true)),
+      isTaxAvoidance = x.taxAvoidanceScheme.fold(Some(false))(_ => Some(true)),
       taxAvoidanceScheme = x.taxAvoidanceScheme,
       taxAvoidancePromoterReference = x.taxAvoidancePromoterReference,
       supportingInfo = x.propertyDetails.additionalDetails,
@@ -141,7 +140,7 @@ object ChangeLiabilityUtils extends ReliefConstants {
   }
 
   def getNinetyDayRuleApplies(x: PropertyDetails): Boolean = {
-    val ninetyDayRuleApplies = x.formBundleReturn.map(_.ninetyDayRuleApplies).getOrElse(false)
+    val ninetyDayRuleApplies = x.formBundleReturn.exists(_.ninetyDayRuleApplies)
     x.value.map {
       b => b.hasValueChanged.fold(ninetyDayRuleApplies)(a =>
         if (a) {b.isNewBuild.fold(ninetyDayRuleApplies)(c => c)} else ninetyDayRuleApplies)

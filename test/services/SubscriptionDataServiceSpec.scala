@@ -22,8 +22,9 @@ import models._
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.Json
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.AuthConnector
@@ -31,7 +32,7 @@ import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.Future
 
-class SubscriptionDataServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
+class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
 
   val mockEtmpConnector = mock[EtmpDetailsConnector]
   val mockAuthConnector = mock[AuthConnector]
@@ -56,7 +57,7 @@ class SubscriptionDataServiceSpec extends PlaySpec with OneServerPerSuite with M
   "SubscriptionDataService" must {
 
     "retrieve Subscription Data" in new Setup {
-      when(mockEtmpConnector.getSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
+      when(mockEtmpConnector.getSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
       val result = testSubscriptionDataService.retrieveSubscriptionData(accountRef)
       val response = await(result)
       response.status must be(OK)
@@ -71,7 +72,7 @@ class SubscriptionDataServiceSpec extends PlaySpec with OneServerPerSuite with M
         val updatedData = UpdateSubscriptionDataRequest(true, ChangeIndicators(), List(Address(addressDetails = addressDetails)))
         implicit val hc = HeaderCarrier()
 
-        when(mockEtmpConnector.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
+        when(mockEtmpConnector.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
         mockRetrievingNoAuthRef
         val result = testSubscriptionDataService.updateSubscriptionData(accountRef, updatedData)
         val response = await(result)
@@ -87,7 +88,7 @@ class SubscriptionDataServiceSpec extends PlaySpec with OneServerPerSuite with M
         val registeredDetails = RegisteredAddressDetails(addressLine1 = "", addressLine2 = "", countryCode = "GB")
         val updatedData = new UpdateRegistrationDetailsRequest(None, false, None, Some(Organisation("testName")), registeredDetails, ContactDetails(), false, false)
 
-        when(mockEtmpConnector.updateRegistrationDetails(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponse))))
+        when(mockEtmpConnector.updateRegistrationDetails(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
         val result = testSubscriptionDataService.updateRegistrationDetails(accountRef, "safeId", updatedData)
         val response = await(result)
         response.status must be(OK)

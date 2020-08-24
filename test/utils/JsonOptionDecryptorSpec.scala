@@ -33,10 +33,9 @@ package utils
  */
 
 import org.scalatest.{Matchers, WordSpec}
-import play.api.libs.json.{Writes, JsString, Json}
-import uk.gov.hmrc.crypto._
+import play.api.libs.json.{JsString, Json}
 import uk.gov.hmrc.crypto.json._
-import uk.gov.hmrc.crypto.{CompositeSymmetricCrypto, Crypted, Protected, ApplicationCrypto}
+import uk.gov.hmrc.crypto.{CompositeSymmetricCrypto, Protected, _}
 
 class JsonEncryptionSpec extends WordSpec with Matchers {
 

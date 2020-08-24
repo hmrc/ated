@@ -17,8 +17,8 @@
 package scheduler
 
 import javax.inject.Inject
-import org.joda.time.{DateTime, Duration}
-import play.api.{Configuration, Environment, Logger}
+import org.joda.time.Duration
+import play.api.{Configuration, Environment, Logging}
 import repository.{DisposeLiabilityReturnMongoRepository, DisposeLiabilityReturnMongoWrapper, LockRepositoryProvider}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
@@ -43,7 +43,7 @@ class DefaultDeleteLiabilityReturnsService @Inject()(val servicesConfig: Service
   }
 }
 
-trait DeleteLiabilityReturnsService extends ScheduledService[Int] {
+trait DeleteLiabilityReturnsService extends ScheduledService[Int] with Logging {
   lazy val repo: DisposeLiabilityReturnMongoRepository = repository()
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
@@ -51,17 +51,17 @@ trait DeleteLiabilityReturnsService extends ScheduledService[Int] {
   val lockKeeper: LockKeeper
   val documentBatchSize: Int
 
-  private def deleteOldLiabilityReturns()(implicit ec: ExecutionContext): Future[Int] = {
+  private def deleteOldLiabilityReturns(): Future[Int] = {
     repo.deleteExpired60DayLiabilityReturns(documentBatchSize)
   }
 
   def invoke()(implicit ec: ExecutionContext): Future[Int] = {
     lockKeeper.tryLock(deleteOldLiabilityReturns()) map {
       case Some(result) =>
-        Logger.info(s"[DeleteLiabilityReturnsService] Deleted $result draft documents past the given day limit")
+        logger.info(s"[DeleteLiabilityReturnsService] Deleted $result draft documents past the given day limit")
         result
       case None         =>
-        Logger.warn(s"[DeleteLiabilityReturnsService] Failed to acquire lock")
+        logger.warn(s"[DeleteLiabilityReturnsService] Failed to acquire lock")
         0
     }
   }

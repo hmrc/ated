@@ -17,15 +17,15 @@
 package scheduler
 
 import akka.actor.{Actor, ActorLogging, Props}
-import play.api.Logger
+import play.api.Logging
 import scheduler.SchedulingActor._
 
-class SchedulingActor extends Actor with ActorLogging {
+class SchedulingActor extends Actor with ActorLogging with Logging {
   import context.dispatcher
 
   override def receive: Receive = {
     case message : ScheduledMessage[_] =>
-      Logger.info(s"Received ${message.getClass.getSimpleName}")
+      logger.info(s"Received ${message.getClass.getSimpleName}")
       message.service.invoke()
   }
 }

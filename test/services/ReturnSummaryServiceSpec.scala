@@ -24,15 +24,16 @@ import org.joda.time.LocalDate
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.Json
 import play.api.test.Helpers._
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.Future
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse }
 
-class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
+class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
   val mockEtmpConnector = mock[EtmpReturnsConnector]
   val mockPropertyDetailsService = mock[PropertyDetailsService]
@@ -86,9 +87,9 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
         val expected = SummaryReturnsModel(None, List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", None, "Liability")), None),
           PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")), None)))
 
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(propDetailsSeq))
-        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(reliefDrafts))
-        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).
+        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
+        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
+        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).
           thenReturn(Future.successful(dispLiab))
 
         val result = testReturnSummaryService.getPartialSummaryReturn(atedRefNo)
@@ -102,9 +103,9 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
         val dispLiab = Nil
 
         val expected = SummaryReturnsModel(None, Nil)
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(propDetailsSeq))
-        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(reliefDrafts))
-        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).
+        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
+        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
+        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).
           thenReturn(Future.successful(dispLiab))
 
         val result = testReturnSummaryService.getPartialSummaryReturn(atedRefNo)
@@ -116,7 +117,6 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
 
       "return SummaryReturnModel with drafts and submitted return when we only have new  - from Mongo DB and ETMP" in new Setup {
 
-        val etmpReturn = EtmpReturnsResponseModelBuilder.generateEtmpGetReturnsResponse(periodKey.toString)
         //TODO: if etmp reverts back to numeric, uncomment next line and comment next-to-next
         //val etmpReturnJson = Json.toJson(etmpReturn)
         val etmpReturnJson =
@@ -142,10 +142,10 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
                 true, "pay-123")))))))
 
         when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))).
-          thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(etmpReturnJson))))
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(propDetailsSeq))
-        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(reliefDrafts))
-        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).
+          thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
+        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
+        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
+        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).
           thenReturn(Future.successful(dispLiab))
 
         val result = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
@@ -154,7 +154,6 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
 
       "return SummaryReturnModel with drafts and submitted return when we have new and old returns  - from Mongo DB and ETMP" in new Setup {
 
-        val etmpReturn = EtmpReturnsResponseModelBuilder.generateEtmpGetReturnsResponse(periodKey.toString)
         //TODO: if etmp reverts back to numeric, uncomment next line and comment next-to-next
         //val etmpReturnJson = Json.toJson(etmpReturn)
         val etmpReturnJson =
@@ -192,10 +191,10 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
         )
 
         when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))).
-          thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(etmpReturnJson))))
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(propDetailsSeq))
-        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(reliefDrafts))
-        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).
+          thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
+        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
+        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
+        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).
           thenReturn(Future.successful(dispLiab))
 
         val result = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
@@ -204,7 +203,6 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
 
       "return SummaryReturnModel with drafts and submitted return - from Mongo DB and ETMP - no liability or draft" in new Setup {
 
-        val etmpReturn = EtmpReturnsResponseModelBuilder.generateEtmpGetReturnsResponseNoDraftandLiabilty(periodKey.toString)
         val etmpReturnJson = Json.parse("""{"safeId":"123Safe","organisationName":"organisationName","periodData":[{"periodKey":"2014","returnData":{}}],"atedBalance":"0"}""")
         val relDraft = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
         val reliefDrafts = Seq(relDraft)
@@ -219,10 +217,10 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
             Some(SubmittedReturns(periodKey, List(), List())))))
 
         when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))).
-          thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(etmpReturnJson))))
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(propDetailsSeq))
-        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(reliefDrafts))
-        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).
+          thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
+        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
+        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
+        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).
           thenReturn(Future.successful(dispLiab))
 
         val result = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
@@ -231,7 +229,6 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
 
       "return SummaryReturnModel with drafts and submitted return - from Mongo DB and ETMP - no liabliity amount in liabilty return" in new Setup {
 
-        val etmpReturn = EtmpReturnsResponseModelBuilder.generateEmptyEtmpGetReturnsResponse(periodKey.toString)
         val etmpReturnJson = Json.parse("""{"safeId":"123Safe","organisationName":"organisationName","periodData":[{"periodKey":"2014","returnData":{"reliefReturnSummary":[{"formBundleNumber":"12345","dateOfSubmission":"2014-05-05","relief":"Farmhouses","reliefStartDate":"2014-09-05","reliefEndDate":"2014-10-05"}],"liabilityReturnSummary":[{}]}}],"atedBalance":"0"}""")
         val relDraft = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
         val reliefDrafts = Seq(relDraft)
@@ -247,10 +244,10 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
             new LocalDate("2014-05-05"), None, None)), List())))))
 
         when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))).
-          thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(etmpReturnJson))))
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(propDetailsSeq))
-        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(reliefDrafts))
-        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).
+          thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
+        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
+        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
+        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).
           thenReturn(Future.successful(dispLiab))
 
         val result = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
@@ -267,10 +264,10 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
         val years = 6
 
         when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))).
-          thenReturn(Future.successful(HttpResponse(NOT_FOUND, responseJson = None)))
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(propDetailsSeq))
-        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(reliefDrafts))
-        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).
+          thenReturn(Future.successful(HttpResponse(NOT_FOUND, "")))
+        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
+        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
+        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).
           thenReturn(Future.successful(dispLiab))
 
         val expected = SummaryReturnsModel(None, List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", Some(1000), "Liability")), None),
@@ -289,10 +286,10 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
         val expected = SummaryReturnsModel(None, Nil)
 
         when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))).
-          thenReturn(Future.successful(HttpResponse(NOT_FOUND, responseJson = None)))
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(propDetailsSeq))
-        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(reliefDrafts))
-        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).
+          thenReturn(Future.successful(HttpResponse(NOT_FOUND, "")))
+        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
+        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
+        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).
           thenReturn(Future.successful(dispLiab))
 
         val result = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
@@ -308,10 +305,10 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
         val expected = SummaryReturnsModel(None, Nil)
 
         when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))).
-          thenReturn(Future.successful(HttpResponse(BAD_REQUEST, responseJson = None)))
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(propDetailsSeq))
-        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(reliefDrafts))
-        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).
+          thenReturn(Future.successful(HttpResponse(BAD_REQUEST, "")))
+        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
+        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
+        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).
           thenReturn(Future.successful(dispLiab))
 
         val result = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
@@ -319,7 +316,6 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
       }
 
       "return blank SummaryReturnModel for no drafts but no matching period key" in new Setup {
-        val etmpReturn = EtmpReturnsResponseModelBuilder.generateEtmpGetReturnsResponseWithNoPeriodData(periodKey.toString)
         val etmpReturnJson = Json.parse("""{"safeId":"123Safe","organisationName":"organisationName","periodData":[],"atedBalance":"0"}""")
         val reliefDrafts = Nil
         val propDetailsSeq = Nil
@@ -330,11 +326,11 @@ class ReturnSummaryServiceSpec extends PlaySpec with OneServerPerSuite with Mock
         val expected = SummaryReturnsModel(None, Nil)
 
         when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))).
-          thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(etmpReturnJson))))
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(propDetailsSeq))
-        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).thenReturn(Future.successful(reliefDrafts))
+          thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
+        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
+        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
 
-        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any())).
+        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).
           thenReturn(Future.successful(dispLiab))
 
         val result = testReturnSummaryService.getFullSummaryReturns(atedRefNo)

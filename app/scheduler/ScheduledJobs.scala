@@ -19,10 +19,12 @@ package scheduler
 import akka.actor.{ActorRef, ActorSystem}
 import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
 import org.quartz.CronExpression
-import play.api.{Configuration, Logger}
+import play.api.{Configuration, Logging}
 import scheduler.SchedulingActor.ScheduledMessage
 
-trait ScheduledJobs {
+import scala.util.Try
+
+trait ScheduledJobs extends Logging {
   val scheduledMessage: ScheduledMessage[_]
   val config: Configuration
   val actorSystem: ActorSystem
@@ -32,11 +34,11 @@ trait ScheduledJobs {
 
   lazy val schedulingActorRef: ActorRef = actorSystem.actorOf(SchedulingActor.props)
 
-  def enabled: Boolean = config.getBoolean(s"schedules.$jobName.enabled").getOrElse(false)
+  def enabled: Boolean = Try(config.get[Boolean](s"schedules.$jobName.enabled")).getOrElse(false)
 
-  lazy val description: Option[String] = config.getString(s"schedules.$jobName.description")
+  lazy val description: Option[String] = Try(config.get[String](s"schedules.$jobName.description")).toOption
 
-  lazy val expression: String = config.getString(s"schedules.$jobName.expression") map (_.replaceAll("_", " ")) getOrElse ""
+  lazy val expression: String = Try(config.get[String](s"schedules.$jobName.expression")) map (_.replaceAll("_", " ")) getOrElse ""
 
   lazy val expressionValid: Boolean = CronExpression.isValidExpression(expression)
 
@@ -45,13 +47,13 @@ trait ScheduledJobs {
       case (true, true) =>
         scheduler.createSchedule(jobName, description, expression)
         scheduler.schedule(jobName, schedulingActorRef, scheduledMessage)
-        Logger.info(s"Scheduler for $jobName has been started")
+        logger.info(s"Scheduler for $jobName has been started")
         true
       case (true, false) =>
-        Logger.info(s"Scheduler for $jobName is disabled as there is no valid quartz expression: $expression")
+        logger.info(s"Scheduler for $jobName is disabled as there is no valid quartz expression: $expression")
         false
       case (false, _) =>
-        Logger.info(s"Scheduler for $jobName is disabled by configuration")
+        logger.info(s"Scheduler for $jobName is disabled by configuration")
         false
     }
   }

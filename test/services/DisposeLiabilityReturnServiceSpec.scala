@@ -16,16 +16,17 @@
 
 package services
 
-import builders.{AuthFunctionalityHelper, ChangeLiabilityReturnBuilder}
 import builders.ChangeLiabilityReturnBuilder._
+import builders.{AuthFunctionalityHelper, ChangeLiabilityReturnBuilder}
 import connectors.{EmailConnector, EmailSent, EtmpReturnsConnector}
 import models._
 import org.joda.time.LocalDate
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.Json
 import play.api.test.Helpers._
 import repository.{DisposeLiabilityReturnCached, DisposeLiabilityReturnMongoRepository}
@@ -35,7 +36,7 @@ import uk.gov.hmrc.mongo.DatabaseUpdate
 
 import scala.concurrent.Future
 
-class DisposeLiabilityReturnServiceSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
+class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
 
   val mockDisposeLiabilityReturnRepository: DisposeLiabilityReturnMongoRepository = mock[DisposeLiabilityReturnMongoRepository]
   val mockEtmpConnector: EtmpReturnsConnector = mock[EtmpReturnsConnector]
@@ -121,14 +122,14 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with OneServerPerSuite 
 
       "return DisposeLiabilityReturn, if not found in mongo, but found in ETMP call, also cache it in mongo for future calls" in new Setup {
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq()))
-        when(mockEtmpConnector.getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1.toString))).thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(Json.toJson(formBundleReturn1)))))
+        when(mockEtmpConnector.getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1.toString))).thenReturn(Future.successful(HttpResponse(OK, Json.toJson(formBundleReturn1), Map.empty[String, Seq[String]])))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(ArgumentMatchers.any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
         val result = await(testDisposeLiabilityReturnService.retrieveAndCacheDisposeLiabilityReturn(atedRefNo, formBundle1))
         result must be (None)
       }
       "return None, because neither dispose was found in mongo, nor there was any formBundle returned from ETMP" in new Setup {
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disposeLiability2)))
-        when(mockEtmpConnector.getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1.toString))).thenReturn(Future.successful(HttpResponse(NOT_FOUND)))
+        when(mockEtmpConnector.getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1.toString))).thenReturn(Future.successful(HttpResponse(NOT_FOUND, "")))
         val result = await(testDisposeLiabilityReturnService.retrieveAndCacheDisposeLiabilityReturn(atedRefNo, formBundle1))
         result must be(None)
       }
@@ -184,7 +185,6 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with OneServerPerSuite 
       }
 
       "return None, if not found in mongo cache" in new Setup {
-        lazy val inputDisposeLiability = DisposeLiability(dateOfDisposal = Some(new LocalDate("2015-05-01")), periodKey = periodKey)
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(ArgumentMatchers.any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
         val result = await(testDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(atedRefNo, formBundle1, true))
@@ -195,16 +195,14 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with OneServerPerSuite 
     "updateDraftDisposeBankDetails" must {
       "create bankDetails if we have none" in new Setup {
         lazy val bankDetails = generateLiabilityBankDetails
-        lazy val protectedBankDetails = generateLiabilityProtectedBankDetails
         val dL1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(dateOfDisposal = Some(new LocalDate("2015-05-01")), periodKey = periodKey)), bankDetails = None)
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(dL1, disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(ArgumentMatchers.any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
         mockRetrievingNoAuthRef
         val respModel = generateEditLiabilityReturnResponse(formBundle1.toString)
         val respJson = Json.toJson(respModel)
-        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(respJson))))
+        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         val result = await(testDisposeLiabilityReturnService.updateDraftDisposeBankDetails(atedRefNo, formBundle1, bankDetails.bankDetails.get))
-        val expected = dL1.copy(calculated = Some(DisposeCalculated(BigDecimal(2000.00), BigDecimal(-500.00))))
 
         result.get.bankDetails.get.hasBankDetails must be(true)
         result.get.bankDetails.get.bankDetails.isDefined must be(false)
@@ -222,7 +220,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with OneServerPerSuite 
         val respModel = generateEditLiabilityReturnResponse(formBundle1.toString)
         val respJson = Json.toJson(respModel)
 
-        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(respJson))))
+        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         val result = await(testDisposeLiabilityReturnService.updateDraftDisposeBankDetails(atedRefNo, formBundle1, bankDetails.bankDetails.get))
 
         val expected = dL1.copy(calculated = None)
@@ -234,8 +232,6 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with OneServerPerSuite 
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(ArgumentMatchers.any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
         mockRetrievingNoAuthRef
-        val respModel = generateEditLiabilityReturnResponse(formBundle1.toString)
-        val respJson = Json.toJson(respModel)
         val result = await(testDisposeLiabilityReturnService.updateDraftDisposeBankDetails(atedRefNo, formBundle1, bank1.bankDetails.get))
         result must be(None)
         verify(mockEtmpConnector, times(0)).submitEditedLiabilityReturns(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
@@ -254,7 +250,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with OneServerPerSuite 
         val respModel = generateEditLiabilityReturnResponse(formBundle1.toString)
         val respJson = Json.toJson(respModel)
 
-        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(respJson))))
+        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         val result = await(testDisposeLiabilityReturnService.calculateDraftDispose(atedRefNo, formBundle1))
 
         val expected = dL1.copy(bankDetails = Some(bankDetails), calculated = Some(DisposeCalculated(BigDecimal(2000.00), BigDecimal(-500.00))))
@@ -267,7 +263,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with OneServerPerSuite 
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(ArgumentMatchers.any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
         mockRetrievingNoAuthRef
 
-        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR)))
+        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, "")))
         val thrown = the[RuntimeException] thrownBy await(testDisposeLiabilityReturnService.calculateDraftDispose(atedRefNo, formBundle1))
 
         thrown.getMessage must include("pre-calculation-request returned wrong status")
@@ -278,8 +274,6 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with OneServerPerSuite 
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(ArgumentMatchers.any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
         mockRetrievingNoAuthRef
-        val respModel = generateEditLiabilityReturnResponse(formBundle1.toString)
-        val respJson = Json.toJson(respModel)
         val result = await(testDisposeLiabilityReturnService.calculateDraftDispose(atedRefNo, formBundle1))
         result must be(None)
         verify(mockEtmpConnector, times(0)).submitEditedLiabilityReturns(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
@@ -294,7 +288,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with OneServerPerSuite 
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(ArgumentMatchers.any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
         val respModel = generateEditLiabilityReturnResponse(formBundle1.toString)
         val respJson = Json.toJson(respModel)
-        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(respJson))))
+        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         val result = await(testDisposeLiabilityReturnService.getPreCalculationAmounts(atedRefNo, formBundleReturn1, DisposeLiability(Some(new LocalDate("2015-05-01")), periodKey), formBundle2))
         result must be(DisposeCalculated(BigDecimal(0.00), BigDecimal(0.00)))
       }
@@ -324,11 +318,11 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with OneServerPerSuite 
             when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
             when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(ArgumentMatchers.any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
             mockRetrievingNoAuthRef
-            when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
+            when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
             when(mockEmailConnector.sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
             lazy val respModel = generateEditLiabilityReturnResponse(formBundle1.toString)
             lazy val respJson = Json.toJson(respModel)
-            when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(respJson))))
+            when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
             val result = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
             result.status must be(OK)
             verify(mockEmailConnector, times(1)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
@@ -338,11 +332,11 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with OneServerPerSuite 
             when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
             when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(ArgumentMatchers.any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
             mockRetrievingNoAuthRef
-            when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
+            when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
             when(mockEmailConnector.sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
             val respModel = generateEditLiabilityReturnResponse(formBundle1.toString)
             val respJson = Json.toJson(respModel)
-            when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(respJson))))
+            when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
             val result = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
             result.status must be(OK)
             verify(mockEmailConnector, times(1)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
@@ -353,11 +347,11 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with OneServerPerSuite 
             when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
             when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(ArgumentMatchers.any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
             mockRetrievingNoAuthRef
-            when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
+            when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
             when(mockEmailConnector.sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
             lazy val respModel = generateEditLiabilityReturnResponse(formBundle1.toString)
             lazy val respJson = Json.toJson(respModel)
-            when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(respJson))))
+            when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
             val result = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
             result.status must be(OK)
             verify(mockEmailConnector, times(1)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
@@ -368,11 +362,11 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with OneServerPerSuite 
             when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
             when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(ArgumentMatchers.any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
             mockRetrievingNoAuthRef
-            when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
+            when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
             when(mockEmailConnector.sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
             lazy val respModel = generateEditLiabilityReturnResponse(formBundle1.toString)
             lazy val respJson = Json.toJson(respModel)
-            when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(respJson))))
+            when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
             val result = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
             result.status must be(OK)
             verify(mockEmailConnector, times(1)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
@@ -385,11 +379,11 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with OneServerPerSuite 
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(ArgumentMatchers.any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
         mockRetrievingNoAuthRef
-        when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
+        when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         when(mockEmailConnector.sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
         lazy val respModel = generateEditLiabilityReturnResponse(formBundle1.toString)
         lazy val respJson = Json.toJson(respModel)
-        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(respJson))))
+        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         val result = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
         result.status must be(OK)
         verify(mockEmailConnector, times(1)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
@@ -397,7 +391,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with OneServerPerSuite 
       "return NOT_FOUND as status, if form-bundle not found in list" in new Setup {
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disposeLiability2)))
         mockRetrievingNoAuthRef
-        when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
+        when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         val result = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
         result.status must be(NOT_FOUND)
         verify(mockEmailConnector, times(0)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
@@ -408,10 +402,8 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with OneServerPerSuite 
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(ArgumentMatchers.any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
         mockRetrievingNoAuthRef
-        when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Some(successResponseJson))))
-        lazy val respModel = generateEditLiabilityReturnResponse(formBundle1.toString)
-        lazy val respJson = Json.toJson(respModel)
-        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, responseJson = Some(Json.parse("""{"reason": "Server error"}""")))))
+        when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
+        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, Json.parse("""{"reason": "Server error"}"""), Map.empty[String, Seq[String]])))
         val result = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
         result.status must be(INTERNAL_SERVER_ERROR)
         verify(mockEmailConnector, times(0)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())

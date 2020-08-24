@@ -18,7 +18,6 @@ package utils
 
 import models._
 import org.joda.time.LocalDate
-import uk.gov.hmrc.http.HeaderCarrier
 
 object ReliefUtils extends ReliefUtils
 
@@ -28,14 +27,13 @@ trait ReliefUtils extends ReliefConstants {
     final def option[A](a: => A): Option[A] = if (b) Some(a) else None
   }
 
-  def convertToSubmitReturnsRequest(atedReferenceNo: String, reliefs: Option[ReliefsTaxAvoidance], agentRefNo: Option[String] = None)
-                                   (implicit hc: HeaderCarrier): Option[SubmitEtmpReturnsRequest] = {
+  def convertToSubmitReturnsRequest(reliefs: Option[ReliefsTaxAvoidance], agentRefNo: Option[String] = None): Option[SubmitEtmpReturnsRequest] = {
     reliefs.flatMap { reliefOptions =>
       val etmpReliefs = createEtmpReliefs(reliefOptions.periodKey, reliefOptions)
 
       etmpReliefs match {
         case Nil => None
-        case reliefList => Some(SubmitEtmpReturnsRequest(
+        case _ => Some(SubmitEtmpReturnsRequest(
           acknowledgementReference = SessionUtils.getUniqueAckNo,
           agentReferenceNumber = agentRefNo,
           reliefReturns = Some(etmpReliefs)))

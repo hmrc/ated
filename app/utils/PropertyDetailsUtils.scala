@@ -74,7 +74,7 @@ object PropertyDetailsUtils extends ReliefConstants {
 
   }
 
-  private def createCalculatedPeriod(lineItem: LineItem, initialValue: BigDecimal, updateValue: Option[(LocalDate, BigDecimal)] = None) = {
+  private def createCalculatedPeriod(lineItem: LineItem, initialValue: BigDecimal, updateValue: Option[(LocalDate, BigDecimal)]) = {
     updateValue match {
       case Some((valueDate, value)) if !lineItem.startDate.isBefore(valueDate) =>
         List(
@@ -185,7 +185,7 @@ object PropertyDetailsUtils extends ReliefConstants {
           (value.isPropertyRevalued, value.revaluedValue, value.partAcqDispDate) match {
             case (_, Some(revalue), _) if revalue == initialValue => None
             case (Some(true), Some(revalue), Some(revaluedAcquiredDate)) =>
-              Some(revaluedAcquiredDate, revalue)
+              Some((revaluedAcquiredDate, revalue))
             case _ => None
           }
       }

@@ -16,10 +16,11 @@
 
 package models
 
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.Json
 
-class EtmpReturnsModelSpec extends PlaySpec with OneServerPerSuite {
+class EtmpReturnsModelSpec extends PlaySpec with GuiceOneServerPerSuite {
 
   "EtmpReturnsModel Response" should {
 

@@ -26,7 +26,6 @@ import utils.ReliefConstants
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.http.HeaderCarrier
 
 class PropertyDetailsPeriodServiceImpl @Inject()(val propertyDetailsMongoWrapper: PropertyDetailsMongoWrapper,
                                                  val etmpConnector: EtmpReturnsConnector,
@@ -40,8 +39,7 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
   def authConnector: AuthConnector
   def propertyDetailsCache: PropertyDetailsMongoRepository
 
-  def cacheDraftFullTaxPeriod(atedRefNo: String, id: String, updatedDetails: IsFullTaxPeriod)
-                             (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+  def cacheDraftFullTaxPeriod(atedRefNo: String, id: String, updatedDetails: IsFullTaxPeriod): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -66,8 +64,7 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
 
-  def cacheDraftInRelief(atedRefNo: String, id: String, updatedDetails: PropertyDetailsInRelief)
-                        (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+  def cacheDraftInRelief(atedRefNo: String, id: String, updatedDetails: PropertyDetailsInRelief): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -84,8 +81,7 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
   }
 
 
-  def cacheDraftDatesLiable(atedRefNo: String, id: String, updatedDetails: PropertyDetailsDatesLiable)
-                           (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+  def cacheDraftDatesLiable(atedRefNo: String, id: String, updatedDetails: PropertyDetailsDatesLiable): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       def lineItemMatches(lineItem: LineItem) = {
@@ -122,8 +118,7 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
   }
 
 
-  def addDraftDatesLiable(atedRefNo: String, id: String, updatedDetails: PropertyDetailsDatesLiable)
-                         (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+  def addDraftDatesLiable(atedRefNo: String, id: String, updatedDetails: PropertyDetailsDatesLiable): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
 
@@ -150,8 +145,7 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
   }
 
 
-  def addDraftDatesInRelief(atedRefNo: String, id: String, updatedDetails: PropertyDetailsDatesInRelief)
-                           (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+  def addDraftDatesInRelief(atedRefNo: String, id: String, updatedDetails: PropertyDetailsDatesInRelief): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
 
@@ -179,8 +173,7 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
   }
 
 
-  def deleteDraftPeriod(atedRefNo: String, id: String, periodStartDate: LocalDate)
-                       (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+  def deleteDraftPeriod(atedRefNo: String, id: String, periodStartDate: LocalDate): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
 
@@ -202,8 +195,7 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
   }
 
 
-  private def cacheDraftPropertyDetails(atedRefNo: String, updatePropertyDetails: Seq[PropertyDetails] => Future[Option[PropertyDetails]])
-                                       (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+  private def cacheDraftPropertyDetails(atedRefNo: String, updatePropertyDetails: Seq[PropertyDetails] => Future[Option[PropertyDetails]]): Future[Option[PropertyDetails]] = {
     for {
       propertyDetailsList <- propertyDetailsCache.fetchPropertyDetails(atedRefNo)
       newPropertyDetails <- updatePropertyDetails(propertyDetailsList)

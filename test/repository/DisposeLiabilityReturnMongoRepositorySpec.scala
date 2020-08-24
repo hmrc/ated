@@ -20,14 +20,15 @@ import builders.ChangeLiabilityReturnBuilder
 import metrics.ServiceMetrics
 import models.DisposeLiabilityReturn
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import reactivemongo.api.DB
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto}
+import uk.gov.hmrc.crypto.ApplicationCrypto
 import uk.gov.hmrc.mongo.{Awaiting, MongoSpecSupport}
 
 class DisposeLiabilityReturnMongoRepositorySpec extends PlaySpec
-  with OneServerPerSuite
+  with GuiceOneServerPerSuite
   with MongoSpecSupport
   with Awaiting
   with MockitoSugar

@@ -44,7 +44,7 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
   def authConnector: AuthConnector
   def subscriptionDataService: SubscriptionDataService
 
-  def saveDraftReliefs(atedRefNo: String, relief: ReliefsTaxAvoidance)(implicit hc: HeaderCarrier): Future[Seq[ReliefsTaxAvoidance]] = {
+  def saveDraftReliefs(atedRefNo: String, relief: ReliefsTaxAvoidance): Future[Seq[ReliefsTaxAvoidance]] = {
     for {
       _ <- reliefsCache.cacheRelief(relief.copy(atedRefNo = atedRefNo))
       draftReliefs <- reliefsCache.fetchReliefs(relief.atedRefNo)
@@ -53,7 +53,7 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
     }
   }
 
-  def retrieveDraftReliefs(atedRefNo: String)(implicit hc: HeaderCarrier): Future[Seq[ReliefsTaxAvoidance]] = {
+  def retrieveDraftReliefs(atedRefNo: String): Future[Seq[ReliefsTaxAvoidance]] = {
     reliefsCache.fetchReliefs(atedRefNo)
   }
 
@@ -65,7 +65,7 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
           case Some(x) => etmpConnector.submitReturns(atedRefNo, x)
           case _ =>
             val notFound = Json.parse("""{"reason" : "No Reliefs to submit"}""")
-            Future.successful(HttpResponse(NOT_FOUND, Some(notFound)))
+            Future.successful(HttpResponse(NOT_FOUND, notFound, Map.empty[String, Seq[String]]))
         }
         subscriptionData <- subscriptionDataService.retrieveSubscriptionData(atedRefNo)
       } yield {
@@ -81,7 +81,7 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
     }
   }
 
-  def retrieveDraftReliefForPeriodKey(atedRefNo: String, periodKey: Int)(implicit hc: HeaderCarrier): Future[Option[ReliefsTaxAvoidance]] = {
+  def retrieveDraftReliefForPeriodKey(atedRefNo: String, periodKey: Int): Future[Option[ReliefsTaxAvoidance]] = {
     for {
       draftReliefs <- retrieveDraftReliefs(atedRefNo)
     } yield {
@@ -89,16 +89,15 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
     }
   }
 
-  private def getSubmitReliefsRequest(atedRefNo: String, periodKey: Int, agentRefNo: Option[String] = None)
-                                     (implicit hc: HeaderCarrier): Future[Option[SubmitEtmpReturnsRequest]] = {
+  private def getSubmitReliefsRequest(atedRefNo: String, periodKey: Int, agentRefNo: Option[String]): Future[Option[SubmitEtmpReturnsRequest]] = {
     for {
       draftReliefs <- retrieveDraftReliefForPeriodKey(atedRefNo, periodKey)
     } yield {
-      ReliefUtils.convertToSubmitReturnsRequest(atedRefNo, draftReliefs, agentRefNo)
+      ReliefUtils.convertToSubmitReturnsRequest(draftReliefs, agentRefNo)
     }
   }
 
-  def deleteAllDraftReliefs(atedRefNo: String)(implicit hc: HeaderCarrier): Future[Seq[ReliefsTaxAvoidance]] = {
+  def deleteAllDraftReliefs(atedRefNo: String): Future[Seq[ReliefsTaxAvoidance]] = {
     for {
       _ <- reliefsCache.deleteReliefs(atedRefNo)
       reliefsList <- reliefsCache.fetchReliefs(atedRefNo)
@@ -107,7 +106,7 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
     }
   }
 
-  def deleteAllDraftReliefByYear(atedRefNo: String, periodKey: Int)(implicit hc: HeaderCarrier): Future[Seq[ReliefsTaxAvoidance]] = {
+  def deleteAllDraftReliefByYear(atedRefNo: String, periodKey: Int): Future[Seq[ReliefsTaxAvoidance]] = {
     for {
       _ <- reliefsCache.deleteDraftReliefByYear(atedRefNo, periodKey)
       reliefsList <- reliefsCache.fetchReliefs(atedRefNo)

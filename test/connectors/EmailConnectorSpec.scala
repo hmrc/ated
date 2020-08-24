@@ -19,13 +19,12 @@ package connectors
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.JsValue
 import play.api.test.Helpers._
-import uk.gov.hmrc.http._
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.{HttpClient, _}
 
 import scala.concurrent.Future
 
@@ -59,7 +58,7 @@ class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
 
         when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
           ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(202, responseJson = None)))
+          .thenReturn(Future.successful(HttpResponse(202, "")))
 
         val response = connector.sendTemplatedEmail(emailString, templateId, params)
         await(response) must be(EmailSent)
@@ -78,7 +77,7 @@ class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
 
         when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
           ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(404, responseJson = None)))
+          .thenReturn(Future.successful(HttpResponse(404, "")))
 
         val response = connector.sendTemplatedEmail(invalidEmailString, templateId, params)
         await(response) must be(EmailNotSent)

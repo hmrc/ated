@@ -22,8 +22,9 @@ import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.ControllerComponents
 import play.api.test.Helpers._
@@ -33,12 +34,12 @@ import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.Audit
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class ReliefsControllerSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
+class ReliefsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
 
   val mockReliefsService: ReliefsService = mock[ReliefsService]
   val periodKey = 2015
@@ -72,7 +73,7 @@ class ReliefsControllerSpec extends PlaySpec with OneServerPerSuite with Mockito
 
         val testReliefs = ReliefBuilder.reliefTaxAvoidance(testAccountRef, periodKey, Reliefs(periodKey = periodKey))
 
-        when(mockReliefsService.retrieveDraftReliefs(any())(any())).thenReturn(Future(Seq(testReliefs)))
+        when(mockReliefsService.retrieveDraftReliefs(any())).thenReturn(Future(Seq(testReliefs)))
 
         val fakeRequest = FakeRequest()
         val result = testReliefsController.retrieveDraftReliefs(testAccountRef, periodKey).apply(fakeRequest)
@@ -83,7 +84,7 @@ class ReliefsControllerSpec extends PlaySpec with OneServerPerSuite with Mockito
       "respond with NotFound and No Reliefs if we have None" in new Setup {
         val testAccountRef = "ATED1223123"
 
-        when(mockReliefsService.retrieveDraftReliefs(any())(any())).thenReturn(Future(Seq()))
+        when(mockReliefsService.retrieveDraftReliefs(any())).thenReturn(Future(Seq()))
 
         val fakeRequest = FakeRequest()
         val result = testReliefsController.retrieveDraftReliefs(testAccountRef, periodKey).apply(fakeRequest)
@@ -119,7 +120,7 @@ class ReliefsControllerSpec extends PlaySpec with OneServerPerSuite with Mockito
         )
         val testReliefs = ReliefBuilder.reliefTaxAvoidance(testAccountRef, periodKey, Reliefs(periodKey = periodKey), taxAvoidance)
 
-        when(mockReliefsService.saveDraftReliefs(any(), any())(any())).thenReturn(Future(Seq(testReliefs)))
+        when(mockReliefsService.saveDraftReliefs(any(), any())).thenReturn(Future(Seq(testReliefs)))
         mockRetrievingNoAuthRef
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testReliefs))
@@ -138,7 +139,7 @@ class ReliefsControllerSpec extends PlaySpec with OneServerPerSuite with Mockito
 
         val fakeRequest = FakeRequest()
         val submitSuccess = Json.parse( """{"status" : "OK", "processingDate" :  "2014-12-17T09:30:47Z", "formBundleNumber" : "123456789012"}""")
-        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any())).thenReturn(Future.successful(HttpResponse(OK, Some(submitSuccess))))
+        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any())).thenReturn(Future.successful(HttpResponse(OK, submitSuccess, Map.empty[String, Seq[String]])))
         val result = testReliefsController.submitDraftReliefs(testAccountRef, periodKey).apply(fakeRequest)
         status(result) must be(OK)
       }
@@ -147,14 +148,14 @@ class ReliefsControllerSpec extends PlaySpec with OneServerPerSuite with Mockito
 
         val fakeRequest = FakeRequest()
         val submitSuccess = Json.parse( """{"status" : "OK", "processingDate" :  "2014-12-17T09:30:47Z", "formBundleNo" : "123456789012"}""")
-        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any())).thenReturn(Future.successful(HttpResponse(OK, Some(submitSuccess))))
+        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any())).thenReturn(Future.successful(HttpResponse(OK, submitSuccess, Map.empty[String, Seq[String]])))
         val result = testReliefsController.submitDraftReliefs(testAccountRef, periodKey).apply(fakeRequest)
         status(result) must be(OK)
       }
       "handle a bad request" in new Setup {
         val fakeRequest = FakeRequest()
         val serviceUnavailable = Json.parse( """{"reason" : "Service unavailable"}""")
-        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any())).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, Some(serviceUnavailable))))
+        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any())).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, serviceUnavailable, Map.empty[String, Seq[String]])))
         val result = testReliefsController.submitDraftReliefs(testAccountRef, periodKey).apply(fakeRequest)
         status(result) must be(BAD_REQUEST)
       }
@@ -162,7 +163,7 @@ class ReliefsControllerSpec extends PlaySpec with OneServerPerSuite with Mockito
       "handle a not found" in new Setup {
         val fakeRequest = FakeRequest()
         val serviceUnavailable = Json.parse( """{"reason" : "Service unavailable"}""")
-        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any())).thenReturn(Future.successful(HttpResponse(NOT_FOUND, Some(serviceUnavailable))))
+        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any())).thenReturn(Future.successful(HttpResponse(NOT_FOUND, serviceUnavailable, Map.empty[String, Seq[String]])))
         val result = testReliefsController.submitDraftReliefs(testAccountRef, periodKey).apply(fakeRequest)
         status(result) must be(NOT_FOUND)
       }
@@ -170,7 +171,7 @@ class ReliefsControllerSpec extends PlaySpec with OneServerPerSuite with Mockito
       "handle a service unavailable" in new Setup {
         val fakeRequest = FakeRequest()
         val serviceUnavailable = Json.parse( """{"reason" : "Service unavailable"}""")
-        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any())).thenReturn(Future.successful(HttpResponse(SERVICE_UNAVAILABLE, Some(serviceUnavailable))))
+        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any())).thenReturn(Future.successful(HttpResponse(SERVICE_UNAVAILABLE, serviceUnavailable, Map.empty[String, Seq[String]])))
         val result = testReliefsController.submitDraftReliefs(testAccountRef, periodKey).apply(fakeRequest)
         status(result) must be(SERVICE_UNAVAILABLE)
       }
@@ -178,7 +179,7 @@ class ReliefsControllerSpec extends PlaySpec with OneServerPerSuite with Mockito
       "handle an internal server errror" in new Setup {
         val fakeRequest = FakeRequest()
         val serviceUnavailable = Json.parse( """{"reason" : "Service unavailable"}""")
-        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any())).thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, Some(serviceUnavailable))))
+        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any())).thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, serviceUnavailable, Map.empty[String, Seq[String]])))
         val result = testReliefsController.submitDraftReliefs(testAccountRef, periodKey).apply(fakeRequest)
         status(result) must be(INTERNAL_SERVER_ERROR)
       }
@@ -190,7 +191,7 @@ class ReliefsControllerSpec extends PlaySpec with OneServerPerSuite with Mockito
 
       "a call is made to the delete api" in new Setup {
         val fakeRequest = FakeRequest()
-        when(mockReliefsService.deleteAllDraftReliefs(any())(any())) thenReturn Future.successful(Seq.empty)
+        when(mockReliefsService.deleteAllDraftReliefs(any())) thenReturn Future.successful(Seq.empty)
 
         val result = testReliefsController.deleteDraftReliefs(testAccountRef).apply(fakeRequest)
         status(result) must be(OK)
@@ -201,7 +202,8 @@ class ReliefsControllerSpec extends PlaySpec with OneServerPerSuite with Mockito
     "deleteDraftReliefsByYear" must {
       "respond with OK when list is empty" in new Setup {
         val testAccountRef = "ATED1223123"
-        when(mockReliefsService.deleteAllDraftReliefByYear(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq(2017))(any())).thenReturn(Future(Seq[ReliefsTaxAvoidance]()))
+        when(mockReliefsService.deleteAllDraftReliefByYear(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq(2017)))
+          .thenReturn(Future(Seq[ReliefsTaxAvoidance]()))
         val result = testReliefsController.deleteDraftReliefsByYear(testAccountRef, 2017).apply(FakeRequest().withJsonBody(Json.parse( """{}""")))
         status(result) must be(OK)
       }
@@ -229,7 +231,8 @@ class ReliefsControllerSpec extends PlaySpec with OneServerPerSuite with Mockito
           equityReleaseSchemePromoter = Some("Promoter9")
         )
         val testReliefs = ReliefBuilder.reliefTaxAvoidance(testAccountRef, periodKey, Reliefs(periodKey = periodKey), taxAvoidance)
-        when(mockReliefsService.deleteAllDraftReliefByYear(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq(2017))(any())).thenReturn(Future(Seq[ReliefsTaxAvoidance](testReliefs)))
+        when(mockReliefsService.deleteAllDraftReliefByYear(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq(2017)))
+          .thenReturn(Future(Seq[ReliefsTaxAvoidance](testReliefs)))
         val result = testReliefsController.deleteDraftReliefsByYear(testAccountRef, 2017).apply(FakeRequest().withJsonBody(Json.parse( """{}""")))
         status(result) must be(INTERNAL_SERVER_ERROR)
       }
@@ -253,7 +256,7 @@ class ReliefsControllerSpec extends PlaySpec with OneServerPerSuite with Mockito
         val testReliefs = ReliefBuilder.reliefTaxAvoidance(testAccountRef, periodKey, Reliefs(periodKey = periodKey), taxAvoidance)
 
         val fakeRequest = FakeRequest()
-        when(mockReliefsService.deleteAllDraftReliefs(any())(any())) thenReturn Future.successful(Seq(testReliefs))
+        when(mockReliefsService.deleteAllDraftReliefs(any())) thenReturn Future.successful(Seq(testReliefs))
         val result = testReliefsController.deleteDraftReliefs(testAccountRef).apply(fakeRequest)
         status(result) must be(INTERNAL_SERVER_ERROR)
       }

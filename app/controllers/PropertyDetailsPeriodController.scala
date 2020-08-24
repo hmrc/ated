@@ -19,13 +19,12 @@ package controllers
 import javax.inject.{Inject, Singleton}
 import models._
 import org.joda.time.LocalDate
+import play.api.libs.json.JodaReads._
 import play.api.libs.json.{Json, OFormat}
 import play.api.mvc.ControllerComponents
 import services.PropertyDetailsPeriodService
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
-import play.api.libs.json.JodaWrites._
-import play.api.libs.json.JodaReads._
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

@@ -16,14 +16,15 @@
 
 package utils
 
-import builders.{PropertyDetailsBuilder, ChangeLiabilityReturnBuilder}
+import builders.ChangeLiabilityReturnBuilder
 import models._
 import org.joda.time.LocalDate
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import uk.gov.hmrc.crypto.Protected
 import uk.gov.hmrc.http.InternalServerException
 
-class ChangeLiabilityUtilsSpec extends PlaySpec with OneServerPerSuite {
+class ChangeLiabilityUtilsSpec extends PlaySpec with GuiceOneServerPerSuite {
 
   "ChangeLiabilityUtils" must {
     "generateAddressFromLiabilityReturn" must {
