@@ -18,10 +18,8 @@ package models
 
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.{Format, Json, OFormat}
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import play.api.libs.json.JodaWrites._
-import play.api.libs.json.JodaReads._
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
+import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 case class PropertyDetails(atedRefNo: String,
                            id: String,

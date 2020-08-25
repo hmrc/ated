@@ -21,21 +21,22 @@ import models._
 import org.joda.time.LocalDate
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.JodaWrites._
 import play.api.libs.json.{Json, OFormat}
 import play.api.mvc.ControllerComponents
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.PropertyDetailsPeriodService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.Future
 
 
-class PropertyDetailsPeriodControllerSpec extends PlaySpec with OneServerPerSuite with MockitoSugar {
+class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar {
 
   val mockPropertyDetailsService: PropertyDetailsPeriodService = mock[PropertyDetailsPeriodService]
 
@@ -65,7 +66,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with OneServerPerSuit
         lazy val testPropertyDetailsDatesLiable = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
         lazy val testPropertyDetailsPeriod = IsFullTaxPeriod(true, Some(testPropertyDetailsDatesLiable))
         when(mockPropertyDetailsService.cacheDraftFullTaxPeriod(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.saveDraftFullTaxPeriod(testAccountRef, "1").apply(fakeRequest)
@@ -76,10 +77,9 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with OneServerPerSuit
       "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
-        lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = IsFullTaxPeriod(true, None)
         when(mockPropertyDetailsService.cacheDraftFullTaxPeriod(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.saveDraftFullTaxPeriod(testAccountRef, "1").apply(fakeRequest)
@@ -95,7 +95,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with OneServerPerSuit
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsInRelief()
         when(mockPropertyDetailsService.cacheDraftInRelief(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.saveDraftInRelief(testAccountRef, "1").apply(fakeRequest)
@@ -105,10 +105,9 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with OneServerPerSuit
       "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
-        lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsInRelief()
         when(mockPropertyDetailsService.cacheDraftInRelief(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.saveDraftInRelief(testAccountRef, "1").apply(fakeRequest)
@@ -126,7 +125,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with OneServerPerSuit
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
         when(mockPropertyDetailsService.cacheDraftDatesLiable(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.saveDraftDatesLiable(testAccountRef, "1").apply(fakeRequest)
@@ -137,10 +136,9 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with OneServerPerSuit
       "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
-        lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
         when(mockPropertyDetailsService.cacheDraftDatesLiable(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.saveDraftDatesLiable(testAccountRef, "1").apply(fakeRequest)
@@ -156,7 +154,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with OneServerPerSuit
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
         when(mockPropertyDetailsService.addDraftDatesLiable(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.addDraftDatesLiable(testAccountRef, "1").apply(fakeRequest)
@@ -167,10 +165,9 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with OneServerPerSuit
       "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
-        lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
         when(mockPropertyDetailsService.addDraftDatesLiable(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.addDraftDatesLiable(testAccountRef, "1").apply(fakeRequest)
@@ -186,7 +183,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with OneServerPerSuit
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsDatesInRelief(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
         when(mockPropertyDetailsService.addDraftDatesInRelief(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.addDraftDatesInRelief(testAccountRef, "1").apply(fakeRequest)
@@ -197,10 +194,9 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with OneServerPerSuit
       "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
-        lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsDatesInRelief(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
         when(mockPropertyDetailsService.addDraftDatesInRelief(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.addDraftDatesInRelief(testAccountRef, "1").apply(fakeRequest)
@@ -216,7 +212,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with OneServerPerSuit
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = new LocalDate("1970-01-01")
         when(mockPropertyDetailsService.deleteDraftPeriod(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.deleteDraftPeriod(testAccountRef, "1").apply(fakeRequest)
@@ -227,10 +223,9 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with OneServerPerSuit
       "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
-        lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = new LocalDate("1970-01-01")
         when(mockPropertyDetailsService.deleteDraftPeriod(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.deleteDraftPeriod(testAccountRef, "1").apply(fakeRequest)

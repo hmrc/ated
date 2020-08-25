@@ -18,9 +18,10 @@ package builders
 
 import models._
 import org.joda.time.LocalDate
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 
-object EtmpReturnsResponseModelBuilder extends PlaySpec with OneServerPerSuite {
+object EtmpReturnsResponseModelBuilder extends PlaySpec with GuiceOneServerPerSuite {
 
 
   def generateEtmpGetReturnsResponse(periodKey: String): EtmpGetReturnsResponse = {
@@ -55,9 +56,6 @@ object EtmpReturnsResponseModelBuilder extends PlaySpec with OneServerPerSuite {
 
     val etmpLiabilityReturnSummary = EtmpLiabilityReturnSummary(Some(Seq(etmpPropertySummary)))
 
-    val etmpReliefReturnsSummary = EtmpReliefReturnsSummary("12345", new LocalDate(s"$periodKey-05-05"), "Farmhouses",
-      new LocalDate(s"$periodKey-09-05"), new LocalDate(s"$periodKey-10-05"), None, None)
-
     val etmpReturnData = EtmpReturnData(None, Some(Seq(etmpLiabilityReturnSummary)))
 
     val etmpPeriodSummary = EtmpPeriodSummary(periodKey, etmpReturnData)
@@ -68,11 +66,6 @@ object EtmpReturnsResponseModelBuilder extends PlaySpec with OneServerPerSuite {
   def generateEmptyEtmpGetReturnsResponse(periodKey: String): EtmpGetReturnsResponse = {
     val safeId = "123Safe"
     val org = "OrganisationName"
-
-    val etmpReturn = EtmpReturn("12345", new LocalDate(s"$periodKey-05-05"),
-      new LocalDate(s"$periodKey-09-05"), new LocalDate(s"$periodKey-10-05"), 1000, "pay-123", true)
-
-    val etmpPropertySummary = EtmpPropertySummary("abc", None, "line1", "line2", Seq(etmpReturn))
 
     val etmpLiabilityReturnSummary = EtmpLiabilityReturnSummary(propertySummary = None)
 
@@ -90,29 +83,11 @@ object EtmpReturnsResponseModelBuilder extends PlaySpec with OneServerPerSuite {
     val safeId = "123Safe"
     val org = "OrganisationName"
 
-    val etmpReturn = EtmpReturn("12345", new LocalDate(s"$periodKey-05-05"),
-      new LocalDate(s"$periodKey-09-05"), new LocalDate(s"$periodKey-10-05"), 1000, "pay-123", true)
-
-    val etmpPropertySummary = EtmpPropertySummary("abc", None, "line1", "line2", Seq(etmpReturn))
-
-    val etmpLiabilityReturnSummary = EtmpLiabilityReturnSummary(Some(Seq(etmpPropertySummary)))
-
-    val etmpReliefReturnsSummary = EtmpReliefReturnsSummary("12345", new LocalDate(s"$periodKey-05-05"), "Farmhouses",
-      new LocalDate(s"$periodKey-09-05"), new LocalDate(s"$periodKey-10-05"), None, None)
-
     val etmpReturnData = EtmpReturnData(None, None)
 
     val etmpPeriodSummary = EtmpPeriodSummary(periodKey, etmpReturnData)
 
     EtmpGetReturnsResponse(safeId, org, Seq(etmpPeriodSummary), 0)
   }
-
-  def generateEtmpGetReturnsResponseWithNoPeriodData(periodKey: String): EtmpGetReturnsResponse = {
-    val safeId = "123Safe"
-    val org = "OrganisationName"
-
-    EtmpGetReturnsResponse(safeId, org, Nil, 0)
-  }
-
 
 }

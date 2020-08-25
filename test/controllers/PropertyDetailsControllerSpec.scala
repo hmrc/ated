@@ -21,21 +21,22 @@ import models._
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json, OFormat}
 import play.api.mvc.ControllerComponents
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.PropertyDetailsService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
 import uk.gov.hmrc.http.HttpResponse
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with MockitoSugar {
+class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar {
 
   val mockPropertyDetailsService: PropertyDetailsService = mock[PropertyDetailsService]
 
@@ -62,7 +63,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with
         val testAccountRef = "ATED1223123"
         val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
 
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(any())).thenReturn(Future(Some(testPropertyDetails)))
+        when(mockPropertyDetailsService.retrieveDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))).thenReturn(Future(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest()
         val result = controller.retrieveDraftPropertyDetails(testAccountRef, "1").apply(fakeRequest)
@@ -73,8 +74,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with
       "respond with NotFound and No Property Details if we have None" in new Setup {
         val testAccountRef = "ATED1223123"
 
-        val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("2"))(any())).thenReturn(Future(None))
+        when(mockPropertyDetailsService.retrieveDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("2"))).thenReturn(Future(None))
 
         val fakeRequest = FakeRequest()
         val result = controller.retrieveDraftPropertyDetails(testAccountRef, "2").apply(fakeRequest)
@@ -91,7 +91,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with
         val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val testPropertyDetailsAddr = testPropertyDetails.addressProperty
         when(mockPropertyDetailsService.createDraftPropertyDetails(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq(2015),
-          ArgumentMatchers.eq(testPropertyDetailsAddr))(any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq(testPropertyDetailsAddr))).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsAddr))
         val result = controller.createDraftPropertyDetails(testAccountRef, 2015).apply(fakeRequest)
@@ -105,7 +105,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with
         val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val testPropertyDetailsAddr = testPropertyDetails.addressProperty
         when(mockPropertyDetailsService.createDraftPropertyDetails(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq(2015),
-          ArgumentMatchers.eq(testPropertyDetailsAddr))(any())).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq(testPropertyDetailsAddr))).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsAddr))
         val result = controller.createDraftPropertyDetails(testAccountRef, 2015).apply(fakeRequest)
@@ -122,7 +122,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with
         val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val testPropertyDetailsAddr = testPropertyDetails.addressProperty
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsAddress(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsAddr))(any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsAddr))).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsAddr))
         val result = controller.saveDraftPropertyDetailsAddress(testAccountRef, "1").apply(fakeRequest)
@@ -136,7 +136,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with
         val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val testPropertyDetailsAddr = testPropertyDetails.addressProperty
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsAddress(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsAddr))(any())).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsAddr))).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsAddr))
         val result = controller.saveDraftPropertyDetailsAddress(testAccountRef, "1").apply(fakeRequest)
@@ -152,7 +152,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with
         val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val testPropertyDetailsTitle = testPropertyDetails.title.get
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsTitle(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsTitle))(any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsTitle))).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsTitle))
         val result = controller.saveDraftPropertyDetailsTitle(testAccountRef, "1").apply(fakeRequest)
@@ -166,7 +166,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with
         val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val testPropertyDetailsTitle = testPropertyDetails.title.get
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsTitle(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsTitle))(any())).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsTitle))).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsTitle))
         val result = controller.saveDraftPropertyDetailsTitle(testAccountRef, "1").apply(fakeRequest)
@@ -182,7 +182,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsTaxAvoidance()
         when(mockPropertyDetailsService.cacheDraftTaxAvoidance(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.saveDraftTaxAvoidance(testAccountRef, "1").apply(fakeRequest)
@@ -193,10 +193,9 @@ class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with
       "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
-        lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsTaxAvoidance()
         when(mockPropertyDetailsService.cacheDraftTaxAvoidance(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(any())).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.saveDraftTaxAvoidance(testAccountRef, "1").apply(fakeRequest)
@@ -212,7 +211,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsSupportingInfo("")
         when(mockPropertyDetailsService.cacheDraftSupportingInfo(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(any())).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.saveDraftSupportingInfo(testAccountRef, "1").apply(fakeRequest)
@@ -223,10 +222,9 @@ class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with
       "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
-        lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsSupportingInfo("")
         when(mockPropertyDetailsService.cacheDraftSupportingInfo(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(any())).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.saveDraftSupportingInfo(testAccountRef, "1").apply(fakeRequest)
@@ -237,20 +235,18 @@ class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with
     "updateHasBankDetails" must {
       val atedRefNo = "ated-123"
       val formBundle1 = "123456789012"
-      val formBundle2 = "100000000000"
       "for successful save, return ChangeLiabilityReturn model with OK as response status" in new Setup {
         val changeLiabilityReturn = PropertyDetailsBuilder.getFullPropertyDetails(formBundle1)
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(true))
-        when(mockPropertyDetailsService.cacheDraftHasBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(true))(any())).thenReturn(Future.successful(Some(changeLiabilityReturn)))
+        when(mockPropertyDetailsService.cacheDraftHasBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(true))).thenReturn(Future.successful(Some(changeLiabilityReturn)))
         val result = controller.updateDraftHasBankDetails(atedRefNo, formBundle1).apply(fakeRequest)
         status(result) must be(OK)
         contentAsJson(result) must be(Json.toJson(changeLiabilityReturn))
       }
 
       "for unsuccessful save, return None with NOT_FOUND as response status" in new Setup {
-        val changeLiabilityReturn = PropertyDetailsBuilder.getFullPropertyDetails(formBundle1)
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(false))
-        when(mockPropertyDetailsService.cacheDraftHasBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(false))(any())).thenReturn(Future.successful(None))
+        when(mockPropertyDetailsService.cacheDraftHasBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(false))).thenReturn(Future.successful(None))
         val result = controller.updateDraftHasBankDetails(atedRefNo, formBundle1).apply(fakeRequest)
         status(result) must be(NOT_FOUND)
         contentAsJson(result) must be(Json.parse( """{}"""))
@@ -261,22 +257,20 @@ class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with
     "updateBankDetails" must {
       val atedRefNo = "ated-123"
       val formBundle1 = "123456789012"
-      val formBundle2 = "100000000000"
       "for successful save, return ChangeLiabilityReturn model with OK as response status" in new Setup {
         val changeLiabilityReturn = PropertyDetailsBuilder.getFullPropertyDetails(formBundle1)
         val bankdetails = ChangeLiabilityReturnBuilder.generateLiabilityBankDetails.bankDetails.get
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(bankdetails))
-        when(mockPropertyDetailsService.cacheDraftBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(bankdetails))(any())).thenReturn(Future.successful(Some(changeLiabilityReturn)))
+        when(mockPropertyDetailsService.cacheDraftBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(bankdetails))).thenReturn(Future.successful(Some(changeLiabilityReturn)))
         val result = controller.updateDraftBankDetails(atedRefNo, formBundle1).apply(fakeRequest)
         status(result) must be(OK)
         contentAsJson(result) must be(Json.toJson(changeLiabilityReturn))
       }
 
       "for unsuccessful save, return None with NOT_FOUND as response status" in new Setup {
-        val changeLiabilityReturn = PropertyDetailsBuilder.getFullPropertyDetails(formBundle1)
         val bankdetails = ChangeLiabilityReturnBuilder.generateLiabilityBankDetails.bankDetails.get
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(bankdetails))
-        when(mockPropertyDetailsService.cacheDraftBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(bankdetails))(any())).thenReturn(Future.successful(None))
+        when(mockPropertyDetailsService.cacheDraftBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(bankdetails))).thenReturn(Future.successful(None))
         val result = controller.updateDraftBankDetails(atedRefNo, formBundle1).apply(fakeRequest)
         status(result) must be(NOT_FOUND)
         contentAsJson(result) must be(Json.parse( """{}"""))
@@ -300,8 +294,6 @@ class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with
       "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
-        val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
-        val testPropertyDetailsTitle = testPropertyDetails.title.get
         when(mockPropertyDetailsService.calculateDraftPropertyDetails(ArgumentMatchers.eq(testAccountRef),
           ArgumentMatchers.eq("1"))(any())).thenReturn(Future.successful(None))
 
@@ -319,35 +311,35 @@ class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with
 
       "respond with OK and a list of cached Property Details if this successfully submits" in new Setup {
         val testAccountRef = "ATED1223123"
-        when(mockPropertyDetailsService.submitDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(any())).thenReturn(Future(HttpResponse(OK, Some(successResponse))))
+        when(mockPropertyDetailsService.submitDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(any())).thenReturn(Future(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
         val result = controller.submitDraftPropertyDetails(testAccountRef, "1").apply(FakeRequest().withJsonBody(Json.parse( """{}""")))
         status(result) must be(OK)
       }
 
       "respond with NOT_FOUND and a list of cached Property Details if no data is found" in new Setup {
         val testAccountRef = "ATED1223123"
-        when(mockPropertyDetailsService.submitDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(any())).thenReturn(Future(HttpResponse(NOT_FOUND, Some(successResponse))))
+        when(mockPropertyDetailsService.submitDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(any())).thenReturn(Future(HttpResponse(NOT_FOUND, successResponse, Map.empty[String, Seq[String]])))
         val result = controller.submitDraftPropertyDetails(testAccountRef, "1").apply(FakeRequest().withJsonBody(Json.parse( """{}""")))
         status(result) must be(NOT_FOUND)
       }
 
       "respond with BAD_REQUEST and a list of cached Property Details if we have this status" in new Setup {
         val testAccountRef = "ATED1223123"
-        when(mockPropertyDetailsService.submitDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(any())).thenReturn(Future(HttpResponse(BAD_REQUEST, Some(failureResponse))))
+        when(mockPropertyDetailsService.submitDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(any())).thenReturn(Future(HttpResponse(BAD_REQUEST, failureResponse, Map.empty[String, Seq[String]])))
         val result = controller.submitDraftPropertyDetails(testAccountRef, "1").apply(FakeRequest().withJsonBody(Json.parse( """{}""")))
         status(result) must be(BAD_REQUEST)
       }
 
       "respond with SERVICE_UNAVAILABLE and a list of cached Property Details if we have this status" in new Setup {
         val testAccountRef = "ATED1223123"
-        when(mockPropertyDetailsService.submitDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(any())).thenReturn(Future(HttpResponse(SERVICE_UNAVAILABLE, Some(failureResponse))))
+        when(mockPropertyDetailsService.submitDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(any())).thenReturn(Future(HttpResponse(SERVICE_UNAVAILABLE, failureResponse, Map.empty[String, Seq[String]])))
         val result = controller.submitDraftPropertyDetails(testAccountRef, "1").apply(FakeRequest().withJsonBody(Json.parse( """{}""")))
         status(result) must be(SERVICE_UNAVAILABLE)
       }
 
       "respond with 999 and a list of cached Property Details if we have this status" in new Setup {
         val testAccountRef = "ATED1223123"
-        when(mockPropertyDetailsService.submitDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(any())).thenReturn(Future(HttpResponse(999, Some(failureResponse))))
+        when(mockPropertyDetailsService.submitDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(any())).thenReturn(Future(HttpResponse(999, failureResponse, Map.empty[String, Seq[String]])))
         val result = controller.submitDraftPropertyDetails(testAccountRef, "1").apply(FakeRequest().withJsonBody(Json.parse( """{}""")))
         status(result) must be(INTERNAL_SERVER_ERROR)
       }
@@ -356,7 +348,8 @@ class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with
     "deleteDraftPropertyDetails" must {
       "respond with OK when list is empty" in new Setup {
         val testAccountRef = "ATED1223123"
-        when(mockPropertyDetailsService.deleteChargeableDraft(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(any())).thenReturn(Future(Seq[PropertyDetails]()))
+        when(mockPropertyDetailsService.deleteChargeableDraft(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1")))
+          .thenReturn(Future(Seq[PropertyDetails]()))
         val result = controller.deleteDraftPropertyDetails(testAccountRef, "1").apply(FakeRequest().withJsonBody(Json.parse( """{}""")))
         status(result) must be(OK)
       }
@@ -364,7 +357,8 @@ class PropertyDetailsControllerSpec extends PlaySpec with OneServerPerSuite with
       "respond with NTERNAL_SERVER_ERROR when list is not empty" in new Setup {
         val testAccountRef = "ATED1223123"
         val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
-        when(mockPropertyDetailsService.deleteChargeableDraft(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(any())).thenReturn(Future(Seq[PropertyDetails](testPropertyDetails)))
+        when(mockPropertyDetailsService.deleteChargeableDraft(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1")))
+          .thenReturn(Future(Seq[PropertyDetails](testPropertyDetails)))
         val result = controller.deleteDraftPropertyDetails(testAccountRef, "1").apply(FakeRequest().withJsonBody(Json.parse( """{}""")))
         status(result) must be(INTERNAL_SERVER_ERROR)
       }

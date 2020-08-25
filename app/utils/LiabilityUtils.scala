@@ -18,7 +18,6 @@ package utils
 
 import models._
 import org.joda.time.LocalDate
-import play.api.Logger
 import utils.PropertyDetailsUtils._
 
 
@@ -35,18 +34,17 @@ trait LiabilityUtils extends ReliefConstants {
     createLiabilityReturnsRequest(id, propertyDetails, ReliefUtils.PreCalculation, agentRefNo)
   }
 
-  private def createLiabilityReturnsRequest(id: String, property: PropertyDetails, mode: String, agentRefNo: Option[String] = None): Option[SubmitEtmpReturnsRequest] = {
+  private def createLiabilityReturnsRequest(id: String, property: PropertyDetails, mode: String, agentRefNo: Option[String]): Option[SubmitEtmpReturnsRequest] = {
 
     (property.calculated.flatMap(_.valuationDateToUse), property.calculated.flatMap(_.professionalValuation), property.calculated) match {
-      case (Some(valuationDate), Some(professionalValuation), Some(propertyCalc)) => {
-        val liabilityReturns = createLiabilityReturns(id, property, propertyCalc, mode, agentRefNo, valuationDate, professionalValuation)
+      case (Some(valuationDate), Some(professionalValuation), Some(propertyCalc)) =>
+        val liabilityReturns = createLiabilityReturns(id, property, propertyCalc, mode, valuationDate, professionalValuation)
         Some(SubmitEtmpReturnsRequest(acknowledgementReference = SessionUtils.getUniqueAckNo,
           agentRefNo,
           reliefReturns = None,
           liabilityReturns = liabilityReturns))
-      }
-      case (None, Some(professionalValuation), Some(propertyCalc)) if (property.calculated.flatMap(_.acquistionDateToUse).isDefined) => {
-        val liabilityReturns = createLiabilityReturns(id, property, propertyCalc, mode, agentRefNo, property.calculated.flatMap(_.acquistionDateToUse).get, professionalValuation)
+      case (None, Some(professionalValuation), Some(propertyCalc)) if property.calculated.flatMap(_.acquistionDateToUse).isDefined => {
+        val liabilityReturns = createLiabilityReturns(id, property, propertyCalc, mode, property.calculated.flatMap(_.acquistionDateToUse).get, professionalValuation)
         Some(SubmitEtmpReturnsRequest(acknowledgementReference = SessionUtils.getUniqueAckNo,
           agentRefNo,
           reliefReturns = None,
@@ -57,9 +55,7 @@ trait LiabilityUtils extends ReliefConstants {
   }
 
   private def createLiabilityReturns(id: String, property: PropertyDetails, propCalc: PropertyDetailsCalculated,
-                                        mode: String, agentRefNo: Option[String] = None,
-                                        valuationDate: LocalDate,
-                                        professionallyValued : Boolean) = {
+                                     mode: String, valuationDate: LocalDate, professionallyValued : Boolean) = {
 
     val liabilityReturn = EtmpLiabilityReturns(mode = mode,
       propertyKey = id,

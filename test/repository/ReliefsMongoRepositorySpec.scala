@@ -21,13 +21,14 @@ import builders.ReliefBuilder
 import metrics.ServiceMetrics
 import models.{Reliefs, TaxAvoidance}
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import reactivemongo.api.DB
 import uk.gov.hmrc.mongo.{Awaiting, MongoSpecSupport}
 
 class ReliefsMongoRepositorySpec extends PlaySpec
-  with OneServerPerSuite
+  with GuiceOneServerPerSuite
   with MongoSpecSupport
   with Awaiting
   with MockitoSugar

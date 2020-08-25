@@ -22,20 +22,21 @@ import org.joda.time.DateTime
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{Json, OFormat}
 import play.api.mvc.ControllerComponents
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.DisposeLiabilityReturnService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.Future
-import uk.gov.hmrc.http.HttpResponse
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
-class DisposeLiabilityReturnControllerSpec extends PlaySpec with OneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
+class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
   val mockDisposeLiabilityReturnService = mock[DisposeLiabilityReturnService]
   val atedRefNo = "ated-123"
@@ -67,14 +68,14 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with OneServerPerSui
       "return DisposeLiabilityReturn model, if found in cache or ETMP" in new Setup {
         lazy val formBundleResp = ChangeLiabilityReturnBuilder.generateFormBundleResponse(periodKey)
         val dispose1 = DisposeLiabilityReturn(atedRefNo, formBundle1, formBundleResp)
-        when(mockDisposeLiabilityReturnService.retrieveAndCacheDisposeLiabilityReturn(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(dispose1)))
+        when(mockDisposeLiabilityReturnService.retrieveAndCacheDisposeLiabilityReturn(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))).thenReturn(Future.successful(Some(dispose1)))
         val result = controller.retrieveAndCacheDisposeLiabilityReturn(atedRefNo, formBundle1).apply(FakeRequest())
         status(result) must be(OK)
         contentAsJson(result) must be(Json.toJson(dispose1))
       }
 
       "return DisposeLiabilityReturn model, if NOT-found in cache or ETMP" in new Setup {
-        when(mockDisposeLiabilityReturnService.retrieveAndCacheDisposeLiabilityReturn(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+        when(mockDisposeLiabilityReturnService.retrieveAndCacheDisposeLiabilityReturn(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))).thenReturn(Future.successful(None))
         val result = controller.retrieveAndCacheDisposeLiabilityReturn(atedRefNo, formBundle1).apply(FakeRequest())
         status(result) must be(NOT_FOUND)
         contentAsJson(result) must be(Json.parse("""{}"""))
@@ -87,18 +88,18 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with OneServerPerSui
         val d1 = DisposeLiability(dateOfDisposal = None, periodKey)
         val dispose1 = DisposeLiabilityReturn(atedRefNo, formBundle1, formBundleResp, disposeLiability = Some(d1))
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(d1))
-        when(mockDisposeLiabilityReturnService.updateDraftDisposeLiabilityReturnDate(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(d1))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(dispose1)))
+        when(mockDisposeLiabilityReturnService.updateDraftDisposeLiabilityReturnDate(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(d1)))
+          .thenReturn(Future.successful(Some(dispose1)))
         val result = controller.updateDisposalDate(atedRefNo, formBundle1).apply(fakeRequest)
         status(result) must be(OK)
         contentAsJson(result) must be(Json.toJson(dispose1))
       }
 
       "for unsuccessful save, return None with NOT_FOUND as response status" in new Setup {
-        lazy val formBundleResp = ChangeLiabilityReturnBuilder.generateFormBundleResponse(periodKey)
         val d1 = DisposeLiability(dateOfDisposal = None, periodKey)
-        val dispose1 = DisposeLiabilityReturn(atedRefNo, formBundle1, formBundleResp, disposeLiability = Some(d1))
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(d1))
-        when(mockDisposeLiabilityReturnService.updateDraftDisposeLiabilityReturnDate(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(d1))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+        when(mockDisposeLiabilityReturnService.updateDraftDisposeLiabilityReturnDate(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(d1)))
+          .thenReturn(Future.successful(None))
         val result = controller.updateDisposalDate(atedRefNo, formBundle1).apply(fakeRequest)
         status(result) must be(NOT_FOUND)
         contentAsJson(result) must be(Json.parse("""{}"""))
@@ -111,16 +112,15 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with OneServerPerSui
         val bank1 = BankDetailsModel(true, Some(BankDetails(None, None, None, None)))
         val dispose1 = DisposeLiabilityReturn(atedRefNo, formBundle1, formBundleResp, bankDetails = Some(bank1))
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(true))
-        when(mockDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(true))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(dispose1)))
+        when(mockDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(true))).thenReturn(Future.successful(Some(dispose1)))
         val result = controller.updateHasBankDetails(atedRefNo, formBundle1).apply(fakeRequest)
         status(result) must be(OK)
         contentAsJson(result) must be(Json.toJson(dispose1))
       }
 
       "for unsuccessful save, return None with NOT_FOUND as response status" in new Setup {
-        lazy val formBundleResp = ChangeLiabilityReturnBuilder.generateFormBundleResponse(periodKey)
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(false))
-        when(mockDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(false))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+        when(mockDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(false))).thenReturn(Future.successful(None))
         val result = controller.updateHasBankDetails(atedRefNo, formBundle1).apply(fakeRequest)
         status(result) must be(NOT_FOUND)
         contentAsJson(result) must be(Json.parse("""{}"""))
@@ -133,17 +133,16 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with OneServerPerSui
         val bank1 = BankDetails(None, None, None, None)
         val dispose1 = DisposeLiabilityReturn(atedRefNo, formBundle1, formBundleResp, bankDetails = Some(BankDetailsModel(true, Some(bank1))))
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(bank1))
-        when(mockDisposeLiabilityReturnService.updateDraftDisposeBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(bank1))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(dispose1)))
+        when(mockDisposeLiabilityReturnService.updateDraftDisposeBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(bank1))).thenReturn(Future.successful(Some(dispose1)))
         val result = controller.updateBankDetails(atedRefNo, formBundle1).apply(fakeRequest)
         status(result) must be(OK)
         contentAsJson(result) must be(Json.toJson(dispose1))
       }
 
       "for unsuccessful save, return None with NOT_FOUND as response status" in new Setup {
-        lazy val formBundleResp = ChangeLiabilityReturnBuilder.generateFormBundleResponse(periodKey)
         val bank1 = BankDetails(None, None, None, None)
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(bank1))
-        when(mockDisposeLiabilityReturnService.updateDraftDisposeBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(bank1))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+        when(mockDisposeLiabilityReturnService.updateDraftDisposeBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(bank1))).thenReturn(Future.successful(None))
         val result = controller.updateBankDetails(atedRefNo, formBundle1).apply(fakeRequest)
         status(result) must be(NOT_FOUND)
         contentAsJson(result) must be(Json.parse("""{}"""))
@@ -162,9 +161,7 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with OneServerPerSui
       }
 
       "for unsuccessful save, return None with NOT_FOUND as response status" in new Setup {
-        lazy val formBundleResp = ChangeLiabilityReturnBuilder.generateFormBundleResponse(periodKey)
         val fakeRequest = FakeRequest()
-        val dispose1 = DisposeLiabilityReturn(atedRefNo, formBundle1, formBundleResp)
         when(mockDisposeLiabilityReturnService.calculateDraftDispose(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
         val result = controller.calculateDraftDisposal(atedRefNo, formBundle1).apply(fakeRequest)
         status(result) must be(NOT_FOUND)
@@ -175,14 +172,14 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with OneServerPerSui
     "submitDisposeLiabilityReturn" must {
       "for successful submit, return OK as response status" in new Setup {
         val successResponse = EditLiabilityReturnsResponseModel(DateTime.now(), liabilityReturnResponse = Seq(), accountBalance = BigDecimal(0.00))
-        when(mockDisposeLiabilityReturnService.submitDisposeLiability(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(Json.toJson(successResponse)))))
+        when(mockDisposeLiabilityReturnService.submitDisposeLiability(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Json.toJson(successResponse), Map.empty[String, Seq[String]])))
         val result = controller.submitDisposeLiabilityReturn(atedRefNo, formBundle1).apply(FakeRequest())
         status(result) must be(OK)
       }
 
       "for unsuccessful submit, return internal server error response" in new Setup {
         val errorResponse = Json.parse("""{"reason": "Some error"}""")
-        when(mockDisposeLiabilityReturnService.submitDisposeLiability(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, responseJson = Some(Json.toJson(errorResponse)))))
+        when(mockDisposeLiabilityReturnService.submitDisposeLiability(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, Json.toJson(errorResponse), Map.empty[String, Seq[String]])))
         val result = controller.submitDisposeLiabilityReturn(atedRefNo, formBundle1).apply(FakeRequest())
         status(result) must be(INTERNAL_SERVER_ERROR)
       }

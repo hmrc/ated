@@ -21,7 +21,6 @@ import connectors.EtmpReturnsConnector
 import models._
 import repository.{PropertyDetailsDelete, PropertyDetailsMongoRepository}
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.http.HeaderCarrier
 import utils._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -33,22 +32,22 @@ trait PropertyDetailsBaseService extends ReliefConstants {
   def authConnector: AuthConnector
   def propertyDetailsCache: PropertyDetailsMongoRepository
 
-  def retrieveDraftPropertyDetails(atedRefNo: String)(implicit hc: HeaderCarrier): Future[Seq[PropertyDetails]] = {
+  def retrieveDraftPropertyDetails(atedRefNo: String): Future[Seq[PropertyDetails]] = {
     propertyDetailsCache.fetchPropertyDetails(atedRefNo)
   }
 
-  def retrieveDraftPropertyDetail(atedRefNo: String, id: String)(implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+  def retrieveDraftPropertyDetail(atedRefNo: String, id: String): Future[Option[PropertyDetails]] = {
     propertyDetailsCache.fetchPropertyDetails(atedRefNo).map {
       propertyDetailsList =>
         PropertyDetailsUtils.populateBankDetails(propertyDetailsList.find(_.id == id))
     }
   }
 
-  def deleteDraftPropertyDetail(atedRefNo: String, id: String)(implicit hc: HeaderCarrier): Future[PropertyDetailsDelete] =
+  def deleteDraftPropertyDetail(atedRefNo: String, id: String): Future[PropertyDetailsDelete] =
     propertyDetailsCache.deletePropertyDetailsByfieldName(atedRefNo, id)
 
-  protected def cacheDraftPropertyDetails(atedRefNo: String, updatePropertyDetails: Seq[PropertyDetails] => Future[Option[PropertyDetails]])
-                                         (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+  protected def cacheDraftPropertyDetails(atedRefNo: String,
+                                          updatePropertyDetails: Seq[PropertyDetails] => Future[Option[PropertyDetails]]): Future[Option[PropertyDetails]] = {
     for {
       propertyDetailsList <- propertyDetailsCache.fetchPropertyDetails(atedRefNo)
       newPropertyDetails <- updatePropertyDetails(propertyDetailsList)
@@ -57,7 +56,7 @@ trait PropertyDetailsBaseService extends ReliefConstants {
           val filteredPropertyDetailsList = propertyDetailsList.filterNot(_.id == x.id)
           val updatedList = filteredPropertyDetailsList :+ x
           updatedList.map { updateProp =>
-            propertyDetailsCache.cachePropertyDetails(updateProp).map(cached => newPropertyDetails)
+            propertyDetailsCache.cachePropertyDetails(updateProp).map(_ => newPropertyDetails)
           }.head
         case None => Future.successful(None)
       }

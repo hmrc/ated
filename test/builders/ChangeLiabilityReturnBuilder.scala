@@ -18,11 +18,11 @@ package builders
 
 import models._
 import org.joda.time.{DateTime, LocalDate}
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
-import play.api.libs.json.Json
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import uk.gov.hmrc.crypto.Protected
 
-object ChangeLiabilityReturnBuilder extends PlaySpec with OneServerPerSuite {
+object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite {
 
   def generateFormBundleResponse(periodKey: Int): FormBundleReturn = {
     val formBundleAddress = FormBundleAddress("line1", "line2", None, None, None, "GB")

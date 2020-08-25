@@ -18,12 +18,12 @@ package controllers
 
 import javax.inject.{Inject, Singleton}
 import models.PropertyDetails
-import play.api.Logger
+import play.api.Logging
 import play.api.libs.json.{Json, OFormat}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.{ChangeLiabilityService, NoLiabilityAmountException}
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -33,14 +33,14 @@ class ChangeLiabilityReturnControllerImpl @Inject()(
                                                      val cc: ControllerComponents,
                                                      implicit val crypto: ApplicationCrypto
                                                    ) extends BackendController(cc) with ChangeLiabilityReturnController
-trait ChangeLiabilityReturnController extends BackendController {
+trait ChangeLiabilityReturnController extends BackendController with Logging {
   val crypto: ApplicationCrypto
   implicit lazy val compositeCrypto: CryptoWithKeysFromConfig = crypto.JsonCrypto
   implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
 
   def changeLiabilityService: ChangeLiabilityService
 
-  def convertSubmittedReturnToCachedDraft(accountRef: String, formBundle: String): Action[AnyContent] = Action.async { implicit request =>
+  def convertSubmittedReturnToCachedDraft(accountRef: String, formBundle: String): Action[AnyContent] = Action.async { _ =>
     for {
       changeLiabilityResponse <- changeLiabilityService.convertSubmittedReturnToCachedDraft(accountRef, formBundle)
     } yield {
@@ -53,11 +53,11 @@ trait ChangeLiabilityReturnController extends BackendController {
 
   def calculateDraftChangeLiability(atedRef: String, oldFormBundleNo: String): Action[AnyContent] = Action.async { implicit request =>
     changeLiabilityService.calculateDraftChangeLiability(atedRef, oldFormBundleNo).map {
-      case updateResponse @ Some(_) => Ok(Json.toJson(updateResponse))
-      case updateResponse @ None => BadRequest(Json.toJson(updateResponse))
+      case updateResponse @ Some(_)  => Ok(Json.toJson(updateResponse))
+      case updateResponse: None.type => BadRequest(Json.toJson(updateResponse))
     } recover {
       case ex: NoLiabilityAmountException =>
-        Logger.warn("NoLiabilityAmountException: " + ex.message)
+        logger.warn("NoLiabilityAmountException: " + ex.message)
         NoContent
     }
   }
@@ -67,14 +67,14 @@ trait ChangeLiabilityReturnController extends BackendController {
       response.status match {
         case OK => Ok(response.body)
         case _ =>
-          Logger.warn(s"[ChangeLiabilityReturnController][submitChangeLiabilityReturn] - status = ${response.status} && response.body = ${response.body}")
+          logger.warn(s"[ChangeLiabilityReturnController][submitChangeLiabilityReturn] - status = ${response.status} && response.body = ${response.body}")
           InternalServerError(response.body)
       }
     }
   }
 
   def convertPreviousSubmittedReturnToCachedDraft(accountRef: String, formBundle: String, period: Int): Action[AnyContent] =
-    Action.async { implicit request =>
+    Action.async { _ =>
       for {
         changeLiabilityResponse <- changeLiabilityService.convertSubmittedReturnToCachedDraft(accountRef, formBundle, Some(true), Some(period))
       } yield {

@@ -19,17 +19,17 @@ package services
 import connectors.{EmailConnector, EtmpReturnsConnector}
 import javax.inject.Inject
 import models._
-import play.api.Logger
+import play.api.Logging
 import play.api.http.Status._
 import play.api.libs.json.{JsValue, Json}
 import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
 import uk.gov.hmrc.auth.core.AuthConnector
-import utils._
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, InternalServerException}
 import utils.AtedUtils._
+import utils._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, InternalServerException}
 
 class ChangeLiabilityServiceImpl @Inject()(val propertyDetailsMongoWrapper: PropertyDetailsMongoWrapper,
                                            val etmpConnector: EtmpReturnsConnector,
@@ -41,11 +41,11 @@ class ChangeLiabilityServiceImpl @Inject()(val propertyDetailsMongoWrapper: Prop
 
 case class NoLiabilityAmountException(message: String) extends Exception
 
-trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConstants with NotificationService with AuthFunctionality {
+trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConstants with NotificationService with AuthFunctionality with Logging {
 
   def subscriptionDataService: SubscriptionDataService
 
-  def convertSubmittedReturnToCachedDraft(atedRefNo: String, oldFormBundleNo: String, fromSelectedPrevReturn: Option[Boolean] = None, period: Option[Int] = None)(implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+  def convertSubmittedReturnToCachedDraft(atedRefNo: String, oldFormBundleNo: String, fromSelectedPrevReturn: Option[Boolean] = None, period: Option[Int] = None): Future[Option[PropertyDetails]] = {
     for {
       cachedData <- retrieveDraftPropertyDetail(atedRefNo, oldFormBundleNo)
       cachedChangeLiability <- {
@@ -97,8 +97,7 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
     }
   }
 
-  def getAmountDueOrRefund(atedRefNo: String, id: String, propertyDetails: PropertyDetails, agentRefNo: Option[String] = None)
-                          (implicit hc: HeaderCarrier): Future[(Option[BigDecimal], Option[BigDecimal])] = {
+  def getAmountDueOrRefund(atedRefNo: String, id: String, propertyDetails: PropertyDetails, agentRefNo: Option[String] = None): Future[(Option[BigDecimal], Option[BigDecimal])] = {
 
     def getLiabilityAmount(data: JsValue): (Option[BigDecimal], Option[BigDecimal]) = {
       val response = data.as[EditLiabilityReturnsResponseModel]
@@ -168,9 +167,9 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
               val editLiabilityRequest = ChangeLiabilityUtils.createPostRequest(x, agentRefNo)
               editLiabilityRequest match {
                 case Some(a) => etmpConnector.submitEditedLiabilityReturns(atedRefNo, a)
-                case None => Future.successful(HttpResponse(NOT_FOUND, None))
+                case None => Future.successful(HttpResponse(NOT_FOUND, ""))
               }
-            case None => Future.successful(HttpResponse(NOT_FOUND, None))
+            case None => Future.successful(HttpResponse(NOT_FOUND, ""))
           }
         }
         subscriptionData <- subscriptionDataService.retrieveSubscriptionData(atedRefNo)
@@ -181,12 +180,11 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
             sendMail(subscriptionData.json, emailTemplate(submitStatus.json, oldFormBundleNo))
             HttpResponse(
               submitStatus.status,
-              responseHeaders = submitStatus.allHeaders,
-              responseJson = Some(Json.toJson(submitStatus.json.as[EditLiabilityReturnsResponseModel])),
-              responseString = Some(Json.prettyPrint(Json.toJson(submitStatus.json.as[EditLiabilityReturnsResponseModel])))
+              json = Json.toJson(submitStatus.json.as[EditLiabilityReturnsResponseModel]),
+              headers = submitStatus.headers
             )
           case someStatus =>
-            Logger.warn(s"[PropertyDetailsService][submitChangeLiability] status = $someStatus body = ${submitStatus.body}")
+            logger.warn(s"[PropertyDetailsService][submitChangeLiability] status = $someStatus body = ${submitStatus.body}")
             submitStatus
         }
       }

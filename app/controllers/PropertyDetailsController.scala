@@ -18,14 +18,12 @@ package controllers
 
 import javax.inject.{Inject, Singleton}
 import models._
-import play.api.Logger
+import play.api.Logging
 import play.api.libs.json.{Json, OFormat}
-import play.api.mvc.ControllerComponents
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.PropertyDetailsService
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
-import play.api.libs.json.JodaWrites._
-import play.api.libs.json.JodaReads._
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -34,19 +32,17 @@ class PropertyDetailsControllerImpl @Inject()(val propertyDetailsService: Proper
                                               val cc: ControllerComponents,
                                               implicit val crypto: ApplicationCrypto) extends BackendController(cc) with PropertyDetailsController
 
-trait PropertyDetailsController extends BackendController {
+trait PropertyDetailsController extends BackendController with Logging {
   val crypto: ApplicationCrypto
   implicit lazy val compositeCrypto: CryptoWithKeysFromConfig = crypto.JsonCrypto
   implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
 
   def propertyDetailsService: PropertyDetailsService
 
-  def retrieveDraftPropertyDetails(atedRefNo: String, id: String) = Action.async { implicit request =>
-    propertyDetailsService.retrieveDraftPropertyDetail(atedRefNo, id).map { draftPropertyDetails =>
-      draftPropertyDetails match {
-        case Some(x) => Ok(Json.toJson(draftPropertyDetails))
-        case _ => NotFound(Json.toJson(draftPropertyDetails))
-      }
+  def retrieveDraftPropertyDetails(atedRefNo: String, id: String): Action[AnyContent] = Action.async { _ =>
+    propertyDetailsService.retrieveDraftPropertyDetail(atedRefNo, id).map {
+      case draftPropertyDetails@Some(_) => Ok(Json.toJson(draftPropertyDetails))
+      case draftPropertyDetails         => NotFound(Json.toJson(draftPropertyDetails))
     }
   }
 
@@ -143,11 +139,11 @@ trait PropertyDetailsController extends BackendController {
     }
   }
 
-  def deleteDraftPropertyDetails(atedRefNo: String, id: String) = Action.async { implicit request =>
+  def deleteDraftPropertyDetails(atedRefNo: String, id: String) = Action.async { _ =>
     propertyDetailsService.deleteChargeableDraft(atedRefNo, id).map {
       case Nil => Ok
       case a =>
-        Logger.warn(
+        logger.warn(
           s"""[PropertyDetailsController][deleteDraftPropertyDetails] - && body = $a""")
         InternalServerError(Json.toJson(a))
     }

@@ -21,6 +21,7 @@ import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.CreationAndLastModifiedDetail
 
 import scala.collection.Set
+import scala.language.implicitConversions
 
 case class Id(id: String)
 
@@ -30,17 +31,14 @@ object Id {
 
   implicit def stringToId(s: String): Id = new Id(s)
 
-  private val idWrite: Writes[Id] = new Writes[Id] {
-    override def writes(value: Id): JsValue = JsString(value.id)
+  private val idWrite: Writes[Id] = (value: Id) => JsString(value.id)
+
+  private val idRead: Reads[Id] = {
+    case v: JsString => v.validate[String].map(Id.apply)
+    case noParsed => throw new Exception(s"Could not read Json value of 'id' in $noParsed")
   }
 
-  private val idRead: Reads[Id] = new Reads[Id] {
-    override def reads(js: JsValue): JsResult[Id] = js match {
-      case v: JsString => v.validate[String].map(Id.apply)
-      case noParsed => throw new Exception(s"Could not read Json value of 'id' in $noParsed")
-    }
-  }
-  implicit val idFormats = Format(idRead, idWrite)
+  implicit val idFormats: Format[Id] = Format(idRead, idWrite)
 }
 
 
@@ -50,17 +48,14 @@ case class Cache(id: Id, data: Option[JsValue] = None,
 }
 
 object Cache {
-
   import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
   final val DataAttributeName = "data"
 
-  implicit val format = ReactiveMongoFormats.objectIdFormats
-  implicit val cacheFormat = Json.format[Cache]
+  implicit val format: Format[BSONObjectID] = ReactiveMongoFormats.objectIdFormats
+  implicit val cacheFormat: OFormat[Cache] = Json.format[Cache]
 
-  val mongoFormats = ReactiveMongoFormats.mongoEntity {
-
-    implicit val dateFormat = ReactiveMongoFormats.dateTimeFormats
+  val mongoFormats: Format[Cache] = ReactiveMongoFormats.mongoEntity {
     cacheFormat
   }
 }

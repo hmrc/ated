@@ -2,7 +2,7 @@
 package helpers
 
 import com.github.tomakehurst.wiremock.client.WireMock._
-import com.github.tomakehurst.wiremock.stubbing.{Scenario, StubMapping}
+import com.github.tomakehurst.wiremock.stubbing.StubMapping
 
 trait StubbedBasicHttpCalls {
 

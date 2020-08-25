@@ -19,7 +19,7 @@ package controllers
 import audit.Auditable
 import javax.inject.{Inject, Named, Singleton}
 import models.ReliefsTaxAvoidance
-import play.api.Logger
+import play.api.Logging
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.ReliefsService
@@ -27,7 +27,7 @@ import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.Audit
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import utils.AuthFunctionality
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -41,7 +41,7 @@ class ReliefsControllerImpl @Inject()(val cc: ControllerComponents,
   val audit: Audit = new Audit(s"ATED:$appName", auditConnector)
 }
 
-trait ReliefsController extends BackendController with Auditable with AuthFunctionality {
+trait ReliefsController extends BackendController with Auditable with AuthFunctionality with Logging {
 
   def reliefsService: ReliefsService
 
@@ -58,7 +58,7 @@ trait ReliefsController extends BackendController with Auditable with AuthFuncti
     }
   }
 
-  def retrieveDraftReliefs(atedRefNo: String, periodKey: Int): Action[AnyContent] = Action.async { implicit request =>
+  def retrieveDraftReliefs(atedRefNo: String, periodKey: Int): Action[AnyContent] = Action.async { _ =>
     reliefsService.retrieveDraftReliefs(atedRefNo).map { reliefs =>
       reliefs.find(_.periodKey == periodKey) match {
         case Some(x) => Ok(Json.toJson(x))
@@ -75,7 +75,7 @@ trait ReliefsController extends BackendController with Auditable with AuthFuncti
         case BAD_REQUEST => BadRequest(responseOfSubmit.body)
         case SERVICE_UNAVAILABLE => ServiceUnavailable(responseOfSubmit.body)
         case INTERNAL_SERVER_ERROR | _ =>
-          Logger.warn(
+          logger.warn(
             s"""[ReliefsController][submitDraftReliefs] - response.status = ${responseOfSubmit.status}
                 |&& response.body = ${responseOfSubmit.body}""".stripMargin)
           InternalServerError(responseOfSubmit.body)
@@ -83,29 +83,29 @@ trait ReliefsController extends BackendController with Auditable with AuthFuncti
     }
   }
 
-  def deleteDraftReliefs(atedRefNo: String): Action[AnyContent] = Action.async { implicit request =>
+  def deleteDraftReliefs(atedRefNo: String): Action[AnyContent] = Action.async { _ =>
     reliefsService.deleteAllDraftReliefs(atedRefNo).map {
       case Nil => Ok
       case a =>
-        Logger.warn(
+        logger.warn(
           s"""[ReliefsController][deleteDraftReliefs] - && body = $a""")
         InternalServerError(Json.toJson(a))
     }
   }
 
-  def deleteDraftReliefsByYear(atedRefNo: String, periodKey: Int): Action[AnyContent] = Action.async { implicit request =>
+  def deleteDraftReliefsByYear(atedRefNo: String, periodKey: Int): Action[AnyContent] = Action.async { _ =>
     reliefsService.deleteAllDraftReliefByYear(atedRefNo, periodKey).map {
       case Nil => Ok
       case a =>
-        Logger.warn(
+        logger.warn(
           s"""[ReliefsController][deleteDraftReliefs] - && body = $a""")
         InternalServerError(Json.toJson(a))
     }
   }
 
 
-  private def auditSaveDraftReliefs(atedRefNo: String,
-                                    reliefsTaxAvoid: ReliefsTaxAvoidance, agentRefNo: Option[String] = None)(implicit hc: HeaderCarrier): Unit = {
+  private def auditSaveDraftReliefs(atedRefNo: String, reliefsTaxAvoid: ReliefsTaxAvoidance, agentRefNo: Option[String])
+                                   (implicit hc: HeaderCarrier): Unit = {
 
     val basicReliefsMap = Map(
       "submittedBy" -> atedRefNo,

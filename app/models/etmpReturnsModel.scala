@@ -17,10 +17,9 @@
 package models
 
 import org.joda.time.LocalDate
-import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsPath, Json, Reads}
-import play.api.libs.json.JodaWrites._
-import play.api.libs.json.JodaReads._
+import play.api.libs.json.JodaWrites.DefaultJodaLocalDateWrites
+import play.api.libs.json.JodaReads.DefaultJodaLocalDateReads
+import play.api.libs.json.Json
 
 case class EtmpAddress(addressLine1: String,
                        addressLine2: String,

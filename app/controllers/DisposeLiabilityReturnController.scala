@@ -17,13 +17,13 @@
 package controllers
 
 import javax.inject.{Inject, Singleton}
-import models.{BankDetails, DisposeLiability, DisposeLiabilityReturn, PropertyDetails}
-import play.api.Logger
+import models.{BankDetails, DisposeLiability, DisposeLiabilityReturn}
+import play.api.Logging
 import play.api.libs.json.{JsValue, Json, OFormat}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.DisposeLiabilityReturnService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -34,14 +34,14 @@ class DisposeLiabilityReturnControllerImpl @Inject()(
                                                     val crypto: ApplicationCrypto
                                                     ) extends BackendController(cc) with DisposeLiabilityReturnController
 
-trait DisposeLiabilityReturnController extends BackendController {
+trait DisposeLiabilityReturnController extends BackendController with Logging {
   val crypto: ApplicationCrypto
   implicit lazy val compositeCrypto: CryptoWithKeysFromConfig = crypto.JsonCrypto
   implicit lazy val format: OFormat[DisposeLiabilityReturn] = DisposeLiabilityReturn.formats
 
   def disposeLiabilityReturnService: DisposeLiabilityReturnService
 
-  def retrieveAndCacheDisposeLiabilityReturn(accountRef: String, formBundle: String): Action[AnyContent] = Action.async { implicit request =>
+  def retrieveAndCacheDisposeLiabilityReturn(accountRef: String, formBundle: String): Action[AnyContent] = Action.async { _ =>
     for {
       disposeLiabilityResponse <- disposeLiabilityReturnService.retrieveAndCacheDisposeLiabilityReturn(accountRef, formBundle)
     } yield {
@@ -92,7 +92,7 @@ trait DisposeLiabilityReturnController extends BackendController {
       response.status match {
         case OK => Ok(response.body)
         case status =>
-          Logger.warn(s"[DisposeLiabilityReturnController][submitDisposeLiabilityReturn] - status = ${response.status} && response.body = ${response.body}")
+          logger.warn(s"[DisposeLiabilityReturnController][submitDisposeLiabilityReturn] - status = ${response.status} && response.body = ${response.body}")
           InternalServerError(response.body)
       }
     }

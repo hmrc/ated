@@ -20,7 +20,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.ReturnSummaryService
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -34,13 +34,13 @@ trait ReturnsSummaryController extends BackendController {
 
   def returnSummaryService: ReturnSummaryService
 
-  def getFullSummaryReturn(atedRef: String): Action[AnyContent] = Action.async { implicit request =>
+  def getFullSummaryReturn(atedRef: String): Action[AnyContent] = Action.async { _ =>
     returnSummaryService.getFullSummaryReturns(atedRef) map {
       fullSummaryReturn => Ok(Json.toJson(fullSummaryReturn))
     }
   }
 
-  def getPartialSummaryReturn(atedRef: String): Action[AnyContent] = Action.async { implicit request =>
+  def getPartialSummaryReturn(atedRef: String): Action[AnyContent] = Action.async { _ =>
     returnSummaryService.getPartialSummaryReturn(atedRef) map {
       partSummaryReturn => Ok(Json.toJson(partSummaryReturn))
     }

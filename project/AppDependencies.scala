@@ -7,14 +7,14 @@ object AppDependencies {
 
   val compile: Seq[ModuleID] = Seq(
     ws,
-		"com.enragedginger" %% "akka-quartz-scheduler"      % "1.8.0-akka-2.5.x",
-    "uk.gov.hmrc"       %% "bootstrap-backend-play-27"  % "2.23.0",
+		"com.enragedginger" %% "akka-quartz-scheduler"      % "1.8.4-akka-2.6.x",
+    "uk.gov.hmrc"       %% "bootstrap-backend-play-27"  % "2.24.0",
     "uk.gov.hmrc"       %% "domain"                     % "5.9.0-play-27",
     "uk.gov.hmrc"       %% "simple-reactivemongo"       % "7.30.0-play-27",
     "uk.gov.hmrc"       %% "json-encryption"            % "4.8.0-play-27",
     "uk.gov.hmrc"       %% "auth-client"                % "3.0.0-play-27",
 		"uk.gov.hmrc"			  %% "mongo-lock"					        % "6.23.0-play-27",
-		"com.typesafe.play" %% "play-json-joda"             % "2.6.10"
+		"com.typesafe.play" %% "play-json-joda"             % "2.6.14"
   )
 
   trait TestDependencies {

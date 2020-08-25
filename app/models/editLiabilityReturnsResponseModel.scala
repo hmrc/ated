@@ -17,8 +17,7 @@
 package models
 
 import org.joda.time.DateTime
-import play.api.libs.functional.syntax._
-import play.api.libs.json.{Format, JsObject, JsPath, JsResult, JsValue, Json, OFormat, Reads, Writes}
+import play.api.libs.json.{Format, Json, Reads, Writes}
 
 
 case class EditLiabilityReturnsResponse(mode: String,
@@ -50,8 +49,8 @@ case class EditLiabilityReturnsResponseModel(processingDate: DateTime,
                                              accountBalance: BigDecimal)
 
 object EditLiabilityReturnsResponseModel {
-  import play.api.libs.json.JodaWrites.jodaDateWrites
   import play.api.libs.json.JodaReads.jodaDateReads
+  import play.api.libs.json.JodaWrites.jodaDateWrites
 
   val reads: Reads[DateTime] = jodaDateReads("yyyy-MM-dd'T'HH:mm:ss'Z'")
   val writes: Writes[DateTime] = jodaDateWrites("yyyy-MM-dd'T'HH:mm:ss'Z'")

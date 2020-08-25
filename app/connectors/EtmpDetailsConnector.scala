@@ -20,7 +20,7 @@ import audit.Auditable
 import javax.inject.Inject
 import metrics.{MetricsEnum, ServiceMetrics}
 import models._
-import play.api.Logger
+import play.api.Logging
 import play.api.http.Status._
 import play.api.libs.json.Json
 import uk.gov.hmrc.http._
@@ -28,7 +28,7 @@ import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.{Audit, EventTypes}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.HttpClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -52,7 +52,7 @@ class EtmpDetailsConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
   val saveRegistrationDetails: String = "registration/safeid"
 }
 
-trait EtmpDetailsConnector extends RawResponseReads with Auditable {
+trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging {
   def serviceUrl: String
   def urlHeaderEnvironment: String
   def urlHeaderAuthorization: String
@@ -77,8 +77,8 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable {
           case OK => metrics.incrementSuccessCounter(MetricsEnum.EtmpGetDetails)
           case status =>
             metrics.incrementFailedCounter(MetricsEnum.EtmpGetDetails)
-            Logger.warn(s"[EtmpDetailsConnector][getDetailsFromEtmp] - status: $status")
-            doHeaderEvent("getDetailsFromEtmpFailedHeaders", response.allHeaders)
+            logger.warn(s"[EtmpDetailsConnector][getDetailsFromEtmp] - status: $status")
+            doHeaderEvent("getDetailsFromEtmpFailedHeaders", response.headers)
             doFailedAudit("getDetailsFromEtmpFailed", getUrl, None, response.body)
         }
         response
@@ -90,14 +90,14 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable {
       case "safeid" => getDetailsFromEtmp(s"$serviceUrl/registration/details?safeid=$identifier")
       case "utr" => getDetailsFromEtmp(s"$serviceUrl/registration/details?utr=$identifier")
       case unknownIdentifier =>
-        Logger.warn(s"[EtmpDetailsConnector][getDetails] - unexpected identifier type supplied of $unknownIdentifier")
+        logger.warn(s"[EtmpDetailsConnector][getDetails] - unexpected identifier type supplied of $unknownIdentifier")
         throw new RuntimeException(s"[EtmpDetailsConnector][getDetails] - unexpected identifier type supplied of $unknownIdentifier")
     }
   }
 
 
   def getSubscriptionData(atedReferenceNo: String): Future[HttpResponse] = {
-    implicit val headerCarrier = createHeaderCarrier
+    implicit val headerCarrier: HeaderCarrier = createHeaderCarrier
     val getUrl = s"""$serviceUrl/$atedBaseURI/$retrieveSubscriptionData/$atedReferenceNo"""
 
     val timerContext = metrics.startTimer(MetricsEnum.EtmpGetSubscriptionData)
@@ -109,8 +109,8 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable {
           response
         case status =>
           metrics.incrementFailedCounter(MetricsEnum.EtmpGetSubscriptionData)
-          Logger.warn(s"[EtmpDetailsConnector][getSummaryReturns] - status: $status")
-          doHeaderEvent("getSubscriptionDataFailedHeaders", response.allHeaders)
+          logger.warn(s"[EtmpDetailsConnector][getSummaryReturns] - status: $status")
+          doHeaderEvent("getSubscriptionDataFailedHeaders", response.headers)
           doFailedAudit("getSubscriptionDataFailed", getUrl, None, response.body)
           response
       }
@@ -132,8 +132,8 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable {
           response
         case status =>
           metrics.incrementFailedCounter(MetricsEnum.EtmpUpdateSubscriptionData)
-          Logger.warn(s"[EtmpDetailsConnector][updateSubscriptionData] - status: $status")
-          doHeaderEvent("updateSubscriptionDataFailedHeaders", response.allHeaders)
+          logger.warn(s"[EtmpDetailsConnector][updateSubscriptionData] - status: $status")
+          doHeaderEvent("updateSubscriptionDataFailedHeaders", response.headers)
           doFailedAudit("updateSubscriptionDataFailed", putUrl, Some(jsonData.toString), response.body)
           response
       }
@@ -154,8 +154,8 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable {
           response
         case status =>
           metrics.incrementFailedCounter(MetricsEnum.EtmpUpdateRegistrationDetails)
-          Logger.warn(s"[EtmpDetailsConnector][updateRegistrationDetails] - status: $status")
-          doHeaderEvent("updateRegistrationDetailsFailedHeaders", response.allHeaders)
+          logger.warn(s"[EtmpDetailsConnector][updateRegistrationDetails] - status: $status")
+          doHeaderEvent("updateRegistrationDetailsFailedHeaders", response.headers)
           doFailedAudit("updateRegistrationDetailsFailed", putUrl, Some(jsonData.toString), response.body)
           response
       }

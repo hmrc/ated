@@ -20,7 +20,7 @@ import audit.Auditable
 import javax.inject.Inject
 import metrics.{MetricsEnum, ServiceMetrics}
 import models._
-import play.api.Logger
+import play.api.Logging
 import play.api.http.Status._
 import play.api.libs.json.{JsValue, Json}
 import uk.gov.hmrc.http._
@@ -28,7 +28,7 @@ import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.{Audit, EventTypes}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.HttpClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -51,7 +51,7 @@ class EtmpReturnsConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
   val formBundleReturns: String = "form-bundle"
 }
 
-trait EtmpReturnsConnector extends RawResponseReads with Auditable {
+trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging {
   def serviceUrl: String
   def urlHeaderEnvironment: String
   def urlHeaderAuthorization: String
@@ -84,8 +84,8 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable {
           response
         case status =>
           metrics.incrementFailedCounter(MetricsEnum.EtmpSubmitReturns)
-          Logger.warn(s"[EtmpReturnsConnector][submitReturns] - status: $status")
-          doHeaderEvent("submitReturnsFailedHeaders", response.allHeaders)
+          logger.warn(s"[EtmpReturnsConnector][submitReturns] - status: $status")
+          doHeaderEvent("submitReturnsFailedHeaders", response.headers)
           doFailedAudit("submitReturnsFailed", postUrl, Some(jsonData.toString), response.body)
           response
       }
@@ -93,7 +93,7 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable {
   }
 
   def getSummaryReturns(atedReferenceNo: String, years: Int): Future[HttpResponse] = {
-    implicit val headerCarrier = createHeaderCarrier
+    implicit val headerCarrier: HeaderCarrier = createHeaderCarrier
     val getUrl = s"""$serviceUrl/$baseURI/$getSummaryReturns/$atedReferenceNo?years=$years"""
 
     val timerContext = metrics.startTimer(MetricsEnum.EtmpGetSummaryReturns)
@@ -105,8 +105,8 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable {
           response
         case status =>
           metrics.incrementFailedCounter(MetricsEnum.EtmpGetSummaryReturns)
-          Logger.warn(s"[EtmpReturnsConnector][getSummaryReturns] - status: $status")
-          doHeaderEvent("getSummaryReturnsFailedHeaders", response.allHeaders)
+          logger.warn(s"[EtmpReturnsConnector][getSummaryReturns] - status: $status")
+          doHeaderEvent("getSummaryReturnsFailedHeaders", response.headers)
           doFailedAudit("getSummaryReturnsFailed", getUrl, None, response.body)
           response
       }
@@ -126,8 +126,8 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable {
           response
         case status =>
           metrics.incrementFailedCounter(MetricsEnum.EtmpGetFormBundleReturns)
-          Logger.warn(s"[EtmpReturnsConnector][getFormBundleReturns] - status: $status")
-          doHeaderEvent("getFormBundleReturnsFailedHeaders", response.allHeaders)
+          logger.warn(s"[EtmpReturnsConnector][getFormBundleReturns] - status: $status")
+          doHeaderEvent("getFormBundleReturnsFailedHeaders", response.headers)
           doFailedAudit("getFormBundleReturnsFailed", getUrl, None, response.body)
           response
       }
@@ -151,8 +151,8 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable {
           response
         case status =>
           metrics.incrementFailedCounter(MetricsEnum.EtmpSubmitEditedLiabilityReturns)
-          Logger.warn(s"[EtmpReturnsConnector][submitEditedLiabilityReturns] - status: $status, reason - ${response.json}")
-          doHeaderEvent("getSummaryReturnsFailed", response.allHeaders)
+          logger.warn(s"[EtmpReturnsConnector][submitEditedLiabilityReturns] - status: $status, reason - ${response.json}")
+          doHeaderEvent("getSummaryReturnsFailed", response.headers)
           doFailedAudit("submitEditedLiabilityReturnsFailed", putUrl, Some(jsonData.toString), response.body)
           response
       }

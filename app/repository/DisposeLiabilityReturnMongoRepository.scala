@@ -16,19 +16,15 @@
 
 package repository
 
-import java.time.LocalDate
-
-import akka.actor.Status.Success
 import javax.inject.{Inject, Singleton}
 import metrics.{MetricsEnum, ServiceMetrics}
 import models.DisposeLiabilityReturn
 import org.joda.time.{DateTime, DateTimeZone}
-import play.api.Logger
-import play.api.libs.json.{Format, Json, OFormat}
+import play.api.libs.json.{Json, OFormat}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.Cursor.FailOnError
-import reactivemongo.api.{Cursor, DB}
 import reactivemongo.api.indexes.{Index, IndexType}
+import reactivemongo.api.{Cursor, DB}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
@@ -91,12 +87,12 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics
 
   override def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: DateTime): Future[DisposeLiabilityReturnDelete] = {
     val query = BSONDocument("atedRefNo" -> liabilityReturn.atedRefNo, "id" -> liabilityReturn.id)
-    collection.update(query, liabilityReturn.copy(timeStamp = date), upsert = false, multi = false) map { res =>
+    collection.update(ordered = false).one(query, liabilityReturn.copy(timeStamp = date), upsert = false, multi = false) map { res =>
       if (res.ok && res.nModified != 0) {
-        Logger.info(s"[updateTimestamp] Updated timestamp for ${liabilityReturn.id} with $date")
+        logger.info(s"[updateTimestamp] Updated timestamp for ${liabilityReturn.id} with $date")
         DisposeLiabilityReturnDeleted
       } else {
-        Logger.error(s"[updateTimeStamp: LiabilityReturn] Mongo failed to update, problem occurred in collect - ex: $res")
+        logger.error(s"[updateTimeStamp: LiabilityReturn] Mongo failed to update, problem occurred in collect - ex: $res")
         DisposeLiabilityReturnDeleteError
       }
     }
@@ -106,19 +102,19 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics
     val query = BSONDocument("timeStamp" -> Json.obj("$lte" -> DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(61).toString()))
 
     val logOnError = Cursor.ContOnError[Seq[DisposeLiabilityReturn]]((_, ex) =>
-      Logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed, problem occurred in collect - ex: ${ex.getMessage}")
+      logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed, problem occurred in collect - ex: ${ex.getMessage}")
     )
-    val foundLiabilityReturns: Future[Seq[DisposeLiabilityReturn]] = collection.find(query)
+    val foundLiabilityReturns: Future[Seq[DisposeLiabilityReturn]] = collection.find(query, Option.empty)(BSONDocumentWrites, BSONDocumentWrites)
       .cursor[DisposeLiabilityReturn]()
       .collect[Seq](batchSize, logOnError)
 
     foundLiabilityReturns flatMap { returns =>
       Future.sequence(returns map { rtn =>
-        collection.remove(BSONDocument("atedRefNo" -> rtn.atedRefNo, "id" -> rtn.id)) map { res =>
+        collection.delete().one(BSONDocument("atedRefNo" -> rtn.atedRefNo, "id" -> rtn.id)) map { res =>
           if (res.ok && res.n == 1) {
             1
           } else {
-            Logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated liability return - ex: $res")
+            logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated liability return - ex: $res")
             0
           }
         }
@@ -129,7 +125,7 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics
   def cacheDisposeLiabilityReturns(disposeLiabilityReturn: DisposeLiabilityReturn): Future[DisposeLiabilityReturnCache] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryInsertDispLiability)
     val query = BSONDocument("atedRefNo" -> disposeLiabilityReturn.atedRefNo, "id" -> disposeLiabilityReturn.id)
-    collection.update(query, disposeLiabilityReturn.copy(timeStamp = DateTime.now(DateTimeZone.UTC)), upsert = true, multi = false).map { writeResult =>
+    collection.update(ordered = false).one(query, disposeLiabilityReturn.copy(timeStamp = DateTime.now(DateTimeZone.UTC)), upsert = true, multi = false).map { writeResult =>
       timerContext.stop()
       if (writeResult.ok) {
         DisposeLiabilityReturnCached
@@ -138,7 +134,7 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics
       }
     }.recover {
 
-      case e => Logger.warn("Failed to remove draft dispose liability", e)
+      case e => logger.warn("Failed to remove draft dispose liability", e)
         timerContext.stop()
         DisposeLiabilityReturnCacheError
 
@@ -150,7 +146,8 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics
     val query = BSONDocument("atedRefNo" -> atedRefNo)
 
     //TODO: Replace with find from ReactiveRepository
-    val result:Future[Seq[DisposeLiabilityReturn]] = collection.find(query).cursor[DisposeLiabilityReturn]().collect[Seq](maxDocs = -1, err = FailOnError[Seq[DisposeLiabilityReturn]]())
+    val result:Future[Seq[DisposeLiabilityReturn]] = collection.find(query, Option.empty)(BSONDocumentWrites, BSONDocumentWrites)
+      .cursor[DisposeLiabilityReturn]().collect[Seq](maxDocs = -1, err = FailOnError[Seq[DisposeLiabilityReturn]]())
 
     result onComplete {
       _ => timerContext.stop()
@@ -161,14 +158,14 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics
   def deleteDisposeLiabilityReturns(atedRefNo: String): Future[DisposeLiabilityReturnDelete] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryDeleteDispLiability)
     val query = BSONDocument("atedRefNo" -> atedRefNo)
-    collection.remove(query).map { removeResult =>
+    collection.delete().one(query).map { removeResult =>
       removeResult.ok match {
         case true => DisposeLiabilityReturnDeleted
         case _ => DisposeLiabilityReturnDeleteError
       }
     }.recover {
 
-      case e => Logger.warn("Failed to remove draft dispose liability", e)
+      case e => logger.warn("Failed to remove draft dispose liability", e)
         timerContext.stop()
         DisposeLiabilityReturnDeleteError
 

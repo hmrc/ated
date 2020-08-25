@@ -16,11 +16,12 @@
 
 package models
 
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsPath, JsSuccess, Json}
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig, PlainText, Protected}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig, Protected}
 
-class BankDetailModelsSpec extends PlaySpec with OneServerPerSuite {
+class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
 
   "BicSwiftCode" must {
 

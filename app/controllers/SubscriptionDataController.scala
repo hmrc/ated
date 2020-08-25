@@ -20,7 +20,7 @@ import javax.inject.{Inject, Singleton}
 import models.{UpdateRegistrationDetailsRequest, UpdateSubscriptionDataRequest}
 import play.api.mvc.ControllerComponents
 import services.SubscriptionDataService
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -38,7 +38,7 @@ trait SubscriptionDataController extends BackendController {
 
   def subscriptionDataService: SubscriptionDataService
 
-  def retrieveSubscriptionData(accountRef: String) = Action.async { implicit request =>
+  def retrieveSubscriptionData(accountRef: String) = Action.async { _ =>
     subscriptionDataService.retrieveSubscriptionData(accountRef) map { responseReceived =>
       responseReceived.status match {
         case OK => Ok(responseReceived.body)
@@ -64,7 +64,7 @@ trait SubscriptionDataController extends BackendController {
     }
   }
 
-  def retrieveSubscriptionDataByAgent(accountRef: String, agentCode: String) = Action.async { implicit request =>
+  def retrieveSubscriptionDataByAgent(accountRef: String, agentCode: String) = Action.async { _ =>
     subscriptionDataService.retrieveSubscriptionData(accountRef) map { responseReceived =>
       responseReceived.status match {
         case OK => Ok(responseReceived.body)
