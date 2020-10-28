@@ -38,7 +38,7 @@ class DisposeLiabilityReturnServiceImpl @Inject()(val etmpReturnsConnector: Etmp
                                                   val subscriptionDataService: SubscriptionDataService,
                                                   val emailConnector: EmailConnector
                                                  ) extends DisposeLiabilityReturnService {
-  val disposeLiabilityReturnRepository: DisposeLiabilityReturnMongoRepository = disposeLiabilityReturnMongoWrapper()
+  lazy val disposeLiabilityReturnRepository: DisposeLiabilityReturnMongoRepository = disposeLiabilityReturnMongoWrapper()
 }
 
 trait DisposeLiabilityReturnService extends NotificationService with AuthFunctionality with Logging {

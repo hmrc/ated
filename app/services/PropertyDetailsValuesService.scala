@@ -29,7 +29,7 @@ import scala.concurrent.Future
 class PropertyDetailsValuesServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnector,
                                                  val authConnector: AuthConnector,
                                                  val propertyDetails: PropertyDetailsMongoWrapper) extends PropertyDetailsValuesService {
-  val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetails()
+  lazy val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetails()
 }
 
 trait PropertyDetailsValuesService extends ReliefConstants {

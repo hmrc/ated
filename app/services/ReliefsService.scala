@@ -34,7 +34,7 @@ class ReliefsServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnector,
                                    val subscriptionDataService: SubscriptionDataService,
                                    val emailConnector: EmailConnector,
                                    val reliefRepo: ReliefsMongoWrapper) extends ReliefsService {
-  val reliefsCache: ReliefsMongoRepository = reliefRepo()
+ lazy val reliefsCache: ReliefsMongoRepository = reliefRepo()
 }
 
 trait ReliefsService extends NotificationService with AuthFunctionality {
