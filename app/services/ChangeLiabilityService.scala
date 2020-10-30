@@ -36,7 +36,7 @@ class ChangeLiabilityServiceImpl @Inject()(val propertyDetailsMongoWrapper: Prop
                                            val authConnector: AuthConnector,
                                            val subscriptionDataService: SubscriptionDataService,
                                            val emailConnector: EmailConnector) extends ChangeLiabilityService {
-  val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetailsMongoWrapper()
+  lazy val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetailsMongoWrapper()
 }
 
 case class NoLiabilityAmountException(message: String) extends Exception

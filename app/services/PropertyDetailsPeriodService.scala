@@ -30,7 +30,7 @@ import scala.concurrent.Future
 class PropertyDetailsPeriodServiceImpl @Inject()(val propertyDetailsMongoWrapper: PropertyDetailsMongoWrapper,
                                                  val etmpConnector: EtmpReturnsConnector,
                                                  val authConnector: AuthConnector) extends PropertyDetailsPeriodService {
-  val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetailsMongoWrapper()
+  lazy val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetailsMongoWrapper()
 }
 
 trait PropertyDetailsPeriodService extends ReliefConstants {

@@ -35,7 +35,7 @@ class PropertyDetailsServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnect
                                            val subscriptionDataService: SubscriptionDataService,
                                            val emailConnector: EmailConnector,
                                            val propertyDetailsMongoWrapper: PropertyDetailsMongoWrapper) extends PropertyDetailsService {
-  val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetailsMongoWrapper()
+  lazy val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetailsMongoWrapper()
 }
 
 trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConstants with NotificationService with AuthFunctionality {
