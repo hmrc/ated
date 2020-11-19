@@ -19,7 +19,6 @@ package builders
 import models.{Reliefs, ReliefsTaxAvoidance, TaxAvoidance}
 import org.joda.time.LocalDate
 
-
 object ReliefBuilder {
 
   def reliefTaxAvoidance(atedRefNo: String, periodKey: Int): ReliefsTaxAvoidance = {
