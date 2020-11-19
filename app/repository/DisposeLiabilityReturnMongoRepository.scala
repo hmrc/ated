@@ -45,7 +45,6 @@ case object DisposeLiabilityReturnDeleteError extends DisposeLiabilityReturnDele
 trait DisposeLiabilityReturnMongoRepository extends ReactiveRepository[DisposeLiabilityReturn, BSONObjectID] {
   def cacheDisposeLiabilityReturns(disposeLiabilityReturn: DisposeLiabilityReturn): Future[DisposeLiabilityReturnCache]
   def fetchDisposeLiabilityReturns(atedRefNo: String): Future[Seq[DisposeLiabilityReturn]]
-  def deleteDisposeLiabilityReturns(atedRefNo: String): Future[DisposeLiabilityReturnDelete]
   def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: DateTime): Future[DisposeLiabilityReturnDelete]
   def deleteExpired60DayLiabilityReturns(batchSize: Int): Future[Int]
   def metrics: ServiceMetrics
@@ -154,23 +153,4 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics
     }
     result
   }
-
-  def deleteDisposeLiabilityReturns(atedRefNo: String): Future[DisposeLiabilityReturnDelete] = {
-    val timerContext = metrics.startTimer(MetricsEnum.RepositoryDeleteDispLiability)
-    val query = BSONDocument("atedRefNo" -> atedRefNo)
-    collection.delete().one(query).map { removeResult =>
-      removeResult.ok match {
-        case true => DisposeLiabilityReturnDeleted
-        case _ => DisposeLiabilityReturnDeleteError
-      }
-    }.recover {
-
-      case e => logger.warn("Failed to remove draft dispose liability", e)
-        timerContext.stop()
-        DisposeLiabilityReturnDeleteError
-
-    }
-  }
-
-
 }

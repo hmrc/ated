@@ -46,7 +46,6 @@ trait PropertyDetailsMongoRepository extends ReactiveRepository[PropertyDetails,
   def cachePropertyDetails(propertyDetails: PropertyDetails): Future[PropertyDetailsCache]
   def fetchPropertyDetails(atedRefNo: String): Future[Seq[PropertyDetails]]
   def fetchPropertyDetailsById(atedRefNo: String, id: String): Future[Seq[PropertyDetails]]
-  def deletePropertyDetails(atedRefNo: String): Future[PropertyDetailsDelete]
   def deleteExpired60PropertyDetails(batchSize: Int): Future[Int]
   def deletePropertyDetailsByfieldName(atedRefNo: String, id: String): Future[PropertyDetailsDelete]
   def updateTimeStamp(propertyDetails: PropertyDetails, date: DateTime): Future[PropertyDetailsCache]
@@ -152,8 +151,6 @@ class PropertyDetailsReactiveMongoRepository(mongo: () => DB, val metrics: Servi
     result
   }
 
-
-
   def fetchPropertyDetailsById(atedRefNo: String, id: String): Future[Seq[PropertyDetails]] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchPropDetails)
     val query = BSONDocument("atedRefNo" -> atedRefNo, "id" -> id)
@@ -166,28 +163,6 @@ class PropertyDetailsReactiveMongoRepository(mongo: () => DB, val metrics: Servi
     }
     result
   }
-
-
-
-  def deletePropertyDetails(atedRefNo: String): Future[PropertyDetailsDelete] = {
-    val timerContext = metrics.startTimer(MetricsEnum.RepositoryDeletePropDetails)
-    val query = BSONDocument("atedRefNo" -> atedRefNo)
-    collection.delete().one(query).map { removeResult =>
-      if (removeResult.ok) {
-        PropertyDetailsDeleted
-      } else {
-        PropertyDetailsDeleteError
-      }
-    }.recover {
-
-      case e => logger.warn("Failed to remove property details", e)
-        timerContext.stop()
-        PropertyDetailsDeleteError
-
-    }
-  }
-
-
 
   def deletePropertyDetailsByfieldName(atedRefNo: String, id: String): Future[PropertyDetailsDelete] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryDeletePropDetailsByFieldName)
@@ -204,7 +179,4 @@ class PropertyDetailsReactiveMongoRepository(mongo: () => DB, val metrics: Servi
         PropertyDetailsDeleteError
     }
   }
-
-
-
 }
