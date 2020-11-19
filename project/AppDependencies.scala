@@ -7,7 +7,7 @@ object AppDependencies {
 
   val compile: Seq[ModuleID] = Seq(
     ws,
-		"com.enragedginger" %% "akka-quartz-scheduler"      % "1.8.4-akka-2.6.x",
+		"com.enragedginger" %% "akka-quartz-scheduler"      % "1.8.5-akka-2.6.x",
     "uk.gov.hmrc"       %% "bootstrap-backend-play-27"  % "2.24.0",
     "uk.gov.hmrc"       %% "domain"                     % "5.9.0-play-27",
     "uk.gov.hmrc"       %% "simple-reactivemongo"       % "7.30.0-play-27",
@@ -25,7 +25,7 @@ object AppDependencies {
   object Test {
     def apply(): Seq[ModuleID] = new TestDependencies {
       override lazy val test: Seq[ModuleID] = Seq(
-        "org.scalatest"           %% "scalatest"          % "3.0.8"             % scope,
+        "org.scalatest"           %% "scalatest"          % "3.0.9"             % scope,
         "org.scalatestplus.play"  %% "scalatestplus-play" % "3.1.3"             % scope,
         "org.pegdown"              % "pegdown"            % "1.6.0"             % scope,
         "org.mockito"              % "mockito-core"       % "3.3.3"            % scope,
