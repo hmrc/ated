@@ -23,10 +23,11 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.JsValue
+import play.api.mvc.MessagesControllerComponents
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HttpClient, _}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
@@ -37,6 +38,7 @@ class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
       val http: HttpClient = mockWSHttp
       override val serviceUrl: String = ""
       override val sendEmailUri: String = ""
+
     }
 
     val connector = new TestEmailConnector()
@@ -51,7 +53,10 @@ class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
     "return a 202 accepted" when {
 
       "correct emailId Id is passed" in new Setup {
+        val mockMcc: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]
+        implicit val ec: ExecutionContext = mockMcc.executionContext
         implicit val hc: HeaderCarrier = HeaderCarrier()
+
         val emailString = "test@mail.com"
         val templateId = "relief_return_submit"
         val params = Map("testParam" -> "testParam")
@@ -70,6 +75,8 @@ class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
     "return other status" when {
 
       "incorrect email Id are passed" in new Setup {
+        val mockMcc: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]
+        implicit val ec: ExecutionContext = mockMcc.executionContext
         implicit val hc: HeaderCarrier = HeaderCarrier()
         val invalidEmailString = "test@test1.com"
         val templateId = "relief_return_submit"
@@ -81,10 +88,7 @@ class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
 
         val response = connector.sendTemplatedEmail(invalidEmailString, templateId, params)
         await(response) must be(EmailNotSent)
-
       }
-
     }
-
   }
 }

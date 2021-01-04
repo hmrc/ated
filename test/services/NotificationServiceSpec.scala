@@ -16,20 +16,23 @@
 
 package services
 
+import connectors.mocks.MockAuthConnector
 import connectors.{EmailConnector, EmailNotSent, EmailSent}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
-import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.Json
 import play.api.test.Helpers._
+import uk.gov.hmrc.auth.core.AuthorisedFunctions
+import uk.gov.hmrc.auth.core.retrieve.Name
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.Future
 
-class NotificationServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
+class NotificationServiceSpec extends PlaySpec with GuiceOneServerPerSuite with BeforeAndAfterEach with MockAuthConnector {
 
   val mockEmailConnector = mock[EmailConnector]
 
@@ -37,10 +40,13 @@ class NotificationServiceSpec extends PlaySpec with GuiceOneServerPerSuite with 
     reset(mockEmailConnector)
   }
 
-  trait Setup {
+  val name = Some(Name(Some("gary"),Some("bloggs")))
+  val noName:Option[Name] = None
 
-    class TestNotificationService extends NotificationService {
+  trait Setup {
+    class TestNotificationService extends NotificationService with AuthorisedFunctions {
       override val emailConnector = mockEmailConnector
+      override val authConnector = mockAuthConnector
     }
 
     val testNotificationService = new TestNotificationService()
@@ -50,8 +56,19 @@ class NotificationServiceSpec extends PlaySpec with GuiceOneServerPerSuite with 
 
     implicit val hc = HeaderCarrier()
 
-    "send email when email address present" in new Setup {
+    "send email when email address present and name is present" in new Setup {
       when(mockEmailConnector.sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
+      mockAuthorise(retrievals = Retrievals.name)(Future.successful(name))
+
+      val json = Json.parse( """{"safeId":"1111111111","organisationName":"Test Org","address":[{"name1":"name1","name2":"name2","addressDetails":{"addressType":"Correspondence","addressLine1":"address line 1","addressLine2":"address line 2","addressLine3":"address line 3","addressLine4":"address line 4","postalCode":"ZZ1 1ZZ","countryCode":"GB"},"contactDetails":{"phoneNumber":"01234567890","mobileNumber":"0712345678","emailAddress":"test@mail.com"}}]}""")
+      await(testNotificationService.sendMail(json, "")) must be(EmailSent)
+      verify(mockEmailConnector, times(1)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
+    }
+
+    "send email when email address present and name is not present" in new Setup {
+      when(mockEmailConnector.sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
+      mockAuthorise(retrievals = Retrievals.name)(Future.successful(noName))
+
       val json = Json.parse( """{"safeId":"1111111111","organisationName":"Test Org","address":[{"name1":"name1","name2":"name2","addressDetails":{"addressType":"Correspondence","addressLine1":"address line 1","addressLine2":"address line 2","addressLine3":"address line 3","addressLine4":"address line 4","postalCode":"ZZ1 1ZZ","countryCode":"GB"},"contactDetails":{"phoneNumber":"01234567890","mobileNumber":"0712345678","emailAddress":"test@mail.com"}}]}""")
       await(testNotificationService.sendMail(json, "")) must be(EmailSent)
     }

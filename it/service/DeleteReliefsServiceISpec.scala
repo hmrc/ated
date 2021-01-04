@@ -73,7 +73,7 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
         stubAuthPost
 
         await(createRelief)
-        await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), DateTime.parse("2020-10-10")))
+        await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), DateTime.parse("2021-10-10")))
         val deleteCount = await(deleteReliefsService.invoke())
         val retrieve = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
 

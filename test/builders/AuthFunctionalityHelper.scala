@@ -17,8 +17,11 @@
 package builders
 
 import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.scalatestplus.mockito.MockitoSugar
+import uk.gov.hmrc.auth.core.retrieve.~
+import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 
 import scala.concurrent.Future
@@ -27,7 +30,6 @@ trait AuthFunctionalityHelper {
   self: MockitoSugar =>
 
   val mockAuthConnector: AuthConnector
-
   val enrolment = Enrolment("HMRC-AGENT-AGENT", Seq(EnrolmentIdentifier("test", "test")), "Activated")
 
   def mockRetrievingAuthRef(): Unit = {
@@ -39,5 +41,4 @@ trait AuthFunctionalityHelper {
     when(mockAuthConnector.authorise[Enrolments](ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
       .thenReturn(Future.successful(Enrolments(Set())))
   }
-
 }

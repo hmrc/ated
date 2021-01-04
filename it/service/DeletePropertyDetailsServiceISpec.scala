@@ -77,7 +77,7 @@ class DeletePropertyDetailsServiceISpec extends IntegrationSpec with AssertionHe
     "not delete any drafts" when {
       "the draft has only just been added for 60days" in new Setup {
         val draft = await(createDraftProperty60)
-        await(repo.updateTimeStamp(createPropertyDetails60(draft.json, address), DateTime.parse("2020-10-10")))
+        await(repo.updateTimeStamp(createPropertyDetails60(draft.json, address), DateTime.parse("2021-10-10")))
         val deleteCount = await(documentUpdateService.invoke())
         val foundDraft = await(hitApplicationEndpoint(s"/ated/ATE1234568XX/property-details/retrieve/${(draft.json \ "id").as[String]}").get())
 

@@ -18,6 +18,7 @@ package utils
 
 import models.{ClientsAgent, RelationshipDetails}
 import org.joda.time.LocalDate
+import uk.gov.hmrc.auth.core.retrieve.Name
 import utils.AtedConstants._
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.logging.SessionId
@@ -56,4 +57,9 @@ object AtedUtils {
 
     LocalDate.parse(s"$year-4-1")
   }
+
+  def extractName(authName: Option[Name]): String = authName.flatMap(_.name).getOrElse("No first name present")
+
+  def extractLastName(authName: Option[Name]): String = authName.flatMap(_.lastName).getOrElse("No last name present")
+
 }
