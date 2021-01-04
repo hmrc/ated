@@ -73,7 +73,7 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
           case OK =>
             deleteAllDraftReliefByYear(atedRefNo, periodKey)
             val references = (submitResponse.json \\ "formBundleNumber").map(x => x.as[String]).mkString(",")
-            sendMail(subscriptionData.json, "relief_return_submit", Map("reference" -> references))
+            sendMail(subscriptionData.json, "relief_return_submit", Map("reference" -> references))//TODO refactor into a future
             submitResponse
           case _ => submitResponse
         }

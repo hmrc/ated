@@ -16,7 +16,7 @@
 
 package services
 
-import connectors.{EmailConnector, EtmpReturnsConnector}
+import connectors.{EmailConnector, EmailSent, EtmpReturnsConnector}
 import javax.inject.Inject
 import models._
 import play.api.Logging
@@ -90,7 +90,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
   }
 
   def updateDraftDisposeLiabilityReturnDate(atedRefNo: String, oldFormBundleNo: String, updatedDate: DisposeLiability)
-                                           : Future[Option[DisposeLiabilityReturn]] = {
+  : Future[Option[DisposeLiabilityReturn]] = {
     for {
       disposeLiabilityReturnList <- retrieveDraftDisposeLiabilityReturns(atedRefNo)
       disposeLiabilityOpt <- {
@@ -107,7 +107,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
   }
 
   def updateDraftDisposeHasBankDetails(atedRefNo: String, oldFormBundleNo: String, hasBankDetails: Boolean)
-                                      : Future[Option[DisposeLiabilityReturn]] = {
+  : Future[Option[DisposeLiabilityReturn]] = {
     val disposeLiabilityReturnListFuture = retrieveDraftDisposeLiabilityReturns(atedRefNo)
     for {
       disposeLiabilityReturnList <- disposeLiabilityReturnListFuture
@@ -131,7 +131,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
 
 
   def updateDraftDisposeBankDetails(atedRefNo: String, oldFormBundleNo: String, updatedValue: BankDetails)
-                                   : Future[Option[DisposeLiabilityReturn]] = {
+  : Future[Option[DisposeLiabilityReturn]] = {
     import models.BankDetailsConversions._
     val disposeLiabilityReturnListFuture = retrieveDraftDisposeLiabilityReturns(atedRefNo)
     for {
@@ -178,7 +178,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
 
 
   def getPreCalculationAmounts(atedRefNo: String, x: FormBundleReturn, disposalDate: DisposeLiability, oldFormBNo: String, agentRefNo: Option[String] = None)
-                              : Future[DisposeCalculated] = {
+  : Future[DisposeCalculated] = {
     def generateEditReturnRequest: EditLiabilityReturnsRequestModel = {
       val liabilityReturn = EditLiabilityReturnsRequest(oldFormBundleNumber = oldFormBNo,
         mode = PreCalculation,
@@ -251,7 +251,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
         EditLiabilityReturnsRequestModel(acknowledgmentReference = getUniqueAckNo, agentReferenceNumber = agentRefNo, liabilityReturn = Seq(liabilityReturn))
       }
 
-      for {
+      (for {
         disposeLiabilityReturnList <- disposeLiabilityReturnListFuture
         submitStatus: HttpResponse <- {
           disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
@@ -263,18 +263,19 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
       } yield {
         submitStatus.status match {
           case OK =>
-            deleteDisposeLiabilityDraft(atedRefNo, oldFormBundleNo)
-            sendMail(subscriptionData.json, "disposal_return_submit")
-            HttpResponse(
+            for {
+              _ <- deleteDisposeLiabilityDraft(atedRefNo, oldFormBundleNo)
+              _ <- sendMail(subscriptionData.json, "disposal_return_submit")
+            } yield HttpResponse(
               submitStatus.status,
               json = Json.toJson(submitStatus.json.as[EditLiabilityReturnsResponseModel]),
-              headers = submitStatus.headers,
+              headers = submitStatus.headers
             )
           case someStatus =>
             logger.warn(s"[DisposeLiabilityReturnService][submitDisposeLiability] status = $someStatus body = ${submitStatus.body}")
-            submitStatus
+            Future.successful(submitStatus)
         }
-      }
+      }).flatten
     }
   }
 

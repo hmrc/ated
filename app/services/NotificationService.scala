@@ -20,28 +20,52 @@ import connectors.{EmailConnector, EmailNotSent, EmailStatus}
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import play.api.libs.json.JsValue
-
-import scala.concurrent.Future
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
+import uk.gov.hmrc.auth.core.retrieve.{Name, ~}
 import uk.gov.hmrc.http.HeaderCarrier
+import utils.AuthFunctionality
 
-trait NotificationService {
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
+trait NotificationService extends AuthFunctionality with Retrievals {
+
+  def extractName(authName: Option[Name]): String = {
+    authName match {
+      case Some(Name(Some(_),_)) => authName.get.name.getOrElse("No first name present")
+      case _ => "No first name present"
+    }
+  }
+
+  def extractLastName(authName: Option[Name]): String = {
+    authName match {
+      case Some(Name(_,Some(_))) => authName.get.lastName.getOrElse("No last name present")
+      case _ => "No last name present"
+    }
+  }
 
   def emailConnector: EmailConnector
 
   def sendMail(subscriptionData: JsValue, template: String, reference: Map[String, String] = Map.empty)(implicit hc: HeaderCarrier): Future[EmailStatus] = {
-
     val emailAddressJson = (subscriptionData \\ "emailAddress").headOption
-
-    emailAddressJson match {
-      case Some(x) =>
-
-        val emailAddress = x.as[String]
-        val companyName = (subscriptionData \ "organisationName").as[String]
-        val params = Map("company_name" -> companyName,
-          "date" -> DateTimeFormat.forPattern("d MMMM yyyy").print(new LocalDate()))
-
-        emailConnector.sendTemplatedEmail(emailAddress, template, params = params ++ reference)
-      case _ => Future.successful(EmailNotSent)
+    authorised().retrieve(Retrievals.name) {
+      case fullName =>
+        emailAddressJson match {
+          case Some(x) =>
+            val emailAddress = x.as[String]
+            val recipientFirstName = extractName(fullName)
+            val recipientLastName = extractLastName(fullName)
+            val companyName = (subscriptionData \ "organisationName").as[String]
+            val params = Map(
+              "first_name" -> recipientFirstName,
+              "last_name" -> recipientLastName,
+              "company_name" -> companyName,
+              "date" -> DateTimeFormat.forPattern("d MMMM yyyy").print(new LocalDate()))
+            emailConnector.sendTemplatedEmail(emailAddress, template, params = params ++ reference)
+          case _ => {
+            Future.successful(EmailNotSent)
+          }
+        }
     }
   }
 }

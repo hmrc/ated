@@ -32,7 +32,8 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import reactivemongo.api.commands.WriteResult
 import repository.{PropertyDetailsCached, PropertyDetailsMongoRepository}
-import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.auth.core.retrieve.{Name, ~}
+import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.mongo.DatabaseUpdate
 
@@ -210,8 +211,14 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       "return status OK, if return found in cache and submitted correctly and then deleted from cache" in new Setup {
         val calc1 = generateCalculated
         val changeLiability1Changed = changeLiability1.copy(calculated = Some(calc1))
+
+        type Retrieval = Option[Name]
+        val testEnrolments: Set[Enrolment] = Set(Enrolment("HMRC-ATED-ORG", Seq(EnrolmentIdentifier("AgentRefNumber", "XN1200000100001")), "activated"))
+        val name = Name(Some("gary"),Some("bloggs"))
+        val enrolmentsWithName: Retrieval = Some(name)
+
         when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(changeLiability1Changed, changeLiability2)))
-        mockRetrievingNoAuthRef
+        when(mockAuthConnector.authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
         when(mockPropertyDetailsCache.cachePropertyDetails(any[PropertyDetails]()))
           .thenReturn(Future.successful(PropertyDetailsCached))
         val respModel = generateEditLiabilityReturnResponse(formBundle1)
