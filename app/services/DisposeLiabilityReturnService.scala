@@ -251,7 +251,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
         EditLiabilityReturnsRequestModel(acknowledgmentReference = getUniqueAckNo, agentReferenceNumber = agentRefNo, liabilityReturn = Seq(liabilityReturn))
       }
 
-      (for {
+      for {
         disposeLiabilityReturnList <- disposeLiabilityReturnListFuture
         submitStatus: HttpResponse <- {
           disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
@@ -263,19 +263,18 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
       } yield {
         submitStatus.status match {
           case OK =>
-            for {
-              _ <- deleteDisposeLiabilityDraft(atedRefNo, oldFormBundleNo)
-              _ <- sendMail(subscriptionData.json, "disposal_return_submit")
-            } yield HttpResponse(
+            deleteDisposeLiabilityDraft(atedRefNo, oldFormBundleNo)
+            sendMail(subscriptionData.json, "disposal_return_submit")
+            HttpResponse(
               submitStatus.status,
               json = Json.toJson(submitStatus.json.as[EditLiabilityReturnsResponseModel]),
-              headers = submitStatus.headers
+              headers = submitStatus.headers,
             )
           case someStatus =>
             logger.warn(s"[DisposeLiabilityReturnService][submitDisposeLiability] status = $someStatus body = ${submitStatus.body}")
-            Future.successful(submitStatus)
+            submitStatus
         }
-      }).flatten
+      }
     }
   }
 
