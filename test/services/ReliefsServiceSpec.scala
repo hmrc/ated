@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import builders.{AuthFunctionalityHelper, ReliefBuilder}
 import connectors.{EmailConnector, EmailSent, EtmpReturnsConnector}
 import models.{Reliefs, TaxAvoidance}
 import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
@@ -29,7 +30,8 @@ import play.api.libs.json.Json
 import play.api.test.Helpers._
 import reactivemongo.api.commands.WriteResult
 import repository.{ReliefCached, ReliefDeleted, ReliefsMongoRepository}
-import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.auth.core.retrieve.Name
+import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.Future
@@ -104,6 +106,7 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
 
         when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq()))
         when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, "")))
+        when(mockAuthConnector.authorise[Option[String]](any(), any())(any(), any())).thenReturn(Future.successful(Some("Name")))
 
         when(mockReliefsCache.deleteReliefs(ArgumentMatchers.anyString())).thenReturn(Future.successful(ReliefDeleted))
         mockRetrievingNoAuthRef
@@ -116,7 +119,12 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
       }
 
       "submit cached Reliefs and delete them if this submit works" in new Setup {
-        implicit val hc = new HeaderCarrier()
+        implicit val hc = HeaderCarrier()
+
+        type Retrieval = Option[Name]
+        val testEnrolments: Set[Enrolment] = Set(Enrolment("HMRC-ATED-ORG", Seq(EnrolmentIdentifier("AgentRefNumber", "XN1200000100001")), "activated"))
+        val name = Name(Some("gary"),Some("bloggs"))
+        val enrolmentsWithName: Retrieval = Some(name)
 
         val reliefs = new Reliefs(periodKey = periodKey, rentalBusiness = true,
           openToPublic = true,
@@ -128,12 +136,12 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
           socialHousing = true)
 
         val taxAvoidance = new TaxAvoidance(rentalBusinessScheme = Some("Scheme123"),
-          socialHousingScheme = Some("Scheme789"))
+            socialHousingScheme = Some("Scheme789"))
 
         val reliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(accountRef, periodKey, reliefs, taxAvoidance)
         when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq(reliefsTaxAvoidance)))
         when(mockReliefsCache.cacheRelief(ArgumentMatchers.any())).thenReturn(Future.successful(ReliefCached))
-        mockRetrievingNoAuthRef
+        when(mockAuthConnector.authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
         when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         when(mockEmailConnector.sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
         when(mockReliefsCache.deleteDraftReliefByYear(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(ReliefDeleted))

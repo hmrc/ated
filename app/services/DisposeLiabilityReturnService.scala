@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package services
 
-import connectors.{EmailConnector, EtmpReturnsConnector}
+import connectors.{EmailConnector, EmailSent, EtmpReturnsConnector}
 import javax.inject.Inject
 import models._
 import play.api.Logging
@@ -90,7 +90,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
   }
 
   def updateDraftDisposeLiabilityReturnDate(atedRefNo: String, oldFormBundleNo: String, updatedDate: DisposeLiability)
-                                           : Future[Option[DisposeLiabilityReturn]] = {
+  : Future[Option[DisposeLiabilityReturn]] = {
     for {
       disposeLiabilityReturnList <- retrieveDraftDisposeLiabilityReturns(atedRefNo)
       disposeLiabilityOpt <- {
@@ -107,7 +107,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
   }
 
   def updateDraftDisposeHasBankDetails(atedRefNo: String, oldFormBundleNo: String, hasBankDetails: Boolean)
-                                      : Future[Option[DisposeLiabilityReturn]] = {
+  : Future[Option[DisposeLiabilityReturn]] = {
     val disposeLiabilityReturnListFuture = retrieveDraftDisposeLiabilityReturns(atedRefNo)
     for {
       disposeLiabilityReturnList <- disposeLiabilityReturnListFuture
@@ -131,7 +131,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
 
 
   def updateDraftDisposeBankDetails(atedRefNo: String, oldFormBundleNo: String, updatedValue: BankDetails)
-                                   : Future[Option[DisposeLiabilityReturn]] = {
+  : Future[Option[DisposeLiabilityReturn]] = {
     import models.BankDetailsConversions._
     val disposeLiabilityReturnListFuture = retrieveDraftDisposeLiabilityReturns(atedRefNo)
     for {
@@ -178,7 +178,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
 
 
   def getPreCalculationAmounts(atedRefNo: String, x: FormBundleReturn, disposalDate: DisposeLiability, oldFormBNo: String, agentRefNo: Option[String] = None)
-                              : Future[DisposeCalculated] = {
+  : Future[DisposeCalculated] = {
     def generateEditReturnRequest: EditLiabilityReturnsRequestModel = {
       val liabilityReturn = EditLiabilityReturnsRequest(oldFormBundleNumber = oldFormBNo,
         mode = PreCalculation,

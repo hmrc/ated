@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import play.api.libs.json.Json
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.http.HttpClient
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -33,7 +32,7 @@ case object EmailSent extends EmailStatus
 case object EmailNotSent extends EmailStatus
 
 class EmailConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
-                                      val http: HttpClient) extends EmailConnector {
+                                   val http: HttpClient) extends EmailConnector {
   val serviceUrl: String = servicesConfig.baseUrl("email")
   val sendEmailUri: String = "hmrc/email"
 }
@@ -44,7 +43,6 @@ trait EmailConnector extends RawResponseReads with Logging {
   val http: HttpClient
 
   def sendTemplatedEmail(emailAddress: String, templateName: String, params: Map[String, String])(implicit hc: HeaderCarrier): Future[EmailStatus] = {
-
     val sendEmailReq = SendEmailRequest(List(emailAddress), templateName, params, force = true)
 
     val postUrl = s"$serviceUrl/$sendEmailUri"

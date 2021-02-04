@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package utils
 import models.{ClientsAgent, IndividualRelationship, OrganisationRelationship, RelationshipDetails}
 import org.joda.time.LocalDate
 import org.scalatestplus.play.PlaySpec
+import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.logging.SessionId
 
@@ -180,4 +181,37 @@ class AtedUtilsSpec extends PlaySpec {
     }
   }
 
+  "extractName" must {
+    val nameMissingFirstName = Some(Name(None,Some("bloggs")))
+    val nameNone = None
+    val name = Some(Name(Some("gary"),Some("bloggs")))
+    "return the first name when present" in {
+      AtedUtils.extractName(name) must be("gary")
+    }
+
+    "return a string saying there is no first name" in  {
+      AtedUtils.extractName(nameMissingFirstName) must be("No first name present")
+    }
+
+    "return a string saying there is no first name when None is returned from auth" in {
+      AtedUtils.extractName(nameNone) must be("No first name present")
+    }
+  }
+
+  "extractLastName" must {
+    val nameMissingLastName = Some(Name(Some("gary"),None))
+    val nameNone = None
+    val name = Some(Name(Some("gary"),Some("bloggs")))
+    "return the second name when present" in  {
+      AtedUtils.extractLastName(name) must be("bloggs")
+    }
+
+    "return a string saying there is no last name" in {
+      AtedUtils.extractLastName(nameMissingLastName) must be("No last name present")
+    }
+
+    "return a string saying there is no second name when None is returned from auth" in {
+      AtedUtils.extractLastName(nameNone) must be("No last name present")
+    }
+  }
 }
