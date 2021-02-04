@@ -16,7 +16,7 @@
 
 package services
 
-import connectors.{EmailConnector, EmailSent, EtmpReturnsConnector}
+import connectors.{EmailConnector, EtmpReturnsConnector}
 import javax.inject.Inject
 import models._
 import play.api.Logging
@@ -219,8 +219,13 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
           case Some(_) =>
             val filteredList = disposeLiabilityReturnList.filterNot(_.id == oldFormBundleNo)
             filteredList
-              .map { dispLiab => disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(dispLiab)
-              .flatMap(_ => Future.successful(filteredList)) }.head
+              .map {
+                dispLiab =>
+                  disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(dispLiab)
+                    .flatMap(
+                      _ => Future.successful(filteredList)
+                    )
+              }.headOption getOrElse Future.successful(Nil)
           case None => Future.successful(Nil)
         }
       }
@@ -234,7 +239,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
     retrieveAgentRefNumberFor { agentRefNo =>
       val disposeLiabilityReturnListFuture = retrieveDraftDisposeLiabilityReturns(atedRefNo)
 
-      def generateEditReturnRequest(x: DisposeLiabilityReturn, agentRefNo: Option[String]) = {
+      def generateEditReturnRequest(x: DisposeLiabilityReturn, agentRefNo: Option[String]): EditLiabilityReturnsRequestModel = {
         val liabilityReturn = EditLiabilityReturnsRequest(oldFormBundleNumber = oldFormBundleNo,
           mode = Post,
           periodKey = x.formBundleReturn.periodKey,
@@ -251,7 +256,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
         EditLiabilityReturnsRequestModel(acknowledgmentReference = getUniqueAckNo, agentReferenceNumber = agentRefNo, liabilityReturn = Seq(liabilityReturn))
       }
 
-      for {
+      (for {
         disposeLiabilityReturnList <- disposeLiabilityReturnListFuture
         submitStatus: HttpResponse <- {
           disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
@@ -263,18 +268,19 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
       } yield {
         submitStatus.status match {
           case OK =>
-            deleteDisposeLiabilityDraft(atedRefNo, oldFormBundleNo)
-            sendMail(subscriptionData.json, "disposal_return_submit")
-            HttpResponse(
+            for {
+              _ <- deleteDisposeLiabilityDraft(atedRefNo, oldFormBundleNo)
+              _ <- sendMail(subscriptionData.json, "disposal_return_submit")
+            } yield HttpResponse(
               submitStatus.status,
               json = Json.toJson(submitStatus.json.as[EditLiabilityReturnsResponseModel]),
-              headers = submitStatus.headers,
+              headers = submitStatus.headers
             )
           case someStatus =>
             logger.warn(s"[DisposeLiabilityReturnService][submitDisposeLiability] status = $someStatus body = ${submitStatus.body}")
-            submitStatus
+            Future.successful(submitStatus)
         }
-      }
+      }).flatten
     }
   }
 
