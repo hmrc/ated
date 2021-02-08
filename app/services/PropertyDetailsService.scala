@@ -219,7 +219,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
   def submitDraftPropertyDetail(atedRefNo: String, id: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     retrieveAgentRefNumberFor { agentRefNo =>
       val propertyDetailsFuture = retrieveDraftPropertyDetail(atedRefNo, id)
-      for {
+      (for {
         propertyDetails <- propertyDetailsFuture
         submitResponse <- {
           propertyDetails match {
@@ -236,17 +236,17 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
       } yield {
         submitResponse.status match {
           case OK =>
-            deleteDraftPropertyDetail(atedRefNo, id)
-            sendMail(subscriptionData.json, "chargeable_return_submit")
-            HttpResponse(
+            for {
+              _ <- deleteDraftPropertyDetail(atedRefNo, id)
+              _ <- sendMail (subscriptionData.json, "chargeable_return_submit")
+            } yield HttpResponse(
               submitResponse.status,
               json = Json.toJson(submitResponse.json.as[SubmitEtmpReturnsResponse]),
-              headers = submitResponse.headers,
-            )
+              headers = submitResponse.headers)
           case _ =>
-            submitResponse
+            Future.successful(submitResponse)
         }
-      }
+      }).flatten
     }
   }
 

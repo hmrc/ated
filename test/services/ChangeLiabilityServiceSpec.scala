@@ -31,7 +31,7 @@ import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import reactivemongo.api.commands.WriteResult
-import repository.{PropertyDetailsCached, PropertyDetailsMongoRepository}
+import repository.{PropertyDetailsCached, PropertyDetailsDeleted, PropertyDetailsMongoRepository}
 import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
@@ -221,6 +221,8 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         when(mockAuthConnector.authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
         when(mockPropertyDetailsCache.cachePropertyDetails(any[PropertyDetails]()))
           .thenReturn(Future.successful(PropertyDetailsCached))
+        when(mockPropertyDetailsCache.deletePropertyDetailsByfieldName(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(PropertyDetailsDeleted))
         val respModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson = Json.toJson(respModel)
         when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))

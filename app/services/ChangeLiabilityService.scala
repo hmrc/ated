@@ -159,7 +159,7 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
   def submitChangeLiability(atedRefNo: String, oldFormBundleNo: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     retrieveAgentRefNumberFor { agentRefNo =>
       val changeLiabilityReturnListFuture = retrieveDraftPropertyDetails(atedRefNo)
-      for {
+      (for {
         changeLiabilityReturnList <- changeLiabilityReturnListFuture
         submitStatus: HttpResponse <- {
           changeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
@@ -176,18 +176,19 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
       } yield {
         submitStatus.status match {
           case OK =>
-            deleteDraftPropertyDetail(atedRefNo, oldFormBundleNo)
-            sendMail(subscriptionData.json, emailTemplate(submitStatus.json, oldFormBundleNo))
-            HttpResponse(
+            for {
+              _ <- deleteDraftPropertyDetail(atedRefNo, oldFormBundleNo)
+              _ <- sendMail (subscriptionData.json, emailTemplate(submitStatus.json, oldFormBundleNo))
+            } yield HttpResponse(
               submitStatus.status,
               json = Json.toJson(submitStatus.json.as[EditLiabilityReturnsResponseModel]),
               headers = submitStatus.headers
             )
           case someStatus =>
             logger.warn(s"[PropertyDetailsService][submitChangeLiability] status = $someStatus body = ${submitStatus.body}")
-            submitStatus
+            Future.successful(submitStatus)
         }
-      }
+      }).flatten
     }
   }
 }
