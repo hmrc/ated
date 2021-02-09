@@ -59,7 +59,6 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       override val subscriptionDataService = mockSubscriptionDataService
       override val emailConnector = mockEmailConnector
     }
-
     val testPropertyDetailsService = new TestPropertyDetailsService()
   }
 
@@ -703,6 +702,8 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       when(mockAuthConnector.authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
+      when(mockPropertyDetailsCache.deletePropertyDetailsByfieldName(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        .thenReturn(Future.successful(PropertyDetailsDeleted))
       when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest]())) thenReturn {
         Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]]))
       }

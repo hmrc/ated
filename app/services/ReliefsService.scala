@@ -59,7 +59,7 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
 
   def submitAndDeleteDraftReliefs(atedRefNo: String, periodKey: Int)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     retrieveAgentRefNumberFor { agentRefNo =>
-      for {
+      (for {
         reliefRequest <- getSubmitReliefsRequest(atedRefNo, periodKey, agentRefNo)
         submitResponse <- reliefRequest match {
           case Some(x) => etmpConnector.submitReturns(atedRefNo, x)
@@ -71,13 +71,14 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
       } yield {
         submitResponse.status match {
           case OK =>
-            deleteAllDraftReliefByYear(atedRefNo, periodKey)
             val references = (submitResponse.json \\ "formBundleNumber").map(x => x.as[String]).mkString(",")
-            sendMail(subscriptionData.json, "relief_return_submit", Map("reference" -> references))
-            submitResponse
-          case _ => submitResponse
+            for {
+              _ <- deleteAllDraftReliefByYear(atedRefNo, periodKey)
+              _ <-  sendMail (subscriptionData.json, "relief_return_submit", Map("reference" -> references))
+            } yield submitResponse
+          case _ => Future.successful(submitResponse)
         }
-      }
+      }).flatten
     }
   }
 
