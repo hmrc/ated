@@ -16,7 +16,6 @@
 
 package scheduler
 
-import javax.inject.Inject
 import org.joda.time.Duration
 import play.api.{Configuration, Environment, Logging}
 import repository.{LockRepositoryProvider, PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
@@ -24,6 +23,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class DefaultDeletePropertyDetailsService @Inject()(val servicesConfig: ServicesConfig,
@@ -54,13 +54,13 @@ trait DeletePropertyDetailsService extends ScheduledService[Int] with Logging {
     repo.deleteExpired60PropertyDetails(documentBatchSize)
   }
 
-	def invoke()(implicit ec: ExecutionContext): Future[Int] = {
+  def invoke()(implicit ec: ExecutionContext): Future[Int] = {
     lockKeeper.tryLock(deleteOldPropertyDetails()) map {
       case Some(result) =>
-				logger.info(s"[deleteOldPropertyDetails] Deleted $result draft documents past the given day limit")
+        logger.info(s"[deleteOldPropertyDetails] Deleted $result draft documents past the given day limit")
         result
-      case None         =>
-				logger.warn(s"[deleteOldPropertyDetails] Failed to acquire lock")
+      case None =>
+        logger.warn(s"[deleteOldPropertyDetails] Failed to acquire lock")
         0
     }
   }

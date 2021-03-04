@@ -30,7 +30,7 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class DetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
@@ -47,6 +47,7 @@ class DetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
     val cc: ControllerComponents = app.injector.instanceOf[ControllerComponents]
 
     class TestDetailsController extends BackendController(cc) with DetailsController {
+      implicit val ec: ExecutionContext = cc.executionContext
       val etmpConnector: EtmpDetailsConnector = mockEtmpConnector
     }
 

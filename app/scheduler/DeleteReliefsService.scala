@@ -16,7 +16,6 @@
 
 package scheduler
 
-import javax.inject.Inject
 import org.joda.time.Duration
 import play.api.{Configuration, Environment, Logging}
 import repository.{LockRepositoryProvider, ReliefsMongoRepository, ReliefsMongoWrapper}
@@ -24,6 +23,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class DefaultDeleteReliefsService @Inject()(val servicesConfig: ServicesConfig,
@@ -51,17 +51,18 @@ trait DeleteReliefsService extends ScheduledService[Int] with Logging {
   val documentBatchSize: Int
 
   private def deleteOldReliefs(): Future[Int] = {
-     repo.deleteExpired60Reliefs(documentBatchSize)
+    repo.deleteExpired60Reliefs(documentBatchSize)
   }
 
-	def invoke()(implicit ec: ExecutionContext): Future[Int] = {
+  def invoke()(implicit ec: ExecutionContext): Future[Int] = {
     lockKeeper.tryLock(deleteOldReliefs()) map {
       case Some(result) =>
-				logger.info(s"[DeleteReliefsService] Deleted $result draft documents past the 28 day limit")
+        logger.info(s"[DeleteReliefsService] Deleted $result draft documents past the 28 day limit")
         result
-      case None         =>
-				logger.warn(s"[DeleteReliefsService] Failed to acquire lock")
-       0
+      case None =>
+        logger.warn(s"[DeleteReliefsService] Failed to acquire lock")
+        0
     }
   }
 }
+

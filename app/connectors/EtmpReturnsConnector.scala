@@ -17,6 +17,7 @@
 package connectors
 
 import audit.Auditable
+
 import javax.inject.Inject
 import metrics.{MetricsEnum, ServiceMetrics}
 import models._
@@ -30,8 +31,7 @@ import uk.gov.hmrc.play.audit.model.{Audit, EventTypes}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.http.HttpClient
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class EtmpReturnsConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
                                             val http: HttpClient,
@@ -66,7 +66,7 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
   val getSummaryReturns: String
   val formBundleReturns: String
 
-  def submitReturns(atedReferenceNo: String, submitReturns: SubmitEtmpReturnsRequest): Future[HttpResponse] = {
+  def submitReturns(atedReferenceNo: String, submitReturns: SubmitEtmpReturnsRequest)(implicit ec: ExecutionContext): Future[HttpResponse] = {
     implicit val headerCarrier = createHeaderCarrier
     val postUrl = s"""$serviceUrl/$baseURI/$submitReturnsURI/$atedReferenceNo"""
 
@@ -92,7 +92,7 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
     }
   }
 
-  def getSummaryReturns(atedReferenceNo: String, years: Int): Future[HttpResponse] = {
+  def getSummaryReturns(atedReferenceNo: String, years: Int)(implicit ec: ExecutionContext): Future[HttpResponse] = {
     implicit val headerCarrier: HeaderCarrier = createHeaderCarrier
     val getUrl = s"""$serviceUrl/$baseURI/$getSummaryReturns/$atedReferenceNo?years=$years"""
 
@@ -113,7 +113,7 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
     }
   }
 
-  def getFormBundleReturns(atedReferenceNo: String, formBundleNumber: String): Future[HttpResponse] = {
+  def getFormBundleReturns(atedReferenceNo: String, formBundleNumber: String)(implicit ec: ExecutionContext): Future[HttpResponse] = {
     implicit val headerCarrier = createHeaderCarrier
     val getUrl = s"""$serviceUrl/$baseURI/$getSummaryReturns/$atedReferenceNo/$formBundleReturns/$formBundleNumber"""
 
@@ -136,7 +136,7 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
 
   def submitEditedLiabilityReturns(atedReferenceNo: String,
                                    editedLiabilityReturns: EditLiabilityReturnsRequestModel,
-                                   disposal: Boolean = false): Future[HttpResponse] = {
+                                   disposal: Boolean = false)(implicit ec: ExecutionContext): Future[HttpResponse] = {
     implicit val headerCarrier = createHeaderCarrier
     val putUrl = s"""$serviceUrl/$baseURI/$submitEditedLiabilityReturnsURI/$atedReferenceNo"""
 

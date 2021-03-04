@@ -25,16 +25,19 @@ import services.DisposeLiabilityReturnService
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class DisposeLiabilityReturnControllerImpl @Inject()(
                                                     val disposeLiabilityReturnService: DisposeLiabilityReturnService,
                                                     val cc: ControllerComponents,
                                                     val crypto: ApplicationCrypto
-                                                    ) extends BackendController(cc) with DisposeLiabilityReturnController
+                                                    ) extends BackendController(cc) with DisposeLiabilityReturnController {
+  override implicit val ec: ExecutionContext = cc.executionContext
+}
 
 trait DisposeLiabilityReturnController extends BackendController with Logging {
+  implicit val ec: ExecutionContext
   val crypto: ApplicationCrypto
   implicit lazy val compositeCrypto: CryptoWithKeysFromConfig = crypto.JsonCrypto
   implicit lazy val format: OFormat[DisposeLiabilityReturn] = DisposeLiabilityReturn.formats

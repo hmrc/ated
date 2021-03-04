@@ -17,7 +17,6 @@
 package services
 
 import java.util.UUID
-
 import builders.PropertyDetailsBuilder
 import connectors.EtmpReturnsConnector
 import models._
@@ -36,7 +35,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.logging.SessionId
 import uk.gov.hmrc.mongo.DatabaseUpdate
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
@@ -45,10 +44,12 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
   val mockDatabaseUpdate = mock[DatabaseUpdate[Cache]]
   val mockEtmpConnector = mock[EtmpReturnsConnector]
   val mockAuthConnector = mock[AuthConnector]
+  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   trait Setup {
 
     class TestPropertyDetailsService extends PropertyDetailsValuesService {
+      implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
       override val propertyDetailsCache = mockPropertyDetailsCache
       override val etmpConnector = mockEtmpConnector
       override val authConnector = mockAuthConnector

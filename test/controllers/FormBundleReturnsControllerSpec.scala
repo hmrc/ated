@@ -30,7 +30,7 @@ import services.FormBundleService
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class FormBundleReturnsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
@@ -45,6 +45,7 @@ class FormBundleReturnsControllerSpec extends PlaySpec with GuiceOneServerPerSui
     val cc: ControllerComponents = app.injector.instanceOf[ControllerComponents]
 
     class TestFormBundleReturnsController extends BackendController(cc) with FormBundleReturnsController {
+      implicit val ec: ExecutionContext = cc.executionContext
       val formBundleService: FormBundleService = mockFormBundleService
     }
 

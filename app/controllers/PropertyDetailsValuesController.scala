@@ -25,7 +25,7 @@ import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.Audit
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class PropertyDetailsValuesControllerImpl @Inject()(val cc: ControllerComponents,
@@ -34,10 +34,11 @@ class PropertyDetailsValuesControllerImpl @Inject()(val cc: ControllerComponents
                                                     @Named("appName") val appName: String
                                                    ) extends BackendController(cc) with PropertyDetailsValuesController {
   val audit: Audit = new Audit(s"ATED:$appName", auditConnector)
+  override implicit val ec: ExecutionContext = cc.executionContext
 }
 
 trait PropertyDetailsValuesController extends BackendController {
-
+  implicit val ec: ExecutionContext
   def propertyDetailsService: PropertyDetailsValuesService
 
   def saveDraftHasValueChanged(atedRefNo: String, id: String) = Action.async(parse.json) {

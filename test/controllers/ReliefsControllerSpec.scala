@@ -36,8 +36,7 @@ import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.Audit
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class ReliefsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
 
@@ -48,8 +47,10 @@ class ReliefsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
 
   trait Setup {
     val cc: ControllerComponents = app.injector.instanceOf[ControllerComponents]
+    implicit val ec: ExecutionContext = app.injector.instanceOf[scala.concurrent.ExecutionContext]
 
     class TestReliefsController extends BackendController(cc) with ReliefsController {
+      implicit val ec: ExecutionContext = cc.executionContext
       val reliefsService = mockReliefsService
       val isAgent = false
       val audit: Audit = new TestAudit(mockAuditConnector)
@@ -120,7 +121,8 @@ class ReliefsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
         )
         val testReliefs = ReliefBuilder.reliefTaxAvoidance(testAccountRef, periodKey, Reliefs(periodKey = periodKey), taxAvoidance)
 
-        when(mockReliefsService.saveDraftReliefs(any(), any())).thenReturn(Future(Seq(testReliefs)))
+        when(mockReliefsService.saveDraftReliefs(any(), any())(ArgumentMatchers.any()))
+          .thenReturn(Future(Seq(testReliefs)))
         mockRetrievingNoAuthRef
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testReliefs))
@@ -139,7 +141,7 @@ class ReliefsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
 
         val fakeRequest = FakeRequest()
         val submitSuccess = Json.parse( """{"status" : "OK", "processingDate" :  "2014-12-17T09:30:47Z", "formBundleNumber" : "123456789012"}""")
-        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any())).thenReturn(Future.successful(HttpResponse(OK, submitSuccess, Map.empty[String, Seq[String]])))
+        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any(), any())).thenReturn(Future.successful(HttpResponse(OK, submitSuccess, Map.empty[String, Seq[String]])))
         val result = testReliefsController.submitDraftReliefs(testAccountRef, periodKey).apply(fakeRequest)
         status(result) must be(OK)
       }
@@ -148,14 +150,14 @@ class ReliefsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
 
         val fakeRequest = FakeRequest()
         val submitSuccess = Json.parse( """{"status" : "OK", "processingDate" :  "2014-12-17T09:30:47Z", "formBundleNo" : "123456789012"}""")
-        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any())).thenReturn(Future.successful(HttpResponse(OK, submitSuccess, Map.empty[String, Seq[String]])))
+        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any(), any())).thenReturn(Future.successful(HttpResponse(OK, submitSuccess, Map.empty[String, Seq[String]])))
         val result = testReliefsController.submitDraftReliefs(testAccountRef, periodKey).apply(fakeRequest)
         status(result) must be(OK)
       }
       "handle a bad request" in new Setup {
         val fakeRequest = FakeRequest()
         val serviceUnavailable = Json.parse( """{"reason" : "Service unavailable"}""")
-        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any())).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, serviceUnavailable, Map.empty[String, Seq[String]])))
+        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any(), any())).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, serviceUnavailable, Map.empty[String, Seq[String]])))
         val result = testReliefsController.submitDraftReliefs(testAccountRef, periodKey).apply(fakeRequest)
         status(result) must be(BAD_REQUEST)
       }
@@ -163,7 +165,7 @@ class ReliefsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
       "handle a not found" in new Setup {
         val fakeRequest = FakeRequest()
         val serviceUnavailable = Json.parse( """{"reason" : "Service unavailable"}""")
-        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any())).thenReturn(Future.successful(HttpResponse(NOT_FOUND, serviceUnavailable, Map.empty[String, Seq[String]])))
+        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any(), any())).thenReturn(Future.successful(HttpResponse(NOT_FOUND, serviceUnavailable, Map.empty[String, Seq[String]])))
         val result = testReliefsController.submitDraftReliefs(testAccountRef, periodKey).apply(fakeRequest)
         status(result) must be(NOT_FOUND)
       }
@@ -171,7 +173,7 @@ class ReliefsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
       "handle a service unavailable" in new Setup {
         val fakeRequest = FakeRequest()
         val serviceUnavailable = Json.parse( """{"reason" : "Service unavailable"}""")
-        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any())).thenReturn(Future.successful(HttpResponse(SERVICE_UNAVAILABLE, serviceUnavailable, Map.empty[String, Seq[String]])))
+        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any(), any())).thenReturn(Future.successful(HttpResponse(SERVICE_UNAVAILABLE, serviceUnavailable, Map.empty[String, Seq[String]])))
         val result = testReliefsController.submitDraftReliefs(testAccountRef, periodKey).apply(fakeRequest)
         status(result) must be(SERVICE_UNAVAILABLE)
       }
@@ -179,7 +181,7 @@ class ReliefsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
       "handle an internal server errror" in new Setup {
         val fakeRequest = FakeRequest()
         val serviceUnavailable = Json.parse( """{"reason" : "Service unavailable"}""")
-        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any())).thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, serviceUnavailable, Map.empty[String, Seq[String]])))
+        when(mockReliefsService.submitAndDeleteDraftReliefs(any(), any())(any(), any())).thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, serviceUnavailable, Map.empty[String, Seq[String]])))
         val result = testReliefsController.submitDraftReliefs(testAccountRef, periodKey).apply(fakeRequest)
         status(result) must be(INTERNAL_SERVER_ERROR)
       }
@@ -191,7 +193,7 @@ class ReliefsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
 
       "a call is made to the delete api" in new Setup {
         val fakeRequest = FakeRequest()
-        when(mockReliefsService.deleteAllDraftReliefs(any())) thenReturn Future.successful(Seq.empty)
+        when(mockReliefsService.deleteAllDraftReliefs(any())(any())) thenReturn Future.successful(Seq.empty)
 
         val result = testReliefsController.deleteDraftReliefs(testAccountRef).apply(fakeRequest)
         status(result) must be(OK)
@@ -202,7 +204,7 @@ class ReliefsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
     "deleteDraftReliefsByYear" must {
       "respond with OK when list is empty" in new Setup {
         val testAccountRef = "ATED1223123"
-        when(mockReliefsService.deleteAllDraftReliefByYear(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq(2017)))
+        when(mockReliefsService.deleteAllDraftReliefByYear(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq(2017))(ArgumentMatchers.any()))
           .thenReturn(Future(Seq[ReliefsTaxAvoidance]()))
         val result = testReliefsController.deleteDraftReliefsByYear(testAccountRef, 2017).apply(FakeRequest().withJsonBody(Json.parse( """{}""")))
         status(result) must be(OK)
@@ -231,7 +233,7 @@ class ReliefsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
           equityReleaseSchemePromoter = Some("Promoter9")
         )
         val testReliefs = ReliefBuilder.reliefTaxAvoidance(testAccountRef, periodKey, Reliefs(periodKey = periodKey), taxAvoidance)
-        when(mockReliefsService.deleteAllDraftReliefByYear(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq(2017)))
+        when(mockReliefsService.deleteAllDraftReliefByYear(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq(2017))(ArgumentMatchers.any()))
           .thenReturn(Future(Seq[ReliefsTaxAvoidance](testReliefs)))
         val result = testReliefsController.deleteDraftReliefsByYear(testAccountRef, 2017).apply(FakeRequest().withJsonBody(Json.parse( """{}""")))
         status(result) must be(INTERNAL_SERVER_ERROR)
@@ -256,7 +258,7 @@ class ReliefsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
         val testReliefs = ReliefBuilder.reliefTaxAvoidance(testAccountRef, periodKey, Reliefs(periodKey = periodKey), taxAvoidance)
 
         val fakeRequest = FakeRequest()
-        when(mockReliefsService.deleteAllDraftReliefs(any())) thenReturn Future.successful(Seq(testReliefs))
+        when(mockReliefsService.deleteAllDraftReliefs(any())(any())) thenReturn Future.successful(Seq(testReliefs))
         val result = testReliefsController.deleteDraftReliefs(testAccountRef).apply(fakeRequest)
         status(result) must be(INTERNAL_SERVER_ERROR)
       }

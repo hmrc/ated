@@ -31,7 +31,7 @@ import services.SubscriptionDataService
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class SubscriptionDataControllerSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
@@ -47,10 +47,12 @@ class SubscriptionDataControllerSpec extends PlaySpec with GuiceOneServerPerSuit
     val cc: ControllerComponents = app.injector.instanceOf[ControllerComponents]
 
     class TestSubscriptionDataController extends BackendController(cc) with SubscriptionDataController {
+      implicit val ec: ExecutionContext = cc.executionContext
       val subscriptionDataService: SubscriptionDataService = mockSubscriptionDataService
     }
 
     class TestAgentRetrieveClientSubscriptionDataController extends BackendController(cc) with SubscriptionDataController {
+      implicit val ec: ExecutionContext = cc.executionContext
       val subscriptionDataService: SubscriptionDataService = mockSubscriptionDataService
     }
 
@@ -127,27 +129,27 @@ class SubscriptionDataControllerSpec extends PlaySpec with GuiceOneServerPerSuit
       val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(updatedData))
 
       "respond with OK, for successful GET" in new Setup {
-        when(mockSubscriptionDataService.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
+        when(mockSubscriptionDataService.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         val result = testSubscriptionDataController.updateSubscriptionData(callingUtr).apply(fakeRequest)
         status(result) must be(OK)
       }
       "respond with NOT_FOUND, for unsuccessful GET" in new Setup {
-        when(mockSubscriptionDataService.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(NOT_FOUND, failureResponseJson, Map.empty[String, Seq[String]])))
+        when(mockSubscriptionDataService.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(NOT_FOUND, failureResponseJson, Map.empty[String, Seq[String]])))
         val result = testSubscriptionDataController.updateSubscriptionData(callingUtr).apply(fakeRequest)
         status(result) must be(NOT_FOUND)
       }
       "respond with BAD_REQUEST, if ETMP sends BadRequest status" in new Setup {
-        when(mockSubscriptionDataService.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, errorResponseJson, Map.empty[String, Seq[String]])))
+        when(mockSubscriptionDataService.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, errorResponseJson, Map.empty[String, Seq[String]])))
         val result = testSubscriptionDataController.updateSubscriptionData(callingUtr).apply(fakeRequest)
         status(result) must be(BAD_REQUEST)
       }
       "respond with SERVICE_UNAVAILABLE, if ETMP is unavailable" in new Setup {
-        when(mockSubscriptionDataService.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(SERVICE_UNAVAILABLE, errorResponseJson, Map.empty[String, Seq[String]])))
+        when(mockSubscriptionDataService.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(SERVICE_UNAVAILABLE, errorResponseJson, Map.empty[String, Seq[String]])))
         val result = testSubscriptionDataController.updateSubscriptionData(callingUtr).apply(fakeRequest)
         status(result) must be(SERVICE_UNAVAILABLE)
       }
       "respond with InternalServerError, if ETMP sends some server error response" in new Setup {
-        when(mockSubscriptionDataService.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, errorResponseJson, Map.empty[String, Seq[String]])))
+        when(mockSubscriptionDataService.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, errorResponseJson, Map.empty[String, Seq[String]])))
         val result = testSubscriptionDataController.updateSubscriptionData(callingUtr).apply(fakeRequest)
         status(result) must be(INTERNAL_SERVER_ERROR)
       }

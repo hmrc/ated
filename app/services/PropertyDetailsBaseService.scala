@@ -23,8 +23,7 @@ import repository.{PropertyDetailsDelete, PropertyDetailsMongoRepository}
 import uk.gov.hmrc.auth.core.AuthConnector
 import utils._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 trait PropertyDetailsBaseService extends ReliefConstants {
 
@@ -36,7 +35,8 @@ trait PropertyDetailsBaseService extends ReliefConstants {
     propertyDetailsCache.fetchPropertyDetails(atedRefNo)
   }
 
-  def retrieveDraftPropertyDetail(atedRefNo: String, id: String): Future[Option[PropertyDetails]] = {
+  def retrieveDraftPropertyDetail(atedRefNo: String, id: String)(
+    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
     propertyDetailsCache.fetchPropertyDetails(atedRefNo).map {
       propertyDetailsList =>
         PropertyDetailsUtils.populateBankDetails(propertyDetailsList.find(_.id == id))
@@ -46,8 +46,8 @@ trait PropertyDetailsBaseService extends ReliefConstants {
   def deleteDraftPropertyDetail(atedRefNo: String, id: String): Future[PropertyDetailsDelete] =
     propertyDetailsCache.deletePropertyDetailsByfieldName(atedRefNo, id)
 
-  protected def cacheDraftPropertyDetails(atedRefNo: String,
-                                          updatePropertyDetails: Seq[PropertyDetails] => Future[Option[PropertyDetails]]): Future[Option[PropertyDetails]] = {
+  protected def cacheDraftPropertyDetails(atedRefNo: String, updatePropertyDetails: Seq[PropertyDetails] => Future[Option[PropertyDetails]])(
+    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
     for {
       propertyDetailsList <- propertyDetailsCache.fetchPropertyDetails(atedRefNo)
       newPropertyDetails <- updatePropertyDetails(propertyDetailsList)

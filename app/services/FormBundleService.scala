@@ -17,14 +17,17 @@
 package services
 
 import connectors.EtmpReturnsConnector
-import javax.inject.Inject
 
-import scala.concurrent.Future
+import javax.inject.Inject
+import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HttpResponse
 
-class FormBundleServiceImpl @Inject()(val etmpReturnsConnector: EtmpReturnsConnector) extends FormBundleService
+class FormBundleServiceImpl @Inject()(val etmpReturnsConnector: EtmpReturnsConnector)(
+  override implicit val ec: ExecutionContext) extends FormBundleService
 
 trait FormBundleService {
+  implicit val ec: ExecutionContext
+
   def etmpReturnsConnector: EtmpReturnsConnector
 
   def getFormBundleReturns(atedReferenceNo: String, formBundleNumber: String): Future[HttpResponse] = {

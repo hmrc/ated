@@ -30,7 +30,7 @@ import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class NotificationServiceSpec extends PlaySpec with GuiceOneServerPerSuite with BeforeAndAfterEach with MockAuthConnector {
 
@@ -45,6 +45,7 @@ class NotificationServiceSpec extends PlaySpec with GuiceOneServerPerSuite with 
 
   trait Setup {
     class TestNotificationService extends NotificationService with AuthorisedFunctions {
+      implicit val ec: ExecutionContext = app.injector.instanceOf[ExecutionContext]
       override val emailConnector = mockEmailConnector
       override val authConnector = mockAuthConnector
     }

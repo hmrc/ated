@@ -17,6 +17,7 @@
 package services
 
 import connectors.EtmpReturnsConnector
+
 import javax.inject.Inject
 import models._
 import org.joda.time.LocalDate
@@ -25,8 +26,7 @@ import uk.gov.hmrc.http.HttpResponse
 import utils.AtedConstants._
 import utils.ReliefUtils._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class ReturnSummaryServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnector,
                                          val propertyDetailsService: PropertyDetailsService,
@@ -65,7 +65,7 @@ trait ReturnSummaryService {
     reliefDraftSeq ++ liabilityDraftSeq ++ disposeLiabilityDraftsSeq
   }
 
-  def getPartialSummaryReturn(atedRef: String): Future[SummaryReturnsModel] = {
+  def getPartialSummaryReturn(atedRef: String)(implicit ec: ExecutionContext): Future[SummaryReturnsModel] = {
     val reliefDraftsFuture = reliefsService.retrieveDraftReliefs(atedRef)
     val liabilityDraftsFuture = propertyDetailsService.retrieveDraftPropertyDetails(atedRef)
     val disposeLiabilityDraftsFuture = disposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(atedRef)
@@ -91,7 +91,7 @@ trait ReturnSummaryService {
     }
   }
 
-  def getFullSummaryReturns(atedRef: String): Future[SummaryReturnsModel] = {
+  def getFullSummaryReturns(atedRef: String)(implicit ec: ExecutionContext): Future[SummaryReturnsModel] = {
     val etmpReturnsFuture = etmpConnector.getSummaryReturns(atedRef, years)
     val reliefDraftsFuture = reliefsService.retrieveDraftReliefs(atedRef)
     val liabilityDraftsFuture = propertyDetailsService.retrieveDraftPropertyDetails(atedRef)

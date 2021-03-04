@@ -17,6 +17,7 @@
 package services
 
 import connectors.{EmailConnector, EtmpReturnsConnector}
+
 import javax.inject.Inject
 import models.{ReliefsTaxAvoidance, SubmitEtmpReturnsRequest}
 import play.api.http.Status._
@@ -26,14 +27,15 @@ import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import utils.{AuthFunctionality, ReliefUtils}
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class ReliefsServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnector,
                                    val authConnector: AuthConnector,
                                    val subscriptionDataService: SubscriptionDataService,
                                    val emailConnector: EmailConnector,
-                                   val reliefRepo: ReliefsMongoWrapper) extends ReliefsService {
+                                   val reliefRepo: ReliefsMongoWrapper,
+                                   override implicit val ec: ExecutionContext
+                                  ) extends ReliefsService {
  lazy val reliefsCache: ReliefsMongoRepository = reliefRepo()
 }
 
@@ -44,7 +46,7 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
   def authConnector: AuthConnector
   def subscriptionDataService: SubscriptionDataService
 
-  def saveDraftReliefs(atedRefNo: String, relief: ReliefsTaxAvoidance): Future[Seq[ReliefsTaxAvoidance]] = {
+  def saveDraftReliefs(atedRefNo: String, relief: ReliefsTaxAvoidance)(implicit ec: ExecutionContext): Future[Seq[ReliefsTaxAvoidance]] = {
     for {
       _ <- reliefsCache.cacheRelief(relief.copy(atedRefNo = atedRefNo))
       draftReliefs <- reliefsCache.fetchReliefs(relief.atedRefNo)
@@ -57,7 +59,7 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
     reliefsCache.fetchReliefs(atedRefNo)
   }
 
-  def submitAndDeleteDraftReliefs(atedRefNo: String, periodKey: Int)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def submitAndDeleteDraftReliefs(atedRefNo: String, periodKey: Int)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
     retrieveAgentRefNumberFor { agentRefNo =>
       (for {
         reliefRequest <- getSubmitReliefsRequest(atedRefNo, periodKey, agentRefNo)
@@ -82,7 +84,8 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
     }
   }
 
-  def retrieveDraftReliefForPeriodKey(atedRefNo: String, periodKey: Int): Future[Option[ReliefsTaxAvoidance]] = {
+  def retrieveDraftReliefForPeriodKey(atedRefNo: String, periodKey: Int)(
+    implicit ec: ExecutionContext): Future[Option[ReliefsTaxAvoidance]] = {
     for {
       draftReliefs <- retrieveDraftReliefs(atedRefNo)
     } yield {
@@ -90,7 +93,8 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
     }
   }
 
-  private def getSubmitReliefsRequest(atedRefNo: String, periodKey: Int, agentRefNo: Option[String]): Future[Option[SubmitEtmpReturnsRequest]] = {
+  private def getSubmitReliefsRequest(atedRefNo: String, periodKey: Int, agentRefNo: Option[String])(
+    implicit ec: ExecutionContext): Future[Option[SubmitEtmpReturnsRequest]] = {
     for {
       draftReliefs <- retrieveDraftReliefForPeriodKey(atedRefNo, periodKey)
     } yield {
@@ -98,7 +102,7 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
     }
   }
 
-  def deleteAllDraftReliefs(atedRefNo: String): Future[Seq[ReliefsTaxAvoidance]] = {
+  def deleteAllDraftReliefs(atedRefNo: String)(implicit ec: ExecutionContext): Future[Seq[ReliefsTaxAvoidance]] = {
     for {
       _ <- reliefsCache.deleteReliefs(atedRefNo)
       reliefsList <- reliefsCache.fetchReliefs(atedRefNo)
@@ -107,7 +111,8 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
     }
   }
 
-  def deleteAllDraftReliefByYear(atedRefNo: String, periodKey: Int): Future[Seq[ReliefsTaxAvoidance]] = {
+  def deleteAllDraftReliefByYear(atedRefNo: String, periodKey: Int)(
+    implicit ec: ExecutionContext): Future[Seq[ReliefsTaxAvoidance]] = {
     for {
       _ <- reliefsCache.deleteDraftReliefByYear(atedRefNo, periodKey)
       reliefsList <- reliefsCache.fetchReliefs(atedRefNo)

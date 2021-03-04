@@ -17,6 +17,7 @@
 package connectors
 
 import audit.Auditable
+
 import javax.inject.Inject
 import metrics.{MetricsEnum, ServiceMetrics}
 import models._
@@ -30,13 +31,13 @@ import uk.gov.hmrc.play.audit.model.{Audit, EventTypes}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.http.HttpClient
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class EtmpDetailsConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
                                             val http: HttpClient,
                                             val auditConnector: AuditConnector,
-                                            val metrics: ServiceMetrics) extends EtmpDetailsConnector {
+                                            val metrics: ServiceMetrics)(implicit val ec: ExecutionContext) extends EtmpDetailsConnector {
+
   val serviceUrl: String = servicesConfig.baseUrl("etmp-hod")
 
   val urlHeaderEnvironment: String = servicesConfig.getConfString("etmp-hod.environment", "")
@@ -53,6 +54,7 @@ class EtmpDetailsConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
 }
 
 trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging {
+  implicit val ec: ExecutionContext
   def serviceUrl: String
   def urlHeaderEnvironment: String
   def urlHeaderAuthorization: String

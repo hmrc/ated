@@ -23,7 +23,6 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.JsValue
-import play.api.mvc.MessagesControllerComponents
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HttpClient, _}
 
@@ -35,6 +34,7 @@ class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
 
   trait Setup {
     class TestEmailConnector extends EmailConnector {
+      implicit val ec: ExecutionContext = app.injector.instanceOf[ExecutionContext]
       val http: HttpClient = mockWSHttp
       override val serviceUrl: String = ""
       override val sendEmailUri: String = ""
@@ -53,8 +53,6 @@ class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
     "return a 202 accepted" when {
 
       "correct emailId Id is passed" in new Setup {
-        val mockMcc: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]
-        implicit val ec: ExecutionContext = mockMcc.executionContext
         implicit val hc: HeaderCarrier = HeaderCarrier()
 
         val emailString = "test@mail.com"
@@ -75,8 +73,6 @@ class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
     "return other status" when {
 
       "incorrect email Id are passed" in new Setup {
-        val mockMcc: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]
-        implicit val ec: ExecutionContext = mockMcc.executionContext
         implicit val hc: HeaderCarrier = HeaderCarrier()
         val invalidEmailString = "test@test1.com"
         val templateId = "relief_return_submit"

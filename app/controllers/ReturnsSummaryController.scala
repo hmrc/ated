@@ -22,15 +22,18 @@ import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.ReturnSummaryService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class ReturnsSummaryControllerImpl @Inject()(
                                               val returnSummaryService: ReturnSummaryService,
                                               val cc: ControllerComponents
-                                            ) extends BackendController(cc) with ReturnsSummaryController
+                                            ) extends BackendController(cc) with ReturnsSummaryController {
+  override implicit val ec: ExecutionContext = cc.executionContext
+}
 
 trait ReturnsSummaryController extends BackendController {
+  implicit val ec: ExecutionContext
 
   def returnSummaryService: ReturnSummaryService
 

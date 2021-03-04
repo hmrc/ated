@@ -27,7 +27,7 @@ import play.api.libs.json.Json
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.HttpResponse
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class FormBundleServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
@@ -42,16 +42,18 @@ class FormBundleServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
 
   trait Setup {
     class TestFormBundleService extends FormBundleService {
+      implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
       override val etmpReturnsConnector = mockEtmpConnector
     }
-
+    implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
     val testFormBundleService = new TestFormBundleService()
   }
 
   "FormBundleService" must {
     "getFormBundleReturns" must {
       "return response from connector" in new Setup {
-        when(mockEtmpConnector.getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle))).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
+        when(mockEtmpConnector.getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle))(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         val response = testFormBundleService.getFormBundleReturns(atedRefNo, formBundle)
         await(response).status must be(OK)
       }

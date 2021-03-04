@@ -4,7 +4,6 @@ import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import helpers.{AssertionHelpers, IntegrationSpec}
 import models.{Reliefs, ReliefsTaxAvoidance, TaxAvoidance}
 import org.joda.time.LocalDate
-import org.scalatestplus.play.PlaySpec
 import play.api.http.Status._
 import play.api.test.FutureAwaits
 import repository.{ReliefsMongoRepository, ReliefsMongoWrapper}

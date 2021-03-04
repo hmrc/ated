@@ -17,6 +17,7 @@
 package services
 
 import connectors.{EmailConnector, EtmpReturnsConnector}
+
 import javax.inject.Inject
 import models._
 import play.api.Logging
@@ -28,14 +29,14 @@ import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, InternalServerException}
 import utils.AtedUtils._
 import utils._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class ChangeLiabilityServiceImpl @Inject()(val propertyDetailsMongoWrapper: PropertyDetailsMongoWrapper,
                                            val etmpConnector: EtmpReturnsConnector,
                                            val authConnector: AuthConnector,
                                            val subscriptionDataService: SubscriptionDataService,
-                                           val emailConnector: EmailConnector) extends ChangeLiabilityService {
+                                           val emailConnector: EmailConnector,
+                                           implicit val ec: ExecutionContext) extends ChangeLiabilityService {
   lazy val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetailsMongoWrapper()
 }
 
@@ -45,7 +46,8 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
 
   def subscriptionDataService: SubscriptionDataService
 
-  def convertSubmittedReturnToCachedDraft(atedRefNo: String, oldFormBundleNo: String, fromSelectedPrevReturn: Option[Boolean] = None, period: Option[Int] = None): Future[Option[PropertyDetails]] = {
+  def convertSubmittedReturnToCachedDraft(atedRefNo: String, oldFormBundleNo: String, fromSelectedPrevReturn: Option[Boolean] = None,
+                                          period: Option[Int] = None)(implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
     for {
       cachedData <- retrieveDraftPropertyDetail(atedRefNo, oldFormBundleNo)
       cachedChangeLiability <- {
@@ -97,7 +99,8 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
     }
   }
 
-  def getAmountDueOrRefund(atedRefNo: String, id: String, propertyDetails: PropertyDetails, agentRefNo: Option[String] = None): Future[(Option[BigDecimal], Option[BigDecimal])] = {
+  def getAmountDueOrRefund(atedRefNo: String, id: String, propertyDetails: PropertyDetails,
+                           agentRefNo: Option[String] = None)(implicit ec: ExecutionContext): Future[(Option[BigDecimal], Option[BigDecimal])] = {
 
     def getLiabilityAmount(data: JsValue): (Option[BigDecimal], Option[BigDecimal]) = {
       val response = data.as[EditLiabilityReturnsResponseModel]
@@ -121,7 +124,7 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
   }
 
   def calculateDraftChangeLiability(atedRefNo: String, id: String)
-                                   (implicit hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
+                                   (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     retrieveAgentRefNumberFor { agentRefNo =>
       def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
@@ -156,7 +159,7 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
     }
   }
 
-  def submitChangeLiability(atedRefNo: String, oldFormBundleNo: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def submitChangeLiability(atedRefNo: String, oldFormBundleNo: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
     retrieveAgentRefNumberFor { agentRefNo =>
       val changeLiabilityReturnListFuture = retrieveDraftPropertyDetails(atedRefNo)
       (for {

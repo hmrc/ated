@@ -30,7 +30,7 @@ import play.api.test.Helpers._
 import services.ReturnSummaryService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class ReturnsSummaryControllerSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
@@ -39,8 +39,9 @@ class ReturnsSummaryControllerSpec extends PlaySpec with GuiceOneServerPerSuite 
 
   trait Setup {
     val cc: ControllerComponents = app.injector.instanceOf[ControllerComponents]
-
+    implicit val ec: ExecutionContext = cc.executionContext
     class TestReturnsSummaryController extends BackendController(cc) with ReturnsSummaryController {
+      implicit val ec: ExecutionContext = cc.executionContext
       val returnSummaryService: ReturnSummaryService = mockReturnSummaryService
     }
 
@@ -56,7 +57,7 @@ class ReturnsSummaryControllerSpec extends PlaySpec with GuiceOneServerPerSuite 
     "getFullSummaryReturn" must {
       "return SummaryReturnsModel model, if found in cache or ETMP" in new Setup {
         val summaryReturnsModel = SummaryReturnsModel(None, Nil)
-        when(mockReturnSummaryService.getFullSummaryReturns(ArgumentMatchers.eq(atedRefNo)))
+        when(mockReturnSummaryService.getFullSummaryReturns(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any()))
           .thenReturn(Future.successful(summaryReturnsModel))
         val result = controller.getFullSummaryReturn(atedRefNo).apply(FakeRequest())
         status(result) must be(OK)
@@ -67,7 +68,7 @@ class ReturnsSummaryControllerSpec extends PlaySpec with GuiceOneServerPerSuite 
       "getPartialSummaryReturn" must {
         "return SummaryReturnsModel model, if found in cache or ETMP" in new Setup {
           val summaryReturnsModel = SummaryReturnsModel(None, Nil)
-          when(mockReturnSummaryService.getPartialSummaryReturn(ArgumentMatchers.eq(atedRefNo)))
+          when(mockReturnSummaryService.getPartialSummaryReturn(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any()))
             .thenReturn(Future.successful(summaryReturnsModel))
           val result = controller.getPartialSummaryReturn(atedRefNo).apply(FakeRequest())
           status(result) must be(OK)

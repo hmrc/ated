@@ -30,7 +30,7 @@ import play.api.test.{FakeHeaders, FakeRequest}
 import services.PropertyDetailsValuesService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar {
 
@@ -38,11 +38,13 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
 
   trait Setup {
     val cc: ControllerComponents = app.injector.instanceOf[ControllerComponents]
+    implicit val ec: ExecutionContext = cc.executionContext
     val testAccountRef = "ATED1223123"
     lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
 
     class TestPropertyDetailsController extends BackendController(cc) with PropertyDetailsValuesController {
       val propertyDetailsService = mockPropertyDetailsService
+      implicit val ec: ExecutionContext = cc.executionContext
     }
 
     val controller = new TestPropertyDetailsController()
@@ -53,7 +55,8 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with OK and a list of cached Property Details if this all works" in new Setup {
         val updated = true
         when(mockPropertyDetailsService.cacheDraftHasValueChanged(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(updated))
         val result = controller.saveDraftHasValueChanged(testAccountRef, "1").apply(fakeRequest)
@@ -64,7 +67,8 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with BAD_REQUEST and if this failed" in new Setup {
         val updated = true
         when(mockPropertyDetailsService.cacheDraftHasValueChanged(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(updated))
         val result = controller.saveDraftHasValueChanged(testAccountRef, "1").apply(fakeRequest)
@@ -76,7 +80,8 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with OK and a list of cached Property Details if this all works" in new Setup {
         val updated = true
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsAcquisition(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(updated))
         val result = controller.saveDraftPropertyDetailsAcquisition(testAccountRef, "1").apply(fakeRequest)
@@ -87,7 +92,7 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with BAD_REQUEST and if this failed" in new Setup {
         val updated = true
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsAcquisition(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(updated))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(updated))
         val result = controller.saveDraftPropertyDetailsAcquisition(testAccountRef, "1").apply(fakeRequest)
@@ -99,7 +104,8 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with OK and a list of cached Property Details if this all works" in new Setup {
         val update = new PropertyDetailsRevalued()
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsRevalued(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
         val result = controller.saveDraftPropertyDetailsRevalued(testAccountRef, "1").apply(fakeRequest)
@@ -110,7 +116,7 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with BAD_REQUEST and if this failed" in new Setup {
         val update = new PropertyDetailsRevalued()
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsRevalued(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
         val result = controller.saveDraftPropertyDetailsRevalued(testAccountRef, "1").apply(fakeRequest)
@@ -122,7 +128,7 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with OK and a list of cached Property Details if this all works" in new Setup {
         val update = PropertyDetailsOwnedBefore()
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsOwnedBefore(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
         val result = controller.saveDraftPropertyDetailsOwnedBefore(testAccountRef, "1").apply(fakeRequest)
@@ -133,7 +139,7 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with BAD_REQUEST and if this failed" in new Setup {
         val update = new PropertyDetailsOwnedBefore()
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsOwnedBefore(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
         val result = controller.saveDraftPropertyDetailsOwnedBefore(testAccountRef, "1").apply(fakeRequest)
@@ -145,7 +151,7 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with OK when saving the IsNewBuildFlag" in new Setup {
         val update = new PropertyDetailsIsNewBuild()
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsIsNewBuild(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
         val result = controller.saveDraftPropertyDetailsIsNewBuild(testAccountRef, id = "1").apply(fakeRequest)
@@ -155,7 +161,7 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with a BAD REQUEST when failing to save the IsNewBuildFlag" in new Setup {
         val update = new PropertyDetailsIsNewBuild()
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsIsNewBuild(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
         val result = controller.saveDraftPropertyDetailsIsNewBuild(testAccountRef, id = "1").apply(fakeRequest)
@@ -167,7 +173,7 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with an Ok when successfully saving the new build dates" in new Setup {
         val update = new PropertyDetailsNewBuildDates()
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsNewBuildDates(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
         val result = controller.saveDraftPropertyDetailsNewBuildDates(testAccountRef, id = "1").apply(fakeRequest)
@@ -177,7 +183,7 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with a BAD REQUEST when failing to save the new build dates" in new Setup {
         val update = new PropertyDetailsNewBuildDates()
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsNewBuildDates(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
         val result = controller.saveDraftPropertyDetailsNewBuildDates(testAccountRef, id = "1").apply(fakeRequest)
@@ -189,7 +195,7 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with OK when saving the New Build Value" in new Setup {
         val update = new PropertyDetailsNewBuildValue()
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsNewBuildValue(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
         val result = controller.saveDraftPropertyDetailsNewBuildValue(testAccountRef, id = "1").apply(fakeRequest)
@@ -199,7 +205,7 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with a BAD REQUEST when failing to save the New Build Value" in new Setup {
         val update = new PropertyDetailsNewBuildValue()
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsNewBuildValue(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
         val result = controller.saveDraftPropertyDetailsNewBuildValue(testAccountRef, id = "1").apply(fakeRequest)
@@ -211,7 +217,7 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with OK when saving the value on acquisition" in new Setup {
         val update = new PropertyDetailsValueOnAcquisition()
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsValueAcquired(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
         val result = controller.saveDraftPropertyDetailsValueAcquired(testAccountRef, id = "1").apply(fakeRequest)
@@ -221,7 +227,7 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with a BAD REQUEST when failing to save the Value acquired" in new Setup {
         val update = new PropertyDetailsValueOnAcquisition()
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsValueAcquired(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
         val result = controller.saveDraftPropertyDetailsValueAcquired(testAccountRef, id = "1").apply(fakeRequest)
@@ -235,7 +241,7 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with OK when saving the dates which the property was acquired" in new Setup {
         val update = new PropertyDetailsDateOfAcquisition()
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsDatesAcquired(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
         val result = controller.saveDraftPropertyDetailsDatesAcquired(testAccountRef, id = "1").apply(fakeRequest)
@@ -246,7 +252,7 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with a BAD REQUEST when failing to save the dates the property was acquired" in new Setup {
         val update = new PropertyDetailsDateOfAcquisition()
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsDatesAcquired(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
         val result = controller.saveDraftPropertyDetailsDatesAcquired(testAccountRef, id = "1").apply(fakeRequest)
@@ -260,7 +266,7 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with OK and a list of cached Property Details if this all works" in new Setup {
         val update = new PropertyDetailsProfessionallyValued()
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsProfessionallyValued(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
         val result = controller.saveDraftPropertyDetailsProfessionallyValued(testAccountRef, "1").apply(fakeRequest)
@@ -271,13 +277,12 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with BAD_REQUEST and if this failed" in new Setup {
         val update = new PropertyDetailsProfessionallyValued()
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsProfessionallyValued(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
         val result = controller.saveDraftPropertyDetailsProfessionallyValued(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(BAD_REQUEST)
       }
     }
-
   }
 }
