@@ -24,20 +24,22 @@ import play.api.libs.json.Json
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.http.HttpClient
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+
+import scala.concurrent.{ExecutionContext, Future}
 
 sealed trait EmailStatus
 case object EmailSent extends EmailStatus
 case object EmailNotSent extends EmailStatus
 
 class EmailConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
-                                   val http: HttpClient) extends EmailConnector {
+                                   val http: HttpClient,
+                                   override implicit val ec: ExecutionContext) extends EmailConnector {
   val serviceUrl: String = servicesConfig.baseUrl("email")
   val sendEmailUri: String = "hmrc/email"
 }
 
 trait EmailConnector extends RawResponseReads with Logging {
+  implicit val ec: ExecutionContext
   val serviceUrl: String
   val sendEmailUri: String
   val http: HttpClient

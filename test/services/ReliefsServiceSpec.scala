@@ -34,7 +34,7 @@ import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
 
@@ -44,6 +44,7 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
   val mockAuthConnector = mock[AuthConnector]
   val mockSubscriptionDataService = mock[SubscriptionDataService]
   val mockEmailConnector = mock[EmailConnector]
+  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   trait Setup {
     class TestReliefsService extends ReliefsService {
@@ -52,6 +53,7 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
       override val authConnector = mockAuthConnector
       override val subscriptionDataService = mockSubscriptionDataService
       override val emailConnector = mockEmailConnector
+      implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
     }
 
     val testReliefsService = new TestReliefsService()
@@ -105,7 +107,8 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
         implicit val hc = new HeaderCarrier()
 
         when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq()))
-        when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, "")))
+        when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(OK, "")))
         when(mockAuthConnector.authorise[Option[String]](any(), any())(any(), any())).thenReturn(Future.successful(Some("Name")))
 
         when(mockReliefsCache.deleteReliefs(ArgumentMatchers.anyString())).thenReturn(Future.successful(ReliefDeleted))
@@ -147,7 +150,8 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
         when(mockReliefsCache.deleteDraftReliefByYear(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(ReliefDeleted))
 
         val submitSuccess = Json.parse( """{"status" : "OK", "processingDate" :  "2014-12-17T09:30:47Z", "formBundleNumber" : "123456789012"}""")
-        when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, submitSuccess, Map.empty[String, Seq[String]])))
+        when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(OK, submitSuccess, Map.empty[String, Seq[String]])))
         val result = testReliefsService.submitAndDeleteDraftReliefs("accountRef", periodKey)
         await(result).status must be(OK)
         verify(mockEmailConnector, times(1)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())

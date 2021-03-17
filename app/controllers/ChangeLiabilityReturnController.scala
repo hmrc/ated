@@ -25,15 +25,19 @@ import services.{ChangeLiabilityService, NoLiabilityAmountException}
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class ChangeLiabilityReturnControllerImpl @Inject()(
                                                      val changeLiabilityService: ChangeLiabilityService,
                                                      val cc: ControllerComponents,
                                                      implicit val crypto: ApplicationCrypto
-                                                   ) extends BackendController(cc) with ChangeLiabilityReturnController
+                                                   ) extends BackendController(cc) with ChangeLiabilityReturnController {
+  override implicit val ec: ExecutionContext = cc.executionContext
+}
+
 trait ChangeLiabilityReturnController extends BackendController with Logging {
+  implicit val ec: ExecutionContext
   val crypto: ApplicationCrypto
   implicit lazy val compositeCrypto: CryptoWithKeysFromConfig = crypto.JsonCrypto
   implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats

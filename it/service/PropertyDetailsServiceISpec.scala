@@ -35,7 +35,7 @@ class PropertyDetailsServiceISpec extends IntegrationSpec with AssertionHelpers 
 
   "deleteChargeableDraft" should {
     "delete a chargeable draft by id and ated ref" in new Setup {
-      val draft = await(hitApplicationEndpoint("/ated/ATE1234568XX/property-details/create/2020")
+      await(hitApplicationEndpoint("/ated/ATE1234568XX/property-details/create/2020")
         .post(Json.toJson(address)))
 
       await(repo.collection.count(None, None, 0, None, readConcern = ReadConcern.Local)) mustBe 1

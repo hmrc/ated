@@ -30,9 +30,9 @@ import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.play.http.logging.Mdc
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 sealed trait PropertyDetailsCache
 case object PropertyDetailsCached extends PropertyDetailsCache
@@ -55,9 +55,10 @@ trait PropertyDetailsMongoRepository extends ReactiveRepository[PropertyDetails,
 @Singleton
 class PropertyDetailsMongoWrapperImpl @Inject()(val mongo: ReactiveMongoComponent,
                                                 val serviceMetrics: ServiceMetrics,
-                                                val crypto: ApplicationCrypto) extends PropertyDetailsMongoWrapper
+                                                val crypto: ApplicationCrypto)(implicit val ec:ExecutionContext) extends PropertyDetailsMongoWrapper
 
 trait PropertyDetailsMongoWrapper {
+  implicit val ec: ExecutionContext
   val mongo: ReactiveMongoComponent
   val serviceMetrics: ServiceMetrics
   val crypto: ApplicationCrypto
@@ -68,7 +69,7 @@ trait PropertyDetailsMongoWrapper {
   def apply(): PropertyDetailsMongoRepository = propertyDetailsRepository
 }
 
-class PropertyDetailsReactiveMongoRepository(mongo: () => DB, val metrics: ServiceMetrics)(implicit crypto: CompositeSymmetricCrypto)
+class PropertyDetailsReactiveMongoRepository(mongo: () => DB, val metrics: ServiceMetrics)(implicit crypto: CompositeSymmetricCrypto, ec: ExecutionContext)
   extends ReactiveRepository[PropertyDetails, BSONObjectID]("propertyDetails", mongo, PropertyDetails.formats, ReactiveMongoFormats.objectIdFormats)
     with PropertyDetailsMongoRepository {
 
@@ -85,7 +86,8 @@ class PropertyDetailsReactiveMongoRepository(mongo: () => DB, val metrics: Servi
 
   def updateTimeStamp(propertyDetails: PropertyDetails, date: DateTime): Future[PropertyDetailsCache] = {
     val query = BSONDocument("periodKey" -> propertyDetails.periodKey, "atedRefNo" -> propertyDetails.atedRefNo, "id" -> propertyDetails.id)
-    collection.update(ordered = false).one(query, propertyDetails.copy(timeStamp = date), upsert = false, multi = false) map { res =>
+    Mdc.preservingMdc(
+      collection.update(ordered = false).one(query, propertyDetails.copy(timeStamp = date), upsert = false, multi = false)) map { res =>
       if (res.ok && res.nModified != 0) {
         logger.info(s"[updateTimestamp] Updated timestamp for ${propertyDetails.id} with $date")
         PropertyDetailsCached
@@ -108,7 +110,8 @@ class PropertyDetailsReactiveMongoRepository(mongo: () => DB, val metrics: Servi
 
     foundPropertyDetails flatMap { propertyDetails =>
       Future.sequence(propertyDetails map { propDetails =>
-        collection.delete().one(BSONDocument("atedRefNo" -> propDetails.atedRefNo, "id" -> propDetails.id)) map { res =>
+        Mdc.preservingMdc(collection.delete()
+          .one(BSONDocument("atedRefNo" -> propDetails.atedRefNo, "id" -> propDetails.id))) map { res =>
           if (res.ok && res.n == 1) {
             1
           } else {
@@ -116,7 +119,10 @@ class PropertyDetailsReactiveMongoRepository(mongo: () => DB, val metrics: Servi
             0
           }
         }
-      }) map {_.sum}
+
+      }) map {
+        _.sum
+      }
     }
   }
 
@@ -124,7 +130,9 @@ class PropertyDetailsReactiveMongoRepository(mongo: () => DB, val metrics: Servi
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryInsertPropDetails)
     val query = BSONDocument("periodKey" -> propertyDetails.periodKey, "atedRefNo" -> propertyDetails.atedRefNo, "id" -> propertyDetails.id)
 
-    collection.update(ordered = false).one(query, propertyDetails.copy(timeStamp = DateTime.now(DateTimeZone.UTC)), upsert = true, multi = false).map { writeResult =>
+    Mdc.preservingMdc(collection.update(ordered = false)
+      .one(query, propertyDetails.copy(timeStamp = DateTime.now(DateTimeZone.UTC)),
+        upsert = true, multi = false)).map { writeResult =>
       timerContext.stop()
       if (writeResult.ok) {
         PropertyDetailsCached
@@ -142,7 +150,7 @@ class PropertyDetailsReactiveMongoRepository(mongo: () => DB, val metrics: Servi
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchPropDetails)
     val query = BSONDocument("atedRefNo" -> atedRefNo)
 
-    val result:Future[Seq[PropertyDetails]] = collection.find(query, Option.empty)(BSONDocumentWrites, BSONDocumentWrites)
+    val result: Future[Seq[PropertyDetails]] = collection.find(query, Option.empty)(BSONDocumentWrites, BSONDocumentWrites)
       .cursor[PropertyDetails]().collect[Seq](maxDocs = -1, err = FailOnError[Seq[PropertyDetails]]())
 
     result onComplete {
@@ -155,7 +163,7 @@ class PropertyDetailsReactiveMongoRepository(mongo: () => DB, val metrics: Servi
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchPropDetails)
     val query = BSONDocument("atedRefNo" -> atedRefNo, "id" -> id)
 
-    val result:Future[Seq[PropertyDetails]] = collection.find(query, Option.empty)(BSONDocumentWrites, BSONDocumentWrites)
+    val result: Future[Seq[PropertyDetails]] = collection.find(query, Option.empty)(BSONDocumentWrites, BSONDocumentWrites)
       .cursor[PropertyDetails]().collect[Seq](maxDocs = -1, err = FailOnError[Seq[PropertyDetails]]())
 
     result onComplete {
@@ -167,7 +175,8 @@ class PropertyDetailsReactiveMongoRepository(mongo: () => DB, val metrics: Servi
   def deletePropertyDetailsByfieldName(atedRefNo: String, id: String): Future[PropertyDetailsDelete] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryDeletePropDetailsByFieldName)
     val query = BSONDocument("atedRefNo" -> atedRefNo, "id" -> id)
-    collection.delete().one(query).map { removeResult =>
+
+    Mdc.preservingMdc(collection.delete().one(query)).map { removeResult =>
       if (removeResult.ok) {
         PropertyDetailsDeleted
       } else {

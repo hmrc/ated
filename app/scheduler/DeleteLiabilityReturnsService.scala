@@ -16,21 +16,23 @@
 
 package scheduler
 
-import javax.inject.Inject
 import org.joda.time.Duration
 import play.api.{Configuration, Environment, Logging}
 import repository.{DisposeLiabilityReturnMongoRepository, DisposeLiabilityReturnMongoWrapper, LockRepositoryProvider}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import uk.gov.hmrc.play.http.logging.Mdc
 
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class DefaultDeleteLiabilityReturnsService @Inject()(val servicesConfig: ServicesConfig,
                                             val repository: DisposeLiabilityReturnMongoWrapper,
                                             val environment: Environment,
                                             val lockRepositoryProvider: LockRepositoryProvider,
-                                            val configuration: Configuration
+                                            val configuration: Configuration,
+                                                     override implicit val ec: ExecutionContext
                                             ) extends DeleteLiabilityReturnsService {
 
   override val documentBatchSize: Int = servicesConfig.getInt("schedules.delete-liability-returns-job.cleardown.batchSize")
@@ -44,6 +46,8 @@ class DefaultDeleteLiabilityReturnsService @Inject()(val servicesConfig: Service
 }
 
 trait DeleteLiabilityReturnsService extends ScheduledService[Int] with Logging {
+
+  implicit val ec: ExecutionContext
   lazy val repo: DisposeLiabilityReturnMongoRepository = repository()
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
@@ -56,11 +60,11 @@ trait DeleteLiabilityReturnsService extends ScheduledService[Int] with Logging {
   }
 
   def invoke()(implicit ec: ExecutionContext): Future[Int] = {
-    lockKeeper.tryLock(deleteOldLiabilityReturns()) map {
+    Mdc.preservingMdc(lockKeeper.tryLock(deleteOldLiabilityReturns())) map {
       case Some(result) =>
         logger.info(s"[DeleteLiabilityReturnsService] Deleted $result draft documents past the given day limit")
         result
-      case None         =>
+      case None =>
         logger.warn(s"[DeleteLiabilityReturnsService] Failed to acquire lock")
         0
     }

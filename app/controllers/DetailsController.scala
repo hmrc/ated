@@ -21,22 +21,29 @@ import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class DetailsControllerImpl @Inject()(
                                       val cc: ControllerComponents,
                                       val etmpConnector: EtmpDetailsConnector
-                                     ) extends BackendController(cc) with DetailsController
+                                     ) extends BackendController(cc) with DetailsController {
+
+  override implicit val ec: ExecutionContext = cc.executionContext
+
+}
 
 @Singleton
 class AgentDetailsController @Inject()(
                                         val cc: ControllerComponents,
                                         val etmpConnector: EtmpDetailsConnector
-                                      ) extends BackendController(cc) with DetailsController
+                                      ) extends BackendController(cc) with DetailsController {
+  override implicit val ec: ExecutionContext = cc.executionContext
+}
 
 trait DetailsController extends BackendController {
 
+  implicit val ec: ExecutionContext
   def etmpConnector: EtmpDetailsConnector
 
   def getDetails(accountRef: String, identifier: String, identifierType: String): Action[AnyContent] = Action.async { _ =>

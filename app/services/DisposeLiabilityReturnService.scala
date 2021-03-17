@@ -17,6 +17,7 @@
 package services
 
 import connectors.{EmailConnector, EtmpReturnsConnector}
+
 import javax.inject.Inject
 import models._
 import play.api.Logging
@@ -29,14 +30,14 @@ import utils.ReliefUtils._
 import utils.SessionUtils._
 import utils.{AuthFunctionality, ChangeLiabilityUtils, PropertyDetailsUtils}
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class DisposeLiabilityReturnServiceImpl @Inject()(val etmpReturnsConnector: EtmpReturnsConnector,
                                                   val disposeLiabilityReturnMongoWrapper: DisposeLiabilityReturnMongoWrapper,
                                                   val authConnector: AuthConnector,
                                                   val subscriptionDataService: SubscriptionDataService,
-                                                  val emailConnector: EmailConnector
+                                                  val emailConnector: EmailConnector,
+                                                  override implicit val ec: ExecutionContext
                                                  ) extends DisposeLiabilityReturnService {
   lazy val disposeLiabilityReturnRepository: DisposeLiabilityReturnMongoRepository = disposeLiabilityReturnMongoWrapper()
 }
@@ -55,13 +56,13 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
     disposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(atedRefNo)
   }
 
-  def retrieveDraftDisposeLiabilityReturn(atedRefNo: String, oldFormBundleNo: String): Future[Option[DisposeLiabilityReturn]] = {
+  def retrieveDraftDisposeLiabilityReturn(atedRefNo: String, oldFormBundleNo: String)(implicit ec: ExecutionContext): Future[Option[DisposeLiabilityReturn]] = {
     retrieveDraftDisposeLiabilityReturns(atedRefNo) map {
       x => x.find(_.id == oldFormBundleNo)
     }
   }
 
-  def retrieveAndCacheDisposeLiabilityReturn(atedRefNo: String, oldFormBundleNo: String): Future[Option[DisposeLiabilityReturn]] = {
+  def retrieveAndCacheDisposeLiabilityReturn(atedRefNo: String, oldFormBundleNo: String)(implicit ec: ExecutionContext): Future[Option[DisposeLiabilityReturn]] = {
     for {
       cachedData <- retrieveDraftDisposeLiabilityReturn(atedRefNo, oldFormBundleNo)
       cachedDisposeLiability <- {
@@ -89,8 +90,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
     }
   }
 
-  def updateDraftDisposeLiabilityReturnDate(atedRefNo: String, oldFormBundleNo: String, updatedDate: DisposeLiability)
-  : Future[Option[DisposeLiabilityReturn]] = {
+  def updateDraftDisposeLiabilityReturnDate(atedRefNo: String, oldFormBundleNo: String, updatedDate: DisposeLiability)(implicit ec: ExecutionContext): Future[Option[DisposeLiabilityReturn]] = {
     for {
       disposeLiabilityReturnList <- retrieveDraftDisposeLiabilityReturns(atedRefNo)
       disposeLiabilityOpt <- {
@@ -106,8 +106,8 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
     }
   }
 
-  def updateDraftDisposeHasBankDetails(atedRefNo: String, oldFormBundleNo: String, hasBankDetails: Boolean)
-  : Future[Option[DisposeLiabilityReturn]] = {
+  def updateDraftDisposeHasBankDetails(atedRefNo: String, oldFormBundleNo: String, hasBankDetails: Boolean)(
+    implicit ec: ExecutionContext): Future[Option[DisposeLiabilityReturn]] = {
     val disposeLiabilityReturnListFuture = retrieveDraftDisposeLiabilityReturns(atedRefNo)
     for {
       disposeLiabilityReturnList <- disposeLiabilityReturnListFuture
@@ -129,9 +129,8 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
     }
   }
 
-
-  def updateDraftDisposeBankDetails(atedRefNo: String, oldFormBundleNo: String, updatedValue: BankDetails)
-  : Future[Option[DisposeLiabilityReturn]] = {
+  def updateDraftDisposeBankDetails(atedRefNo: String, oldFormBundleNo: String, updatedValue: BankDetails)(
+    implicit ec: ExecutionContext): Future[Option[DisposeLiabilityReturn]] = {
     import models.BankDetailsConversions._
     val disposeLiabilityReturnListFuture = retrieveDraftDisposeLiabilityReturns(atedRefNo)
     for {
@@ -152,8 +151,8 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
     }
   }
 
-  def calculateDraftDispose(atedRefNo: String, oldFormBundleNo: String)
-                           (implicit hc: HeaderCarrier): Future[Option[DisposeLiabilityReturn]] = {
+  def calculateDraftDispose(atedRefNo: String, oldFormBundleNo: String)(
+    implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[DisposeLiabilityReturn]] = {
     retrieveAgentRefNumberFor { agentRefNo =>
       val disposeLiabilityReturnListFuture = retrieveDraftDisposeLiabilityReturns(atedRefNo)
       for {
@@ -177,8 +176,8 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
   }
 
 
-  def getPreCalculationAmounts(atedRefNo: String, x: FormBundleReturn, disposalDate: DisposeLiability, oldFormBNo: String, agentRefNo: Option[String] = None)
-  : Future[DisposeCalculated] = {
+  def getPreCalculationAmounts(atedRefNo: String, x: FormBundleReturn, disposalDate: DisposeLiability, oldFormBNo: String,
+                               agentRefNo: Option[String] = None)(implicit ec: ExecutionContext): Future[DisposeCalculated] = {
     def generateEditReturnRequest: EditLiabilityReturnsRequestModel = {
       val liabilityReturn = EditLiabilityReturnsRequest(oldFormBundleNumber = oldFormBNo,
         mode = PreCalculation,
@@ -211,7 +210,8 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
     }
   }
 
-  def deleteDisposeLiabilityDraft(atedRefNo: String, oldFormBundleNo: String): Future[Seq[DisposeLiabilityReturn]] = {
+  def deleteDisposeLiabilityDraft(atedRefNo: String, oldFormBundleNo: String)(
+    implicit ec: ExecutionContext): Future[Seq[DisposeLiabilityReturn]] = {
     for {
       disposeLiabilityReturnList <- retrieveDraftDisposeLiabilityReturns(atedRefNo)
       updatedListAfterDelete <- {
@@ -235,7 +235,8 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
   }
 
   //scalastyle:off method.length
-  def submitDisposeLiability(atedRefNo: String, oldFormBundleNo: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def submitDisposeLiability(atedRefNo: String, oldFormBundleNo: String)(
+    implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
     retrieveAgentRefNumberFor { agentRefNo =>
       val disposeLiabilityReturnListFuture = retrieveDraftDisposeLiabilityReturns(atedRefNo)
 

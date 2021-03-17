@@ -21,15 +21,18 @@ import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.FormBundleService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class FormBundleReturnsControllerImpl @Inject()(
                                                  val cc: ControllerComponents,
                                                  val formBundleService: FormBundleService
-                                               ) extends BackendController(cc) with FormBundleReturnsController
+                                               ) extends BackendController(cc) with FormBundleReturnsController {
+  override implicit val ec: ExecutionContext = cc.executionContext
+}
 
 trait FormBundleReturnsController extends BackendController {
+  implicit val ec: ExecutionContext
   def formBundleService: FormBundleService
 
   def getFormBundleReturns(accountRef: String, formBundle: String): Action[AnyContent] = Action.async { _ =>

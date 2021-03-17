@@ -17,6 +17,7 @@
 package controllers
 
 import audit.Auditable
+
 import javax.inject.{Inject, Named, Singleton}
 import models.ReliefsTaxAvoidance
 import play.api.Logging
@@ -30,7 +31,7 @@ import uk.gov.hmrc.play.audit.model.Audit
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import utils.AuthFunctionality
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class ReliefsControllerImpl @Inject()(val cc: ControllerComponents,
@@ -39,9 +40,11 @@ class ReliefsControllerImpl @Inject()(val cc: ControllerComponents,
                                       val auditConnector: AuditConnector,
                                       @Named("appName") val appName: String) extends BackendController(cc) with ReliefsController {
   val audit: Audit = new Audit(s"ATED:$appName", auditConnector)
+  override implicit val ec: ExecutionContext = cc.executionContext
 }
 
 trait ReliefsController extends BackendController with Auditable with AuthFunctionality with Logging {
+  implicit val ec: ExecutionContext
 
   def reliefsService: ReliefsService
 

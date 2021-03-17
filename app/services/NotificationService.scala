@@ -23,13 +23,13 @@ import play.api.libs.json.JsValue
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.AuthFunctionality
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+
+import scala.concurrent.{ExecutionContext, Future}
 import utils.AtedUtils._
 
 trait NotificationService extends AuthFunctionality with Retrievals {
 
-
+  implicit val ec: ExecutionContext
   def emailConnector: EmailConnector
 
   def sendMail(subscriptionData: JsValue, template: String, reference: Map[String, String] = Map.empty)(implicit hc: HeaderCarrier): Future[EmailStatus] = {

@@ -26,16 +26,19 @@ import services.PropertyDetailsPeriodService
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class PropertyDetailsPeriodControllerImpl @Inject()(
                                                      val propertyDetailsService: PropertyDetailsPeriodService,
                                                      val cc: ControllerComponents,
                                                      implicit val crypto: ApplicationCrypto
-                                                   ) extends BackendController(cc) with PropertyDetailsPeriodController
+                                                   ) extends BackendController(cc) with PropertyDetailsPeriodController {
+  override implicit val ec: ExecutionContext = cc.executionContext
+}
 
 trait PropertyDetailsPeriodController extends BackendController {
+  implicit val ec: ExecutionContext
   val crypto: ApplicationCrypto
   implicit lazy val compositeCrypto: CryptoWithKeysFromConfig = crypto.JsonCrypto
   implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats

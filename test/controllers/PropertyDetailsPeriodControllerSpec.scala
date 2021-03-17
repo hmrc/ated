@@ -33,7 +33,7 @@ import services.PropertyDetailsPeriodService
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 
 class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar {
@@ -46,10 +46,11 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPe
 
   trait Setup {
     val cc: ControllerComponents = app.injector.instanceOf[ControllerComponents]
-
+    implicit val ec: ExecutionContext = cc.executionContext
     class TestPropertyDetailsController extends BackendController(cc) with PropertyDetailsPeriodController {
       val propertyDetailsService = mockPropertyDetailsService
       override implicit val crypto: ApplicationCrypto = compositeSymmetricCrypto
+      implicit val ec: ExecutionContext = cc.executionContext
     }
 
     val controller = new TestPropertyDetailsController()
@@ -66,7 +67,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPe
         lazy val testPropertyDetailsDatesLiable = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
         lazy val testPropertyDetailsPeriod = IsFullTaxPeriod(true, Some(testPropertyDetailsDatesLiable))
         when(mockPropertyDetailsService.cacheDraftFullTaxPeriod(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.saveDraftFullTaxPeriod(testAccountRef, "1").apply(fakeRequest)
@@ -79,7 +80,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPe
 
         lazy val testPropertyDetailsPeriod = IsFullTaxPeriod(true, None)
         when(mockPropertyDetailsService.cacheDraftFullTaxPeriod(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.saveDraftFullTaxPeriod(testAccountRef, "1").apply(fakeRequest)
@@ -95,7 +96,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPe
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsInRelief()
         when(mockPropertyDetailsService.cacheDraftInRelief(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.saveDraftInRelief(testAccountRef, "1").apply(fakeRequest)
@@ -107,7 +108,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPe
 
         lazy val testPropertyDetailsPeriod = PropertyDetailsInRelief()
         when(mockPropertyDetailsService.cacheDraftInRelief(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.saveDraftInRelief(testAccountRef, "1").apply(fakeRequest)
@@ -125,7 +126,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPe
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
         when(mockPropertyDetailsService.cacheDraftDatesLiable(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.saveDraftDatesLiable(testAccountRef, "1").apply(fakeRequest)
@@ -138,7 +139,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPe
 
         lazy val testPropertyDetailsPeriod = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
         when(mockPropertyDetailsService.cacheDraftDatesLiable(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.saveDraftDatesLiable(testAccountRef, "1").apply(fakeRequest)
@@ -154,7 +155,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPe
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
         when(mockPropertyDetailsService.addDraftDatesLiable(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.addDraftDatesLiable(testAccountRef, "1").apply(fakeRequest)
@@ -167,7 +168,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPe
 
         lazy val testPropertyDetailsPeriod = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
         when(mockPropertyDetailsService.addDraftDatesLiable(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.addDraftDatesLiable(testAccountRef, "1").apply(fakeRequest)
@@ -183,7 +184,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPe
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = PropertyDetailsDatesInRelief(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
         when(mockPropertyDetailsService.addDraftDatesInRelief(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.addDraftDatesInRelief(testAccountRef, "1").apply(fakeRequest)
@@ -196,7 +197,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPe
 
         lazy val testPropertyDetailsPeriod = PropertyDetailsDatesInRelief(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
         when(mockPropertyDetailsService.addDraftDatesInRelief(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.addDraftDatesInRelief(testAccountRef, "1").apply(fakeRequest)
@@ -212,7 +213,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPe
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod = new LocalDate("1970-01-01")
         when(mockPropertyDetailsService.deleteDraftPeriod(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.deleteDraftPeriod(testAccountRef, "1").apply(fakeRequest)
@@ -225,7 +226,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPe
 
         lazy val testPropertyDetailsPeriod = new LocalDate("1970-01-01")
         when(mockPropertyDetailsService.deleteDraftPeriod(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testPropertyDetailsPeriod))
         val result = controller.deleteDraftPeriod(testAccountRef, "1").apply(fakeRequest)

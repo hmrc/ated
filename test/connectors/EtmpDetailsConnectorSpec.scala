@@ -32,7 +32,7 @@ import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.Audit
 import utils.SessionUtils
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class EtmpDetailsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfter {
 
@@ -41,6 +41,7 @@ class EtmpDetailsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
 
   trait Setup {
     class TestEtmpDetailsConnector extends EtmpDetailsConnector {
+      implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
       val serviceUrl = "etmp-hod"
       val http: HttpClient = mockWSHttp
       val urlHeaderEnvironment: String = ""

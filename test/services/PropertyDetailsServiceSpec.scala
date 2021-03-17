@@ -18,7 +18,6 @@ package services
 
 
 import java.util.UUID
-
 import builders.{AuthFunctionalityHelper, ChangeLiabilityReturnBuilder, PropertyDetailsBuilder}
 import connectors.{EmailConnector, EmailSent, EtmpReturnsConnector}
 import models._
@@ -39,7 +38,7 @@ import uk.gov.hmrc.http.logging.SessionId
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse, InternalServerException}
 import uk.gov.hmrc.mongo.DatabaseUpdate
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
 
@@ -50,9 +49,11 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
   val mockAuthConnector = mock[AuthConnector]
   val mockSubscriptionDataService = mock[SubscriptionDataService]
   val mockEmailConnector = mock[EmailConnector]
+  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   trait Setup {
     class TestPropertyDetailsService extends PropertyDetailsService {
+      implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
       override val propertyDetailsCache = mockPropertyDetailsCache
       override val etmpConnector = mockEtmpConnector
       override val authConnector = mockAuthConnector
@@ -311,7 +312,8 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       lazy val calcPropertyDetails1 = PropertyDetailsBuilder.getPropertyDetails("1", Some("something"), liabilityAmount = Some(BigDecimal(123.22))).copy(calculated = None)
 
       val successResponse = Json.parse(jsonEtmpResponse)
-      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(calcPropertyDetails1)))
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
@@ -635,7 +637,8 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       lazy val propertyDetailsExample = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
 
       val successResponse = Json.parse(jsonEtmpResponse)
-      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
       val result = testPropertyDetailsService.getLiabilityAmount(accountRef, "1", propertyDetailsExample)
 
       val liabilityAmount = await(result)
@@ -646,7 +649,8 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       lazy val propertyDetailsExample = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
 
       val successResponse = Json.parse(jsonEtmpResponse)
-      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
       val result = testPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
 
       val liabilityAmount = await(result)
@@ -657,7 +661,8 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       lazy val propertyDetailsExample = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
 
       val failureResponse = Json.parse( """{ "reason": "Error"}""")
-      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, failureResponse, Map.empty[String, Seq[String]])))
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, failureResponse, Map.empty[String, Seq[String]])))
       val result = testPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
 
       val thrown = the[BadRequestException] thrownBy await(result)
@@ -668,7 +673,8 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       lazy val propertyDetailsExample = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
 
       val failureResponse = Json.parse( """{ "reason": "Error"}""")
-      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, failureResponse, Map.empty[String, Seq[String]])))
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, failureResponse, Map.empty[String, Seq[String]])))
       val result = testPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
 
       val thrown = the[InternalServerException] thrownBy await(result)
@@ -680,7 +686,8 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       val propertyDetailsExample = propertyDetailsPopulated.copy(period = None, calculated = None)
 
       val failureResponse = Json.parse( """{ "reason": "Error"}""")
-      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, failureResponse, Map.empty[String, Seq[String]])))
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, failureResponse, Map.empty[String, Seq[String]])))
       val thrown = the[InternalServerException] thrownBy testPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
 
       thrown.getMessage must include("Invalid Data for the request")
@@ -699,12 +706,14 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       val enrolmentsWithName: Retrieval = Some(name)
 
       val successResponse = Json.parse(jsonEtmpResponse)
-      when(mockAuthConnector.authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
+      when(mockAuthConnector.authorise[Any](any(), any())(any(), any()))
+        .thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
       when(mockPropertyDetailsCache.deletePropertyDetailsByfieldName(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(PropertyDetailsDeleted))
-      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest]())) thenReturn {
+      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef),
+        ArgumentMatchers.any[SubmitEtmpReturnsRequest]())(ArgumentMatchers.any())) thenReturn {
         Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]]))
       }
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))

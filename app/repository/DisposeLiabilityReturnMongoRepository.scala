@@ -16,7 +16,6 @@
 
 package repository
 
-import javax.inject.{Inject, Singleton}
 import metrics.{MetricsEnum, ServiceMetrics}
 import models.DisposeLiabilityReturn
 import org.joda.time.{DateTime, DateTimeZone}
@@ -30,9 +29,10 @@ import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.play.http.logging.Mdc
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
 
 sealed trait DisposeLiabilityReturnCache
 case object DisposeLiabilityReturnCached extends DisposeLiabilityReturnCache
@@ -53,9 +53,11 @@ trait DisposeLiabilityReturnMongoRepository extends ReactiveRepository[DisposeLi
 @Singleton
 class DisposeLiabilityReturnMongoWrapperImpl @Inject()(val mongo: ReactiveMongoComponent,
                                                        val serviceMetrics: ServiceMetrics,
-                                                       val crypto: ApplicationCrypto) extends DisposeLiabilityReturnMongoWrapper
+                                                       val crypto: ApplicationCrypto)(
+  override implicit val ec: ExecutionContext) extends DisposeLiabilityReturnMongoWrapper
 
 trait DisposeLiabilityReturnMongoWrapper {
+  implicit val ec: ExecutionContext
   val mongo: ReactiveMongoComponent
   val serviceMetrics: ServiceMetrics
   val crypto: ApplicationCrypto
@@ -66,7 +68,8 @@ trait DisposeLiabilityReturnMongoWrapper {
   def apply(): DisposeLiabilityReturnMongoRepository = disposeLiabilityReturnRepository
 }
 
-class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics: ServiceMetrics)(implicit crypto: CompositeSymmetricCrypto)
+class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics: ServiceMetrics)(
+  implicit crypto: CompositeSymmetricCrypto, ec: ExecutionContext)
   extends ReactiveRepository[DisposeLiabilityReturn, BSONObjectID](collectionName = "disposeLiabilityReturns",
                                                                    mongo,
                                                                    DisposeLiabilityReturn.formats,
@@ -86,7 +89,7 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics
 
   override def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: DateTime): Future[DisposeLiabilityReturnDelete] = {
     val query = BSONDocument("atedRefNo" -> liabilityReturn.atedRefNo, "id" -> liabilityReturn.id)
-    collection.update(ordered = false).one(query, liabilityReturn.copy(timeStamp = date), upsert = false, multi = false) map { res =>
+    Mdc.preservingMdc(collection.update(ordered = false).one(query, liabilityReturn.copy(timeStamp = date), upsert = false, multi = false)) map { res =>
       if (res.ok && res.nModified != 0) {
         logger.info(s"[updateTimestamp] Updated timestamp for ${liabilityReturn.id} with $date")
         DisposeLiabilityReturnDeleted
@@ -109,7 +112,7 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics
 
     foundLiabilityReturns flatMap { returns =>
       Future.sequence(returns map { rtn =>
-        collection.delete().one(BSONDocument("atedRefNo" -> rtn.atedRefNo, "id" -> rtn.id)) map { res =>
+        Mdc.preservingMdc(collection.delete().one(BSONDocument("atedRefNo" -> rtn.atedRefNo, "id" -> rtn.id))) map { res =>
           if (res.ok && res.n == 1) {
             1
           } else {
@@ -117,14 +120,19 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics
             0
           }
         }
-      }) map {_.sum}
+      }) map {
+        _.sum
+      }
     }
   }
 
   def cacheDisposeLiabilityReturns(disposeLiabilityReturn: DisposeLiabilityReturn): Future[DisposeLiabilityReturnCache] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryInsertDispLiability)
     val query = BSONDocument("atedRefNo" -> disposeLiabilityReturn.atedRefNo, "id" -> disposeLiabilityReturn.id)
-    collection.update(ordered = false).one(query, disposeLiabilityReturn.copy(timeStamp = DateTime.now(DateTimeZone.UTC)), upsert = true, multi = false).map { writeResult =>
+
+    Mdc.preservingMdc(collection.update(ordered = false)
+      .one(query, disposeLiabilityReturn.copy(timeStamp = DateTime.now(DateTimeZone.UTC)),
+        upsert = true, multi = false)).map { writeResult =>
       timerContext.stop()
       if (writeResult.ok) {
         DisposeLiabilityReturnCached
@@ -132,11 +140,9 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics
         DisposeLiabilityReturnCacheError
       }
     }.recover {
-
       case e => logger.warn("Failed to remove draft dispose liability", e)
         timerContext.stop()
         DisposeLiabilityReturnCacheError
-
     }
   }
 
@@ -145,9 +151,12 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics
     val query = BSONDocument("atedRefNo" -> atedRefNo)
 
     //TODO: Replace with find from ReactiveRepository
-    val result:Future[Seq[DisposeLiabilityReturn]] = collection.find(query, Option.empty)(BSONDocumentWrites, BSONDocumentWrites)
-      .cursor[DisposeLiabilityReturn]().collect[Seq](maxDocs = -1, err = FailOnError[Seq[DisposeLiabilityReturn]]())
+    val result: Future[Seq[DisposeLiabilityReturn]] =
+      Mdc.preservingMdc {
+        collection.find(query, Option.empty)(BSONDocumentWrites, BSONDocumentWrites)
+          .cursor[DisposeLiabilityReturn]().collect[Seq](maxDocs = -1, err = FailOnError[Seq[DisposeLiabilityReturn]]())
 
+      }
     result onComplete {
       _ => timerContext.stop()
     }
