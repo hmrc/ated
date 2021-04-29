@@ -1,7 +1,7 @@
 ated
 ====
 
-[![Build Status](https://travis-ci.org/hmrc/ated.svg?branch=master)](https://travis-ci.org/hmrc/ated) [ ![Download](https://api.bintray.com/packages/hmrc/releases/ated/images/download.svg) ](https://bintray.com/hmrc/releases/ated/_latestVersion)
+[![Build Status](https://travis-ci.org/hmrc/ated.svg?branch=master)](https://travis-ci.org/hmrc/ated)
 
 Microservice for Annual Tax on Enveloped Dwellings. This implements the main business logic for ATED, communicating with ETMP(HOD) and Mongo Database for storage/retrieval. The microservice is based on the RESTful API structure, receives and sends data using JSON to either from.
 
