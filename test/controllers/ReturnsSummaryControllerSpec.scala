@@ -57,7 +57,7 @@ class ReturnsSummaryControllerSpec extends PlaySpec with GuiceOneServerPerSuite 
     "getFullSummaryReturn" must {
       "return SummaryReturnsModel model, if found in cache or ETMP" in new Setup {
         val summaryReturnsModel = SummaryReturnsModel(None, Nil)
-        when(mockReturnSummaryService.getFullSummaryReturns(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any()))
+        when(mockReturnSummaryService.getFullSummaryReturns(ArgumentMatchers.eq(atedRefNo))(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(summaryReturnsModel))
         val result = controller.getFullSummaryReturn(atedRefNo).apply(FakeRequest())
         status(result) must be(OK)

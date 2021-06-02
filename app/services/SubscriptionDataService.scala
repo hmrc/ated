@@ -34,12 +34,12 @@ trait SubscriptionDataService extends AuthFunctionality {
 
   def authConnector: AuthConnector
 
-  def retrieveSubscriptionData(atedReferenceNo: String): Future[HttpResponse] = {
+  def retrieveSubscriptionData(atedReferenceNo: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     etmpConnector.getSubscriptionData(atedReferenceNo)
   }
 
-  def updateSubscriptionData(atedReferenceNo: String, updateData: UpdateSubscriptionDataRequest)(
-    implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
+  def updateSubscriptionData(atedReferenceNo: String, updateData: UpdateSubscriptionDataRequest)
+                            (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
     retrieveAgentRefNumberFor { agentRefNo =>
       val request = UpdateEtmpSubscriptionDataRequest(
         SessionUtils.getUniqueAckNo,
@@ -52,7 +52,8 @@ trait SubscriptionDataService extends AuthFunctionality {
     }
   }
 
-  def updateRegistrationDetails(atedReferenceNo: String, safeId: String, updateData: UpdateRegistrationDetailsRequest): Future[HttpResponse] = {
+  def updateRegistrationDetails(atedReferenceNo: String, safeId: String, updateData: UpdateRegistrationDetailsRequest)
+                               (implicit hc: HeaderCarrier): Future[HttpResponse] = {
     val request = updateData.copy(acknowledgementReference = Some(SessionUtils.getUniqueAckNo))
     etmpConnector.updateRegistrationDetails(atedReferenceNo, safeId, request)
   }

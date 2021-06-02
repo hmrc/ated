@@ -117,8 +117,8 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
   }
 
   def getLiabilityAmount(atedRefNo: String, id: String,
-                         propertyDetails: PropertyDetails, agentRefNo: Option[String] = None)(
-    implicit ec: ExecutionContext): Future[Option[BigDecimal]] = {
+                         propertyDetails: PropertyDetails, agentRefNo: Option[String] = None)
+                        (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[BigDecimal]] = {
     def getLiabilityAmount(response: JsValue): Option[BigDecimal] = {
       val liabilityResponses = response.as[SubmitEtmpReturnsResponse]
       val result = liabilityResponses.liabilityReturnResponse.flatMap {

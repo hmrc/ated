@@ -43,7 +43,7 @@ trait SubscriptionDataController extends BackendController {
 
   def subscriptionDataService: SubscriptionDataService
 
-  def retrieveSubscriptionData(accountRef: String) = Action.async { _ =>
+  def retrieveSubscriptionData(accountRef: String) = Action.async { implicit request =>
     subscriptionDataService.retrieveSubscriptionData(accountRef) map { responseReceived =>
       responseReceived.status match {
         case OK => Ok(responseReceived.body)
@@ -69,7 +69,7 @@ trait SubscriptionDataController extends BackendController {
     }
   }
 
-  def retrieveSubscriptionDataByAgent(accountRef: String, agentCode: String) = Action.async { _ =>
+  def retrieveSubscriptionDataByAgent(accountRef: String, agentCode: String) = Action.async { implicit request =>
     subscriptionDataService.retrieveSubscriptionData(accountRef) map { responseReceived =>
       responseReceived.status match {
         case OK => Ok(responseReceived.body)

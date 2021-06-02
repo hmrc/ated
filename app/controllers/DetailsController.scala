@@ -17,10 +17,10 @@
 package controllers
 
 import connectors.EtmpDetailsConnector
-import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
 @Singleton
@@ -46,7 +46,7 @@ trait DetailsController extends BackendController {
   implicit val ec: ExecutionContext
   def etmpConnector: EtmpDetailsConnector
 
-  def getDetails(accountRef: String, identifier: String, identifierType: String): Action[AnyContent] = Action.async { _ =>
+  def getDetails(accountRef: String, identifier: String, identifierType: String): Action[AnyContent] = Action.async { implicit request =>
     etmpConnector.getDetails(identifier = identifier, identifierType = identifierType) map { responseReceived =>
       responseReceived.status match {
         case OK => Ok(responseReceived.body)

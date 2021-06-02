@@ -20,7 +20,7 @@ import connectors.EtmpReturnsConnector
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 class FormBundleServiceImpl @Inject()(val etmpReturnsConnector: EtmpReturnsConnector)(
   override implicit val ec: ExecutionContext) extends FormBundleService
@@ -30,7 +30,7 @@ trait FormBundleService {
 
   def etmpReturnsConnector: EtmpReturnsConnector
 
-  def getFormBundleReturns(atedReferenceNo: String, formBundleNumber: String): Future[HttpResponse] = {
+  def getFormBundleReturns(atedReferenceNo: String, formBundleNumber: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     etmpReturnsConnector.getFormBundleReturns(atedReferenceNo, formBundleNumber)
   }
 }

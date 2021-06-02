@@ -35,7 +35,7 @@ trait FormBundleReturnsController extends BackendController {
   implicit val ec: ExecutionContext
   def formBundleService: FormBundleService
 
-  def getFormBundleReturns(accountRef: String, formBundle: String): Action[AnyContent] = Action.async { _ =>
+  def getFormBundleReturns(accountRef: String, formBundle: String): Action[AnyContent] = Action.async { implicit request =>
     formBundleService.getFormBundleReturns(accountRef, formBundle) map { responseReceived =>
       responseReceived.status match {
         case OK => Ok(responseReceived.body)

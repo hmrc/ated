@@ -58,7 +58,8 @@ class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite w
   "SubscriptionDataService" must {
 
     "retrieve Subscription Data" in new Setup {
-      when(mockEtmpConnector.getSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+      implicit val hc: HeaderCarrier = HeaderCarrier()
+      when(mockEtmpConnector.getSubscriptionData(ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
       val result = testSubscriptionDataService.retrieveSubscriptionData(accountRef)
       val response = await(result)
       response.status must be(OK)
@@ -73,7 +74,7 @@ class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite w
         val updatedData = UpdateSubscriptionDataRequest(true, ChangeIndicators(), List(Address(addressDetails = addressDetails)))
         implicit val hc = HeaderCarrier()
 
-        when(mockEtmpConnector.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+        when(mockEtmpConnector.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
         mockRetrievingNoAuthRef
         val result = testSubscriptionDataService.updateSubscriptionData(accountRef, updatedData)
         val response = await(result)
@@ -86,10 +87,11 @@ class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite w
       val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
 
       "work if we have valid data" in new Setup {
+        implicit val hc: HeaderCarrier = HeaderCarrier()
         val registeredDetails = RegisteredAddressDetails(addressLine1 = "", addressLine2 = "", countryCode = "GB")
         val updatedData = new UpdateRegistrationDetailsRequest(None, false, None, Some(Organisation("testName")), registeredDetails, ContactDetails(), false, false)
 
-        when(mockEtmpConnector.updateRegistrationDetails(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+        when(mockEtmpConnector.updateRegistrationDetails(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
         val result = testSubscriptionDataService.updateRegistrationDetails(accountRef, "safeId", updatedData)
         val response = await(result)
         response.status must be(OK)

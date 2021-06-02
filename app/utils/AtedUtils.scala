@@ -19,9 +19,8 @@ package utils
 import models.{ClientsAgent, RelationshipDetails}
 import org.joda.time.LocalDate
 import uk.gov.hmrc.auth.core.retrieve.Name
+import uk.gov.hmrc.http.{HeaderCarrier, SessionId}
 import utils.AtedConstants._
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.logging.SessionId
 
 object AtedUtils {
 
@@ -41,7 +40,7 @@ object AtedUtils {
 
   def getClientsAgentFromEtmpRelationshipData(data: RelationshipDetails): ClientsAgent = {
     def getName = data.individual.fold(data.organisation.fold("")(a => a.organisationName))(a => a.firstName + " " + a.lastName)
-    val clientsAgent = ClientsAgent(data.agentReferenceNumber, data.atedReferenceNumber, getName, agentRejected = false, isEtmpData = true)
+    val clientsAgent = ClientsAgent(data.agentReferenceNumber, data.atedReferenceNumber, getName, isEtmpData = true)
     clientsAgent
   }
 

@@ -17,20 +17,17 @@
 package connectors
 
 import audit.Auditable
-
-import javax.inject.Inject
 import metrics.{MetricsEnum, ServiceMetrics}
 import models._
 import play.api.Logging
 import play.api.http.Status._
 import play.api.libs.json.{JsValue, Json}
-import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.logging.Authorization
+import uk.gov.hmrc.http.{HttpClient, _}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.{Audit, EventTypes}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import uk.gov.hmrc.http.HttpClient
 
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class EtmpReturnsConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
@@ -66,13 +63,13 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
   val getSummaryReturns: String
   val formBundleReturns: String
 
-  def submitReturns(atedReferenceNo: String, submitReturns: SubmitEtmpReturnsRequest)(implicit ec: ExecutionContext): Future[HttpResponse] = {
-    implicit val headerCarrier = createHeaderCarrier
+  def submitReturns(atedReferenceNo: String, submitReturns: SubmitEtmpReturnsRequest)
+                   (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[HttpResponse] = {
     val postUrl = s"""$serviceUrl/$baseURI/$submitReturnsURI/$atedReferenceNo"""
 
     val jsonData = Json.toJson(submitReturns)
     val timerContext = metrics.startTimer(MetricsEnum.EtmpSubmitReturns)
-    http.POST(postUrl, jsonData).map { response =>
+    http.POST(postUrl, jsonData, createHeaders).map { response =>
       timerContext.stop()
       auditSubmitReturns(atedReferenceNo, submitReturns, response)
       if (submitReturns.liabilityReturns.isDefined) {
@@ -92,12 +89,11 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
     }
   }
 
-  def getSummaryReturns(atedReferenceNo: String, years: Int)(implicit ec: ExecutionContext): Future[HttpResponse] = {
-    implicit val headerCarrier: HeaderCarrier = createHeaderCarrier
+  def getSummaryReturns(atedReferenceNo: String, years: Int)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[HttpResponse] = {
     val getUrl = s"""$serviceUrl/$baseURI/$getSummaryReturns/$atedReferenceNo?years=$years"""
 
     val timerContext = metrics.startTimer(MetricsEnum.EtmpGetSummaryReturns)
-    http.GET[HttpResponse](getUrl).map { response =>
+    http.GET[HttpResponse](getUrl, Seq.empty, createHeaders).map { response =>
       timerContext.stop()
       response.status match {
         case OK | NOT_FOUND =>
@@ -113,12 +109,11 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
     }
   }
 
-  def getFormBundleReturns(atedReferenceNo: String, formBundleNumber: String)(implicit ec: ExecutionContext): Future[HttpResponse] = {
-    implicit val headerCarrier = createHeaderCarrier
+  def getFormBundleReturns(atedReferenceNo: String, formBundleNumber: String)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[HttpResponse] = {
     val getUrl = s"""$serviceUrl/$baseURI/$getSummaryReturns/$atedReferenceNo/$formBundleReturns/$formBundleNumber"""
 
     val timerContext = metrics.startTimer(MetricsEnum.EtmpGetFormBundleReturns)
-    http.GET[HttpResponse](getUrl).map { response =>
+    http.GET[HttpResponse](getUrl, Seq.empty, createHeaders).map { response =>
       timerContext.stop()
       response.status match {
         case OK =>
@@ -136,13 +131,12 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
 
   def submitEditedLiabilityReturns(atedReferenceNo: String,
                                    editedLiabilityReturns: EditLiabilityReturnsRequestModel,
-                                   disposal: Boolean = false)(implicit ec: ExecutionContext): Future[HttpResponse] = {
-    implicit val headerCarrier = createHeaderCarrier
+                                   disposal: Boolean = false)(implicit ec: ExecutionContext, headerCarrier: HeaderCarrier): Future[HttpResponse] = {
     val putUrl = s"""$serviceUrl/$baseURI/$submitEditedLiabilityReturnsURI/$atedReferenceNo"""
 
     val jsonData = Json.toJson(editedLiabilityReturns)
     val timerContext = metrics.startTimer(MetricsEnum.EtmpSubmitEditedLiabilityReturns)
-    http.PUT[JsValue, HttpResponse](putUrl, jsonData).map { response =>
+    http.PUT[JsValue, HttpResponse](putUrl, jsonData, createHeaders).map { response =>
       timerContext.stop()
       auditSubmitEditedLiabilityReturns(atedReferenceNo, editedLiabilityReturns, response, disposal)
       response.status match {
@@ -160,9 +154,11 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
 
   }
 
-  private def createHeaderCarrier: HeaderCarrier = {
-    HeaderCarrier(extraHeaders = Seq("Environment" -> urlHeaderEnvironment),
-      authorization = Some(Authorization(urlHeaderAuthorization)))
+  private def createHeaders: Seq[(String, String)] = {
+    Seq(
+      "Environment" -> urlHeaderEnvironment,
+      "Authorization" -> urlHeaderAuthorization
+    )
   }
 
   private def auditSubmitReturns(atedReferenceNo: String,
@@ -227,7 +223,7 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
   }
 
   private def auditAddress(addressDetails: Option[EtmpPropertyDetails])(implicit hc: HeaderCarrier) = {
-    addressDetails.map { x =>
+    addressDetails.map { _ =>
       sendDataEvent(transactionName = "manualAddressSubmitted",
         detail = Map(
           "submittedLine1" -> addressDetails.get.address.addressLine1,
@@ -257,7 +253,7 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
           "iban" ->  bankDetailsData.internationalAccount.map(_.iban).getOrElse(""),
           "bicSwiftCode" ->  bankDetailsData.internationalAccount.map(_.bicSwiftCode).getOrElse(""),
           "amended_further_changed_return" -> typeOfReturn,
-          "status" -> s"${eventType}")
+          "status" -> s"$eventType")
       )
     }
   }

@@ -62,7 +62,8 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
     }
   }
 
-  def retrieveAndCacheDisposeLiabilityReturn(atedRefNo: String, oldFormBundleNo: String)(implicit ec: ExecutionContext): Future[Option[DisposeLiabilityReturn]] = {
+  def retrieveAndCacheDisposeLiabilityReturn(atedRefNo: String, oldFormBundleNo: String)
+                                            (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[DisposeLiabilityReturn]] = {
     for {
       cachedData <- retrieveDraftDisposeLiabilityReturn(atedRefNo, oldFormBundleNo)
       cachedDisposeLiability <- {
@@ -177,7 +178,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
 
 
   def getPreCalculationAmounts(atedRefNo: String, x: FormBundleReturn, disposalDate: DisposeLiability, oldFormBNo: String,
-                               agentRefNo: Option[String] = None)(implicit ec: ExecutionContext): Future[DisposeCalculated] = {
+                               agentRefNo: Option[String] = None)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[DisposeCalculated] = {
     def generateEditReturnRequest: EditLiabilityReturnsRequestModel = {
       val liabilityReturn = EditLiabilityReturnsRequest(oldFormBundleNumber = oldFormBNo,
         mode = PreCalculation,

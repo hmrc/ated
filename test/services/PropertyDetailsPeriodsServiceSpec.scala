@@ -16,7 +16,6 @@
 
 package services
 
-import java.util.UUID
 import builders.PropertyDetailsBuilder
 import connectors.EtmpReturnsConnector
 import models._
@@ -31,10 +30,10 @@ import play.api.test.Helpers._
 import reactivemongo.api.commands.WriteResult
 import repository.{PropertyDetailsCached, PropertyDetailsMongoRepository}
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.logging.SessionId
+import uk.gov.hmrc.http.{HeaderCarrier, SessionId}
 import uk.gov.hmrc.mongo.DatabaseUpdate
 
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuite with MockitoSugar with BeforeAndAfterEach {
