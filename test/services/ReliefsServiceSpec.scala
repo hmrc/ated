@@ -107,14 +107,15 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
         implicit val hc = new HeaderCarrier()
 
         when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq()))
-        when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, "")))
         when(mockAuthConnector.authorise[Option[String]](any(), any())(any(), any())).thenReturn(Future.successful(Some("Name")))
 
         when(mockReliefsCache.deleteReliefs(ArgumentMatchers.anyString())).thenReturn(Future.successful(ReliefDeleted))
         mockRetrievingNoAuthRef
 
-        when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
+        when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
 
         val result = testReliefsService.submitAndDeleteDraftReliefs("accountRef", periodKey)
         await(result).status must be(NOT_FOUND)
@@ -145,12 +146,12 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
         when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq(reliefsTaxAvoidance)))
         when(mockReliefsCache.cacheRelief(ArgumentMatchers.any())).thenReturn(Future.successful(ReliefCached))
         when(mockAuthConnector.authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
-        when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
+        when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         when(mockEmailConnector.sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
         when(mockReliefsCache.deleteDraftReliefByYear(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(ReliefDeleted))
 
         val submitSuccess = Json.parse( """{"status" : "OK", "processingDate" :  "2014-12-17T09:30:47Z", "formBundleNumber" : "123456789012"}""")
-        when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, submitSuccess, Map.empty[String, Seq[String]])))
         val result = testReliefsService.submitAndDeleteDraftReliefs("accountRef", periodKey)
         await(result).status must be(OK)

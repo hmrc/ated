@@ -20,8 +20,7 @@ import models.{ClientsAgent, IndividualRelationship, OrganisationRelationship, R
 import org.joda.time.LocalDate
 import org.scalatestplus.play.PlaySpec
 import uk.gov.hmrc.auth.core.retrieve.Name
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.logging.SessionId
+import uk.gov.hmrc.http.{HeaderCarrier, SessionId}
 
 class AtedUtilsSpec extends PlaySpec {
 

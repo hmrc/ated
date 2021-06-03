@@ -37,7 +37,7 @@ trait ReturnsSummaryController extends BackendController {
 
   def returnSummaryService: ReturnSummaryService
 
-  def getFullSummaryReturn(atedRef: String): Action[AnyContent] = Action.async { _ =>
+  def getFullSummaryReturn(atedRef: String): Action[AnyContent] = Action.async { implicit request =>
     returnSummaryService.getFullSummaryReturns(atedRef) map {
       fullSummaryReturn => Ok(Json.toJson(fullSummaryReturn))
     }

@@ -22,7 +22,7 @@ import javax.inject.Inject
 import models._
 import org.joda.time.LocalDate
 import play.api.http.Status._
-import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import utils.AtedConstants._
 import utils.ReliefUtils._
 
@@ -91,7 +91,7 @@ trait ReturnSummaryService {
     }
   }
 
-  def getFullSummaryReturns(atedRef: String)(implicit ec: ExecutionContext): Future[SummaryReturnsModel] = {
+  def getFullSummaryReturns(atedRef: String)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[SummaryReturnsModel] = {
     val etmpReturnsFuture = etmpConnector.getSummaryReturns(atedRef, years)
     val reliefDraftsFuture = reliefsService.retrieveDraftReliefs(atedRef)
     val liabilityDraftsFuture = propertyDetailsService.retrieveDraftPropertyDetails(atedRef)

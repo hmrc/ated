@@ -1,15 +1,14 @@
 
-import uk.gov.hmrc._
-import DefaultBuildSettings._
 import play.sbt.routes.RoutesKeys.routesGenerator
-import uk.gov.hmrc.SbtAutoBuildPlugin
+import uk.gov.hmrc.DefaultBuildSettings._
+import uk.gov.hmrc._
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
 
 val appName: String = "ated"
 
 val appDependencies: Seq[ModuleID] = AppDependencies()
 
-lazy val plugins: Seq[Plugins] = Seq(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin)
+lazy val plugins: Seq[Plugins] = Seq(play.sbt.PlayScala, SbtDistributablesPlugin)
 lazy val playSettings: Seq[Setting[_]] = Seq.empty
 
 lazy val scoverageSettings: Seq[Def.Setting[_ >: String with Double with Boolean]] = {
@@ -57,5 +56,4 @@ lazy val microservice = Project(appName, file("."))
     resolvers += Resolver.typesafeRepo("releases"),
     resolvers += Resolver.jcenterRepo
   )
-  .enablePlugins(SbtDistributablesPlugin, SbtAutoBuildPlugin, SbtGitVersioning)
   .disablePlugins(JUnitXmlReportPlugin)

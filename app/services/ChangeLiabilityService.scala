@@ -47,7 +47,7 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
   def subscriptionDataService: SubscriptionDataService
 
   def convertSubmittedReturnToCachedDraft(atedRefNo: String, oldFormBundleNo: String, fromSelectedPrevReturn: Option[Boolean] = None,
-                                          period: Option[Int] = None)(implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+                                          period: Option[Int] = None)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[PropertyDetails]] = {
     for {
       cachedData <- retrieveDraftPropertyDetail(atedRefNo, oldFormBundleNo)
       cachedChangeLiability <- {
@@ -100,7 +100,7 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
   }
 
   def getAmountDueOrRefund(atedRefNo: String, id: String, propertyDetails: PropertyDetails,
-                           agentRefNo: Option[String] = None)(implicit ec: ExecutionContext): Future[(Option[BigDecimal], Option[BigDecimal])] = {
+                           agentRefNo: Option[String] = None)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[(Option[BigDecimal], Option[BigDecimal])] = {
 
     def getLiabilityAmount(data: JsValue): (Option[BigDecimal], Option[BigDecimal]) = {
       val response = data.as[EditLiabilityReturnsResponseModel]

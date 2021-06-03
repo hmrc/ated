@@ -17,20 +17,17 @@
 package connectors
 
 import audit.Auditable
-
-import javax.inject.Inject
 import metrics.{MetricsEnum, ServiceMetrics}
 import models._
 import play.api.Logging
 import play.api.http.Status._
 import play.api.libs.json.Json
-import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.logging.Authorization
+import uk.gov.hmrc.http.{HttpClient, _}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.{Audit, EventTypes}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import uk.gov.hmrc.http.HttpClient
 
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class EtmpDetailsConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
@@ -69,11 +66,10 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging 
   val saveSubscriptionData: String
   val saveRegistrationDetails: String
 
-  def getDetails(identifier: String, identifierType: String): Future[HttpResponse] = {
+  def getDetails(identifier: String, identifierType: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     def getDetailsFromEtmp(getUrl: String): Future[HttpResponse] = {
-      implicit val hc = createHeaderCarrier
       val timerContext = metrics.startTimer(MetricsEnum.EtmpGetDetails)
-      http.GET[HttpResponse](getUrl).map { response =>
+      http.GET[HttpResponse](getUrl, Seq.empty, createHeaders).map { response =>
         timerContext.stop()
         response.status match {
           case OK => metrics.incrementSuccessCounter(MetricsEnum.EtmpGetDetails)
@@ -98,12 +94,11 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging 
   }
 
 
-  def getSubscriptionData(atedReferenceNo: String): Future[HttpResponse] = {
-    implicit val headerCarrier: HeaderCarrier = createHeaderCarrier
+  def getSubscriptionData(atedReferenceNo: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     val getUrl = s"""$serviceUrl/$atedBaseURI/$retrieveSubscriptionData/$atedReferenceNo"""
 
     val timerContext = metrics.startTimer(MetricsEnum.EtmpGetSubscriptionData)
-    http.GET[HttpResponse](getUrl).map { response =>
+    http.GET[HttpResponse](getUrl, Seq.empty, createHeaders).map { response =>
       timerContext.stop()
       response.status match {
         case OK =>
@@ -119,13 +114,13 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging 
     }
   }
 
-  def updateSubscriptionData(atedReferenceNo: String, updatedData: UpdateEtmpSubscriptionDataRequest): Future[HttpResponse] = {
-    implicit val headerCarrier = createHeaderCarrier
+  def updateSubscriptionData(atedReferenceNo: String, updatedData: UpdateEtmpSubscriptionDataRequest)
+                            (implicit hc: HeaderCarrier): Future[HttpResponse] = {
     val putUrl = s"""$serviceUrl/$atedBaseURI/$saveSubscriptionData/$atedReferenceNo"""
 
     val timerContext = metrics.startTimer(MetricsEnum.EtmpUpdateSubscriptionData)
     val jsonData = Json.toJson(updatedData)
-    http.PUT(putUrl, jsonData).map { response =>
+    http.PUT(putUrl, jsonData, createHeaders).map { response =>
       timerContext.stop()
       auditUpdateSubscriptionData(atedReferenceNo, updatedData, response)
       response.status match {
@@ -142,12 +137,12 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging 
     }
   }
 
-  def updateRegistrationDetails(atedReferenceNo: String, safeId: String, updatedData: UpdateRegistrationDetailsRequest): Future[HttpResponse] = {
-    implicit val headerCarrier = createHeaderCarrier
+  def updateRegistrationDetails(atedReferenceNo: String, safeId: String, updatedData: UpdateRegistrationDetailsRequest)
+                               (implicit hc: HeaderCarrier): Future[HttpResponse] = {
     val putUrl = s"""$serviceUrl/$saveRegistrationDetails/$safeId"""
     val timerContext = metrics.startTimer(MetricsEnum.EtmpUpdateRegistrationDetails)
     val jsonData = Json.toJson(updatedData)
-    http.PUT(putUrl, jsonData).map { response =>
+    http.PUT(putUrl, jsonData, createHeaders).map { response =>
       timerContext.stop()
       auditUpdateRegistrationDetails(atedReferenceNo, safeId, updatedData, response)
       response.status match {
@@ -164,9 +159,11 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging 
     }
   }
 
-  private def createHeaderCarrier: HeaderCarrier = {
-    HeaderCarrier(extraHeaders = Seq("Environment" -> urlHeaderEnvironment),
-      authorization = Some(Authorization(urlHeaderAuthorization)))
+  private def createHeaders: Seq[(String, String)] = {
+    Seq(
+      "Environment" -> urlHeaderEnvironment,
+      "Authorization" -> urlHeaderAuthorization
+    )
   }
 
   private def auditUpdateSubscriptionData(atedReferenceNo: String,
@@ -183,7 +180,7 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging 
         "requestData" -> s"${Json.toJson(updateData)}",
         "responseStatus" -> s"${response.status}",
         "responseBody" -> s"${response.body}",
-        "status" -> s"${eventType}"))
+        "status" -> s"$eventType"))
   }
 
 
@@ -202,7 +199,7 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging 
         "requestData" -> s"${Json.toJson(updateData)}",
         "responseStatus" -> s"${response.status}",
         "responseBody" -> s"${response.body}",
-        "status" -> s"${eventType}"))
+        "status" -> s"$eventType"))
   }
 
 }

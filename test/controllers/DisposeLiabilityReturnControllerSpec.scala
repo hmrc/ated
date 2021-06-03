@@ -71,7 +71,7 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
         lazy val formBundleResp = ChangeLiabilityReturnBuilder.generateFormBundleResponse(periodKey)
         val dispose1 = DisposeLiabilityReturn(atedRefNo, formBundle1, formBundleResp)
         when(mockDisposeLiabilityReturnService.retrieveAndCacheDisposeLiabilityReturn(ArgumentMatchers.eq(atedRefNo),
-          ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(dispose1)))
+          ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(Some(dispose1)))
         val result = controller.retrieveAndCacheDisposeLiabilityReturn(atedRefNo, formBundle1).apply(FakeRequest())
         status(result) must be(OK)
         contentAsJson(result) must be(Json.toJson(dispose1))
@@ -79,7 +79,7 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
 
       "return DisposeLiabilityReturn model, if NOT-found in cache or ETMP" in new Setup {
         when(mockDisposeLiabilityReturnService.retrieveAndCacheDisposeLiabilityReturn(ArgumentMatchers.eq(atedRefNo),
-          ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(None))
         val result = controller.retrieveAndCacheDisposeLiabilityReturn(atedRefNo, formBundle1).apply(FakeRequest())
         status(result) must be(NOT_FOUND)
         contentAsJson(result) must be(Json.parse("""{}"""))

@@ -44,7 +44,7 @@ trait DisposeLiabilityReturnController extends BackendController with Logging {
 
   def disposeLiabilityReturnService: DisposeLiabilityReturnService
 
-  def retrieveAndCacheDisposeLiabilityReturn(accountRef: String, formBundle: String): Action[AnyContent] = Action.async { _ =>
+  def retrieveAndCacheDisposeLiabilityReturn(accountRef: String, formBundle: String): Action[AnyContent] = Action.async { implicit request =>
     for {
       disposeLiabilityResponse <- disposeLiabilityReturnService.retrieveAndCacheDisposeLiabilityReturn(accountRef, formBundle)
     } yield {

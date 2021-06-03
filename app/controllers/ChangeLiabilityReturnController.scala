@@ -44,7 +44,7 @@ trait ChangeLiabilityReturnController extends BackendController with Logging {
 
   def changeLiabilityService: ChangeLiabilityService
 
-  def convertSubmittedReturnToCachedDraft(accountRef: String, formBundle: String): Action[AnyContent] = Action.async { _ =>
+  def convertSubmittedReturnToCachedDraft(accountRef: String, formBundle: String): Action[AnyContent] = Action.async { implicit request =>
     for {
       changeLiabilityResponse <- changeLiabilityService.convertSubmittedReturnToCachedDraft(accountRef, formBundle)
     } yield {
@@ -78,7 +78,7 @@ trait ChangeLiabilityReturnController extends BackendController with Logging {
   }
 
   def convertPreviousSubmittedReturnToCachedDraft(accountRef: String, formBundle: String, period: Int): Action[AnyContent] =
-    Action.async { _ =>
+    Action.async { implicit request =>
       for {
         changeLiabilityResponse <- changeLiabilityService.convertSubmittedReturnToCachedDraft(accountRef, formBundle, Some(true), Some(period))
       } yield {

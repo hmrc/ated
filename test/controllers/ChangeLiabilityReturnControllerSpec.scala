@@ -71,7 +71,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
       "return ChangeLiabilityReturn model, if found in cache or ETMP" in new Setup {
         lazy val changeLiabilityReturn = PropertyDetailsBuilder.getFullPropertyDetails(formBundle1)
         when(mockChangeLiabilityReturnService.convertSubmittedReturnToCachedDraft(ArgumentMatchers.eq(atedRefNo),
-          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(changeLiabilityReturn)))
         val result = controller.convertSubmittedReturnToCachedDraft(atedRefNo, formBundle1).apply(FakeRequest())
         status(result) must be(OK)
@@ -80,7 +80,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
 
       "return ChangeLiabilityReturn model, if NOT-found in cache or ETMP" in new Setup {
         when(mockChangeLiabilityReturnService.convertSubmittedReturnToCachedDraft(ArgumentMatchers.eq(atedRefNo),
-          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(None))
         val result = controller.convertSubmittedReturnToCachedDraft(atedRefNo, formBundle1).apply(FakeRequest())
         status(result) must be(NOT_FOUND)
@@ -92,7 +92,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
       "return ChangeLiabilityReturn model, if found in cache or ETMP" in new Setup {
         lazy val changeLiabilityReturn = PropertyDetailsBuilder.getFullPropertyDetails(formBundle1)
         when(mockChangeLiabilityReturnService.convertSubmittedReturnToCachedDraft(ArgumentMatchers.eq(atedRefNo),
-          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(changeLiabilityReturn)))
         val result = controller.convertPreviousSubmittedReturnToCachedDraft(atedRefNo, formBundle1, periodKey).apply(FakeRequest())
         status(result) must be(OK)
@@ -101,7 +101,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
 
       "return ChangeLiabilityReturn model, if NOT-found in cache or ETMP" in new Setup {
         when(mockChangeLiabilityReturnService.convertSubmittedReturnToCachedDraft(ArgumentMatchers.eq(atedRefNo),
-          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(None))
         val result = controller.convertPreviousSubmittedReturnToCachedDraft(atedRefNo, formBundle1, periodKey).apply(FakeRequest())
         status(result) must be(NOT_FOUND)
