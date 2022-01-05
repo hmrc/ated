@@ -57,7 +57,7 @@ trait DeleteReliefsService extends ScheduledService[Int] with Logging {
   def invoke()(implicit ec: ExecutionContext): Future[Int] = {
     lockKeeper.tryLock(deleteOldReliefs()) map {
       case Some(result) =>
-        logger.info(s"[DeleteReliefsService] Deleted $result draft documents past the 28 day limit")
+        logger.info(s"[DeleteReliefsService] Deleted $result draft documents past the given day limit")
         result
       case None =>
         logger.warn(s"[DeleteReliefsService] Failed to acquire lock")
