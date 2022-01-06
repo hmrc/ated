@@ -28,6 +28,7 @@ class DeletePropertyDetailsServiceISpec extends IntegrationSpec with AssertionHe
   val date60DaysHrsMinsAgo: DateTime = date59DaysAgo.minusDays(1).minusHours(22).minusMinutes(59)
   val date61DaysAgo: DateTime = date59DaysAgo.minusDays(2)
   val date61DaysMinsAgo: DateTime = date59DaysAgo.minusDays(2).minusMinutes(1)
+  val dateOneMinAgo: DateTime = DateTime.now.minusMinutes(1)
 
   override def additionalConfig(a: Map[String, Any]): Map[String, Any] = Map(
     "schedules.delete-property-details-job.cleardown.batchSize" -> 2
@@ -75,9 +76,9 @@ class DeletePropertyDetailsServiceISpec extends IntegrationSpec with AssertionHe
 
   "documentUpdateService" should {
     "not delete any drafts" when {
-      "the draft has only just been added for 60days" in new Setup {
+      "the draft has only just been added" in new Setup {
         val draft = await(createDraftProperty60)
-        await(repo.updateTimeStamp(createPropertyDetails60(draft.json, address), DateTime.parse("2021-10-10")))
+        await(repo.updateTimeStamp(createPropertyDetails60(draft.json, address), dateOneMinAgo))
         val deleteCount = await(documentUpdateService.invoke())
         val foundDraft = await(hitApplicationEndpoint(s"/ated/ATE1234568XX/property-details/retrieve/${(draft.json \ "id").as[String]}").get())
 

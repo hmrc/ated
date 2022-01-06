@@ -22,6 +22,7 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
   val date60DaysHrsMinsAgo: DateTime = date59DaysAgo.minusDays(1).minusHours(22).minusMinutes(59)
   val date61DaysAgo: DateTime = date59DaysAgo.minusDays(2)
   val date61DaysMinsAgo: DateTime = date59DaysAgo.minusDays(2).minusMinutes(1)
+  val dateOneMinAgo: DateTime =  DateTime.now.minusMinutes(1)
 
   val periodKey = 2019
 
@@ -69,11 +70,11 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
       .post(Json.toJson(reliefTaxAvoidance("SoDoesThis")))
 
     "not delete any drafts" when {
-      "the draft has only just been added for 60days" in new Setup {
+      "the draft has only just been added" in new Setup {
         stubAuthPost
 
         await(createRelief)
-        await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), DateTime.parse("2021-10-10")))
+        await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), dateOneMinAgo))
         val deleteCount = await(deleteReliefsService.invoke())
         val retrieve = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
 
