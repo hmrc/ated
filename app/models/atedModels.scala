@@ -16,11 +16,13 @@
 
 package models
 
-import play.api.libs.json.{Format, Json, OFormat}
+import play.api.libs.json.{Format, JsPath, Json, OFormat, Reads}
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
+import play.api.libs.functional.syntax.{toFunctionalBuilderOps, unlift}
 import play.api.libs.json.JodaWrites._
 import play.api.libs.json.JodaReads._
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
+import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 
 case class PendingClient(
                           atedReferenceNo: String,
@@ -96,9 +98,21 @@ case class DisposeLiabilityReturn(atedRefNo: String,
                                   timeStamp: DateTime = DateTime.now(DateTimeZone.UTC))
 
 object DisposeLiabilityReturn {
+  implicit val mongoJodaFormats: Format[DateTime] = MongoJodaFormats.dateTimeFormat
+
   def formats(implicit crypto: CompositeSymmetricCrypto): OFormat[DisposeLiabilityReturn] = {
     implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
 
-    Json.format[DisposeLiabilityReturn]
+    val format: OFormat[DisposeLiabilityReturn] = (
+      (JsPath \ "atedRefNo").format[String] and
+        (JsPath\ "id").format[String] and
+        (JsPath\ "formBundleReturn").format[FormBundleReturn] and
+        (JsPath\ "disposeLiability").formatNullable[DisposeLiability] and
+        (JsPath\ "calculated").formatNullable[DisposeCalculated] and
+        (JsPath\ "bankDetails").formatNullable[BankDetailsModel] and
+        (JsPath\ "timeStamp").format[DateTime]
+    )(DisposeLiabilityReturn.apply, unlift(DisposeLiabilityReturn.unapply))
+
+    format
   }
 }

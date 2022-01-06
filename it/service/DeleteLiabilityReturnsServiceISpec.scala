@@ -32,7 +32,7 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
   override def additionalConfig(a: Map[String, Any]): Map[String, Any] = Map(
     "microservice.services.etmp-hod.host" -> wireMockHost,
     "microservice.services.etmp-hod.port" -> wireMockPort,
-    "schedules.delete-liability-returns-job.cleardown.batchSize" -> 2
+    "schedules.delete-liability-returns-job.cleardown.batchSize" -> 20
   )
 
   def generateFormBundleResponse(periodKey: Int): FormBundleReturn = {
@@ -66,7 +66,7 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
   class Setup {
     val repo: DisposeLiabilityReturnMongoRepository = app.injector.instanceOf[DisposeLiabilityReturnMongoWrapper].apply()
 
-    await(repo.drop)
+    await(repo.collection.drop().toFuture())
     await(repo.ensureIndexes)
   }
 
@@ -118,7 +118,7 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
         await(createAndRetrieveLiabilityReturn)
         await(repo.updateTimeStamp(liabilityReturn, date60DaysAgo))
 
-        await(repo.collection.count(None, None, 0, None, readConcern = ReadConcern.Local)) mustBe 1
+        await(repo.collection.countDocuments().toFuture()) mustBe 1
 
         val deleteCount = await(deleteLiabilityReturnsService.invoke())
         val retrieve = await(updateLiabilityReturn())
@@ -133,7 +133,7 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
         await(createAndRetrieveLiabilityReturn)
         await(repo.updateTimeStamp(liabilityReturn, date60DaysHrsMinsAgo))
 
-        await(repo.collection.count(None, None, 0, None, readConcern = ReadConcern.Local)) mustBe 1
+        await(repo.collection.countDocuments().toFuture()) mustBe 1
 
         val deleteCount = await(deleteLiabilityReturnsService.invoke())
         val retrieve = await(updateLiabilityReturn())
@@ -150,8 +150,7 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
         await(createAndRetrieveLiabilityReturn)
         await(repo.updateTimeStamp(liabilityReturn, date61DaysAgo))
 
-
-        await(repo.collection.count(None, None, 0, None, readConcern = ReadConcern.Local)) mustBe 1
+        await(repo.collection.countDocuments().toFuture()) mustBe 1
 
         val deleteCount = await(deleteLiabilityReturnsService.invoke())
         val retrieve = await(updateLiabilityReturn())
@@ -165,8 +164,7 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
         await(createAndRetrieveLiabilityReturn)
         await(repo.updateTimeStamp(liabilityReturn, date61DaysMinsAgo))
 
-
-        await(repo.collection.count(None, None, 0, None, readConcern = ReadConcern.Local)) mustBe 1
+        await(repo.collection.countDocuments().toFuture()) mustBe 1
 
         val deleteCount = await(deleteLiabilityReturnsService.invoke())
         val retrieve = await(updateLiabilityReturn())
@@ -185,7 +183,7 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
       await(repo.updateTimeStamp(liabilityReturn, date61DaysAgo))
       await(repo.updateTimeStamp(liabilityReturn2, date60DaysHrsMinsAgo))
 
-      await(repo.collection.count(None, None, 0, None, readConcern = ReadConcern.Local)) mustBe 2
+      await(repo.collection.countDocuments().toFuture()) mustBe 2
 
       val deleteCount = await(deleteLiabilityReturnsService.invoke())
       val deletedDraft = await(updateLiabilityReturn())
@@ -208,7 +206,7 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
       await(repo.updateTimeStamp(liabilityReturn2, date61DaysMinsAgo))
       await(repo.updateTimeStamp(liabilityReturn3, date60DaysHrsMinsAgo))
 
-      await(repo.collection.count(None, None, 0, None, readConcern = ReadConcern.Local)) mustBe 3
+      await(repo.collection.countDocuments().toFuture()) mustBe 3
 
       val deleteCount = await(deleteLiabilityReturnsService.invoke())
       val deletedDraft = await(updateLiabilityReturn())
