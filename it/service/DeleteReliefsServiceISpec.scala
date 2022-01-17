@@ -58,7 +58,7 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
   class Setup {
     val repo: ReliefsMongoRepository = app.injector.instanceOf[ReliefsMongoWrapper].apply()
 
-    await(repo.drop)
+    await(repo.collection.drop().toFuture())
     await(repo.ensureIndexes)
   }
 
@@ -114,7 +114,7 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
         await(createRelief)
         await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), date61DaysAgo))
 
-        await(repo.collection.count(None, None, 0, None, readConcern = ReadConcern.Local)) mustBe 1
+        await(repo.collection.countDocuments().toFuture()) mustBe 1
 
         val deleteCount = await(deleteReliefsService.invoke())
         val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
@@ -129,7 +129,7 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
         await(createRelief)
         await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), date61DaysMinsAgo))
 
-        await(repo.collection.count(None, None, 0, None, readConcern = ReadConcern.Local)) mustBe 1
+        await(repo.collection.countDocuments().toFuture()) mustBe 1
 
         val deleteCount = await(deleteReliefsService.invoke())
         val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
@@ -148,7 +148,7 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
       await(repo.updateTimeStamp(reliefTaxAvoidance("ATE7654321XX"), date59DaysAgo))
 
 
-      await(repo.collection.count(None, None, 0, None, readConcern = ReadConcern.Local)) mustBe 2
+      await(repo.collection.countDocuments().toFuture()) mustBe 2
 
       val deleteCount = await(deleteReliefsService.invoke())
       val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
@@ -167,11 +167,11 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
       await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), date61DaysMinsAgo))
       await(repo.updateTimeStamp(reliefTaxAvoidance("ATE7654321XX"), date61DaysAgo))
 
-      await(repo.collection.count(None, None, 0, None, readConcern = ReadConcern.Local)) mustBe 2
+      await(repo.collection.countDocuments().toFuture()) mustBe 2
 
       val deleteCount = await(deleteReliefsService.invoke())
 
-      await(repo.collection.count(None, None, 0, None, readConcern = ReadConcern.Local)) mustBe 0
+      await(repo.collection.countDocuments().toFuture()) mustBe 0
 
       val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
       val foundDraft = await(hitApplicationEndpoint(s"/ated/ATE7654321XX/ated/reliefs/$periodKey").get())

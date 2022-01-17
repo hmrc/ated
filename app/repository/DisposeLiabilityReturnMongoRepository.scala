@@ -80,7 +80,7 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: MongoComponent, val m
       IndexModel(ascending("id"), IndexOptions().name("idIndex").unique(true).sparse(true)),
       IndexModel(ascending("id", "periodKey", "atedRefNo"), IndexOptions().name("idAndperiodKeyAndAtedRefIndex").unique(true)),
       IndexModel(ascending("atedRefNo"), IndexOptions().name("atedRefIndex")),
-      IndexModel(ascending("timeStamp"), IndexOptions().name("dispLiabilityDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
+      IndexModel(ascending("timestamp"), IndexOptions().name("dispLiabilityDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
     )
   ) with DisposeLiabilityReturnMongoRepository with Logging {
 
@@ -135,8 +135,8 @@ class DisposeLiabilityReturnReactiveMongoRepository(mongo: MongoComponent, val m
 
     preservingMdc(
       collection.replaceOne(query, disposeLiabilityReturnTimestampUpdate, replaceOptions).toFuture().map { writeResult =>
-        timerContext.stop()
-        if (writeResult.wasAcknowledged() && writeResult.getModifiedCount == 1) {
+          timerContext.stop()
+          if (writeResult.wasAcknowledged() && writeResult.getModifiedCount == 1) {
           DisposeLiabilityReturnCached
         } else {
           DisposeLiabilityReturnCacheError

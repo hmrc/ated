@@ -29,7 +29,7 @@ class PropertyDetailsServiceISpec extends IntegrationSpec with AssertionHelpers 
   class Setup {
     val repo: PropertyDetailsMongoRepository = app.injector.instanceOf[PropertyDetailsMongoWrapper].apply()
 
-    await(repo.drop)
+    await(repo.collection.drop().toFuture())
     await(repo.ensureIndexes)
   }
 
@@ -38,7 +38,7 @@ class PropertyDetailsServiceISpec extends IntegrationSpec with AssertionHelpers 
       await(hitApplicationEndpoint("/ated/ATE1234568XX/property-details/create/2020")
         .post(Json.toJson(address)))
 
-      await(repo.collection.count(None, None, 0, None, readConcern = ReadConcern.Local)) mustBe 1
+      await(repo.collection.countDocuments().toFuture()) mustBe 1
 
       val deleteCount = await(propertyDetailsService.deleteChargeableDraft("ATE1234568XX", "id")).size
 

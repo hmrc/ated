@@ -23,7 +23,7 @@ import org.joda.time.{DateTime, DateTimeZone}
 import org.mongodb.scala.model.Filters.{and, equal, lte}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model.{IndexModel, IndexOptions, UpdateOptions}
+import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions, UpdateOptions}
 import play.api.Logging
 import play.api.libs.json.{Format, Json, OFormat}
 import play.modules.reactivemongo.ReactiveMongoComponent
@@ -88,7 +88,7 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
       IndexModel(ascending("id"), IndexOptions().name("idIndex").unique(true).sparse(true)),
       IndexModel(ascending("id", "periodKey", "atedRefNo"), IndexOptions().name("idAndperiodKeyAndAtedRefIndex").unique(true)),
       IndexModel(ascending("atedRefNo"), IndexOptions().name("atedRefIndex")),
-      IndexModel(ascending("timeStamp"), IndexOptions().name("propDetailsDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
+      IndexModel(ascending("timestamp"), IndexOptions().name("propDetailsDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
     ))
     with PropertyDetailsMongoRepository with Logging {
 
@@ -109,49 +109,20 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
     }
   }
 
-  def deleteExpired60DayLiabilityReturns(batchSize: Int): Future[Int] = {
+  def deleteExpired60PropertyDetails(batchSize: Int): Future[Int] = {
     val dayThreshold = 61
     val jodaDateTimeThreshold = DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(dayThreshold)
 
     val query2 = lte("timeStamp", Codecs.toBson(jodaDateTimeThreshold))
 
-    val foundLiabilityReturns: Future[Seq[DisposeLiabilityReturn]] = collection.find(query2).batchSize(batchSize).toFuture()
-
-    foundLiabilityReturns flatMap { returns =>
-      Future.sequence(returns map { rtn =>
-        val deleteQuery = and(equal("atedRefNo", rtn.atedRefNo), equal("id", rtn.id))
-
-        preservingMdc(collection.deleteOne(deleteQuery).toFuture()) map { res =>
-          if (res.wasAcknowledged() && res.getDeletedCount == 1) {
-            1
-          } else {
-            logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated liability return - ex: $res")
-            0
-          }
-        }
-      }) map {
-        _.sum
-      }
-    }
-  }
-
-  def deleteExpired60PropertyDetails(batchSize: Int): Future[Int] = {
-    implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
-    val query = BSONDocument("timeStamp" -> Json.obj("$lte" -> DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(61)))
-    val logOnError = Cursor.ContOnError[Seq[PropertyDetails]]((_, ex) =>
-      logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed, problem occurred in collect - ex: ${ex.getMessage}")
-    )
-    val foundPropertyDetails: Future[Seq[PropertyDetails]] = collection.find(query, Option.empty)(BSONDocumentWrites, BSONDocumentWrites)
-      .cursor[PropertyDetails]()
-      .collect[Seq](batchSize, logOnError)
-
-    
+    val foundPropertyDetails: Future[Seq[PropertyDetails]] = collection.find(query2).batchSize(batchSize).toFuture()
 
     foundPropertyDetails flatMap { propertyDetails =>
       Future.sequence(propertyDetails map { propDetails =>
-        preservingMdc(collection.delete()
-          .one(BSONDocument("atedRefNo" -> propDetails.atedRefNo, "id" -> propDetails.id))) map { res =>
-          if (res.ok && res.n == 1) {
+        val deleteQuery = and(equal("atedRefNo", propDetails.atedRefNo), equal("id", propDetails.id))
+
+        preservingMdc(collection.deleteOne(deleteQuery).toFuture()) map { res =>
+          if (res.wasAcknowledged() && res.getDeletedCount == 1) {
             1
           } else {
             logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated property details - ex: $res")
@@ -167,30 +138,33 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
 
   def cachePropertyDetails(propertyDetails: PropertyDetails): Future[PropertyDetailsCache] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryInsertPropDetails)
-    val query = BSONDocument("periodKey" -> propertyDetails.periodKey, "atedRefNo" -> propertyDetails.atedRefNo, "id" -> propertyDetails.id)
+    val query = and(equal("periodKey", propertyDetails.periodKey), equal("atedRefNo", propertyDetails.atedRefNo), equal("id", propertyDetails.id))
+    val propertyDetailsTimestampUpdate = propertyDetails.copy(timeStamp = DateTime.now(DateTimeZone.UTC))
+    val replaceOptions = ReplaceOptions().upsert(true)
 
-    preservingMdc(collection.update(ordered = false)
-      .one(query, propertyDetails.copy(timeStamp = DateTime.now(DateTimeZone.UTC)),
-        upsert = true, multi = false)).map { writeResult =>
-      timerContext.stop()
-      if (writeResult.ok) {
-        PropertyDetailsCached
-      } else {
-        PropertyDetailsCacheError
-      }
-    } recover {
-      case e => logger.warn("Failed to update or insert property details", e)
+    preservingMdc(
+      collection.replaceOne(query, propertyDetailsTimestampUpdate, replaceOptions).toFuture().map { writeResult =>
         timerContext.stop()
-        PropertyDetailsCacheError
-    }
+        if (writeResult.wasAcknowledged() && writeResult.getModifiedCount == 1) {
+          PropertyDetailsCached
+        } else {
+          PropertyDetailsCacheError
+        }
+      } recover {
+        case e => logger.warn("Failed to update or insert property details", e)
+          timerContext.stop()
+          PropertyDetailsCacheError
+      }
+    )
   }
 
   def fetchPropertyDetails(atedRefNo: String): Future[Seq[PropertyDetails]] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchPropDetails)
-    val query = BSONDocument("atedRefNo" -> atedRefNo)
+    val query = equal("atedRefNo", atedRefNo)
 
-    val result: Future[Seq[PropertyDetails]] = collection.find(query, Option.empty)(BSONDocumentWrites, BSONDocumentWrites)
-      .cursor[PropertyDetails]().collect[Seq](maxDocs = -1, err = FailOnError[Seq[PropertyDetails]]())
+    val result: Future[Seq[PropertyDetails]] = preservingMdc {
+      collection.find(query).toFuture()
+    }
 
     result onComplete {
       _ => timerContext.stop()
@@ -200,10 +174,11 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
 
   def fetchPropertyDetailsById(atedRefNo: String, id: String): Future[Seq[PropertyDetails]] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchPropDetails)
-    val query = BSONDocument("atedRefNo" -> atedRefNo, "id" -> id)
+    val query = and(equal("atedRefNo", atedRefNo), equal("id", id))
 
-    val result: Future[Seq[PropertyDetails]] = collection.find(query, Option.empty)(BSONDocumentWrites, BSONDocumentWrites)
-      .cursor[PropertyDetails]().collect[Seq](maxDocs = -1, err = FailOnError[Seq[PropertyDetails]]())
+    val result: Future[Seq[PropertyDetails]] = preservingMdc {
+      collection.find(query).toFuture()
+    }
 
     result onComplete {
       _ => timerContext.stop()
@@ -213,10 +188,10 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
 
   def deletePropertyDetailsByfieldName(atedRefNo: String, id: String): Future[PropertyDetailsDelete] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryDeletePropDetailsByFieldName)
-    val query = BSONDocument("atedRefNo" -> atedRefNo, "id" -> id)
+    val query = and(equal("atedRefNo", atedRefNo), equal("id", id))
 
-    preservingMdc(collection.delete().one(query)).map { removeResult =>
-      if (removeResult.ok) {
+    preservingMdc(collection.deleteOne(query).toFuture()).map { removeResult =>
+      if (removeResult.wasAcknowledged() && removeResult.getDeletedCount == 1) {
         PropertyDetailsDeleted
       } else {
         PropertyDetailsDeleteError

@@ -47,7 +47,7 @@ class ReliefsServiceISpec extends IntegrationSpec with AssertionHelpers with Fut
   class Setup {
     val repo: ReliefsMongoRepository = app.injector.instanceOf[ReliefsMongoWrapper].apply()
 
-    await(repo.drop)
+    await(repo.collection.drop().toFuture())
     await(repo.ensureIndexes)
 
   }
@@ -57,9 +57,9 @@ class ReliefsServiceISpec extends IntegrationSpec with AssertionHelpers with Fut
       val periodKey = 2020
 
       await(repo.cacheRelief(reliefTaxAvoidance("123456789", periodKey)))
-      await(repo.find()).size must be(1)
+      await(repo.collection.find().toFuture()).size must be(1)
       await(reliefsService.deleteAllDraftReliefs("123456789"))
-      await(repo.find()).size must be(0)
+      await(repo.collection.find().toFuture()).size must be(0)
     }
     "not throw an exception if draft reliefs cannot be removed due to an error" in new Setup {
       await(reliefsService.deleteAllDraftReliefs("123456789")).size must be(0)
@@ -73,9 +73,9 @@ class ReliefsServiceISpec extends IntegrationSpec with AssertionHelpers with Fut
 
       await(repo.cacheRelief(reliefTaxAvoidance("123456719", periodKey2019)))
       await(repo.cacheRelief(reliefTaxAvoidance("123456720", periodKey2020)))
-      await(repo.find()).size must be(2)
+      await(repo.collection.find().toFuture()).size must be(2)
       await(reliefsService.deleteAllDraftReliefByYear("123456719", periodKey2019))
-      await(repo.find()).size must be(1)
+      await(repo.collection.find().toFuture()).size must be(1)
     }
     "not throw an exception if draft reliefs cannot be deleted by year" in new Setup {
       val periodKey2019 = 2019
