@@ -28,7 +28,7 @@ object AppDependencies {
         "org.pegdown"                  %  "pegdown"              % "1.6.0"             % scope,
         "org.mockito"                  %  "mockito-core"         % "3.12.4"            % scope,
         "com.typesafe.play"            %% "play-test"            % PlayVersion.current % scope,
-        "uk.gov.hmrc"                  %% "reactivemongo-test"   % "5.0.0-play-28"     % scope,
+        // "uk.gov.hmrc"                  %% "reactivemongo-test"   % "5.0.0-play-28"     % scope,
         "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.5"            % scope
       )
     }.test

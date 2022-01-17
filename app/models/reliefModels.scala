@@ -19,7 +19,7 @@ package models
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits._
 
 case class TaxAvoidance(
                          rentalBusinessScheme: Option[String] = None,
@@ -69,9 +69,6 @@ case class Reliefs( periodKey: Int,
                   )
 
 object Reliefs {
-  import play.api.libs.json.JodaWrites._
-  import play.api.libs.json.JodaReads._
-
   implicit val formats = Json.format[Reliefs]
 }
 
@@ -84,10 +81,6 @@ case class ReliefsTaxAvoidance(atedRefNo: String,
                                timeStamp: DateTime = DateTime.now(DateTimeZone.UTC))
 
 object ReliefsTaxAvoidance {
-  implicit val dateFormat = ReactiveMongoFormats.dateTimeFormats
-  implicit val idFormat = ReactiveMongoFormats.objectIdFormats
-  import play.api.libs.json.JodaWrites.DefaultJodaLocalDateWrites
-  import play.api.libs.json.JodaReads.DefaultJodaLocalDateReads
 
   val reliefTaxAvoidanceReads: Reads[ReliefsTaxAvoidance] = (
       (JsPath \ "atedRefNo").read[String] and

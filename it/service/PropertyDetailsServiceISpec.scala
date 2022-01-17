@@ -4,7 +4,6 @@ import helpers.{AssertionHelpers, IntegrationSpec}
 import models.PropertyDetailsAddress
 import play.api.libs.json.Json
 import play.api.test.FutureAwaits
-import reactivemongo.api.ReadConcern
 import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
 import services.PropertyDetailsService
 

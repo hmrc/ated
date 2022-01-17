@@ -9,7 +9,6 @@ import play.api.libs.json.JodaWrites._
 import play.api.libs.json.JodaReads._
 import play.api.libs.ws.WSResponse
 import play.api.test.FutureAwaits
-import reactivemongo.api.ReadConcern
 import repository.{DisposeLiabilityReturnMongoRepository, DisposeLiabilityReturnMongoWrapper}
 import scheduler.DeleteLiabilityReturnsService
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}

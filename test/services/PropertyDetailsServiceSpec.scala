@@ -29,7 +29,6 @@ import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.Json
 import play.api.test.Helpers._
-import reactivemongo.api.commands.WriteResult
 import repository._
 import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
@@ -42,7 +41,6 @@ import scala.concurrent.{ExecutionContext, Future}
 class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
 
   val mockPropertyDetailsCache = mock[PropertyDetailsMongoRepository]
-  val mockWriteResult = mock[WriteResult]
   val mockDatabaseUpdate = mock[DatabaseUpdate[Cache]]
   val mockEtmpConnector = mock[EtmpReturnsConnector]
   val mockAuthConnector = mock[AuthConnector]

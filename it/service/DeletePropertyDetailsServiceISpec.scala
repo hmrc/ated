@@ -9,7 +9,6 @@ import play.api.libs.json.JodaReads._
 import play.api.libs.json.{Format, JsValue, Json, OFormat}
 import play.api.libs.ws.WSResponse
 import play.api.test.FutureAwaits
-import reactivemongo.api.ReadConcern
 import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
 import scheduler.DeletePropertyDetailsService
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}

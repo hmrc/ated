@@ -16,12 +16,12 @@
 
 package scheduler
 
-import org.joda.time.Duration
 import play.api.{Configuration, Environment, Logging}
 import repository.{LockRepositoryProvider, ReliefsMongoRepository, ReliefsMongoWrapper}
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import scala.concurrent.duration.{SECONDS, Duration}
+import uk.gov.hmrc.mongo.lock.LockService
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
@@ -34,12 +34,7 @@ class DefaultDeleteReliefsService @Inject()(val servicesConfig: ServicesConfig,
                                             ) extends DeleteReliefsService {
   override val documentBatchSize: Int = servicesConfig.getInt("schedules.delete-reliefs-job.cleardown.batchSize")
   lazy val lockoutTimeout: Int = servicesConfig.getInt("schedules.delete-reliefs-job.lockTimeout")
-
-  lazy val lockKeeper: LockKeeper = new LockKeeper() {
-    override val lockId = "delete-reliefs-job-lock"
-    override val forceLockReleaseAfter: Duration = Duration.standardSeconds(lockoutTimeout)
-    override lazy val repo: LockRepository = lockRepositoryProvider.repo
-  }
+  val lockService: LockService = LockService(lockRepositoryProvider.repo, lockId = "delete-reliefs-job-lock", ttl = Duration.create(lockoutTimeout, SECONDS))
 }
 
 trait DeleteReliefsService extends ScheduledService[Int] with Logging {
@@ -47,7 +42,7 @@ trait DeleteReliefsService extends ScheduledService[Int] with Logging {
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
   val repository: ReliefsMongoWrapper
-  val lockKeeper: LockKeeper
+  val lockService: LockService
   val documentBatchSize: Int
 
   private def deleteOldReliefs(): Future[Int] = {
@@ -55,7 +50,7 @@ trait DeleteReliefsService extends ScheduledService[Int] with Logging {
   }
 
   def invoke()(implicit ec: ExecutionContext): Future[Int] = {
-    lockKeeper.tryLock(deleteOldReliefs()) map {
+    lockService.withLock(deleteOldReliefs()) map {
       case Some(result) =>
         logger.info(s"[DeleteReliefsService] Deleted $result draft documents past the given day limit")
         result

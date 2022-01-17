@@ -65,12 +65,12 @@ trait DisposeLiabilityReturnMongoWrapper {
   val crypto: ApplicationCrypto
   implicit val compositeCrypto: CryptoWithKeysFromConfig = crypto.JsonCrypto
 
-  private lazy val disposeLiabilityReturnRepository = new DisposeLiabilityReturnReactiveMongoRepository(mongo, serviceMetrics)
+  private lazy val disposeLiabilityReturnRepository = new DisposeLiabilityReturnRepository(mongo, serviceMetrics)
 
   def apply(): DisposeLiabilityReturnMongoRepository = disposeLiabilityReturnRepository
 }
 
-class DisposeLiabilityReturnReactiveMongoRepository(mongo: MongoComponent, val metrics: ServiceMetrics)
+class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: ServiceMetrics)
                                                    (implicit crypto: CompositeSymmetricCrypto, ec: ExecutionContext)
   extends PlayMongoRepository[DisposeLiabilityReturn](
     collectionName = "disposeLiabilityReturns",

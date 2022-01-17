@@ -8,7 +8,6 @@ import play.api.http.Status._
 import play.api.libs.json.Json
 import play.api.libs.ws.WSResponse
 import play.api.test.FutureAwaits
-import reactivemongo.api.ReadConcern
 import repository.{ReliefsMongoRepository, ReliefsMongoWrapper}
 import scheduler.DeleteReliefsService
 
