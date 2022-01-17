@@ -17,14 +17,13 @@
 package repository
 
 import metrics.{MetricsEnum, ServiceMetrics}
-import models.{DisposeLiabilityReturn, PropertyDetails, ReliefsTaxAvoidance}
+import models.ReliefsTaxAvoidance
 import org.joda.time.{DateTime, DateTimeZone}
 import org.mongodb.scala.model.Filters.{and, equal, lte}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions, UpdateOptions}
 import play.api.Logging
-import play.api.libs.json.{Format, Json}
 import org.mongodb.scala._
 import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.model.Sorts._

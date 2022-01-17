@@ -18,14 +18,14 @@ package repository
 
 import javax.inject.{Inject, Singleton}
 import metrics.{MetricsEnum, ServiceMetrics}
-import models.{DisposeLiabilityReturn, PropertyDetails}
+import models.PropertyDetails
 import org.joda.time.{DateTime, DateTimeZone}
 import org.mongodb.scala.model.Filters.{and, equal, lte}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions, UpdateOptions}
 import play.api.Logging
-import play.api.libs.json.{Format, Json, OFormat}
+import play.api.libs.json.OFormat
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
 import org.mongodb.scala._
 import org.mongodb.scala.model.Filters._
@@ -34,7 +34,6 @@ import org.mongodb.scala.model.Updates._
 import org.mongodb.scala.model._
 import uk.gov.hmrc.mongo._
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
-import uk.gov.hmrc.play.http.logging.Mdc
 import uk.gov.hmrc.play.http.logging.Mdc.preservingMdc
 import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits._
 

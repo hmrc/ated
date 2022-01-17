@@ -17,10 +17,8 @@
 package models
 
 import play.api.libs.json._
-import uk.gov.hmrc.mongo.play.json.formats.MongoFormats
 import org.bson.types.ObjectId
 import uk.gov.hmrc.mongo.play.json.formats.MongoFormats.Implicits._
-//import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.CreationAndLastModifiedDetail
 import scala.collection.Set
 import scala.language.implicitConversions
@@ -44,28 +42,23 @@ object Id {
 }
 
 
-case class Cache(id: Id, data: Option[JsValue] = None,
+case class Cache(_id: Id, data: Option[JsValue] = None,
                  modifiedDetails: CreationAndLastModifiedDetail = CreationAndLastModifiedDetail(),
                  atomicId: Option[ObjectId] = None) extends Cacheable {
 }
 
 object Cache {
-  // import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-
   final val DataAttributeName = "data"
 
-  // implicit val format: Format[BSONObjectID] = ReactiveMongoFormats.objectIdFormats
   implicit val cacheFormat: OFormat[Cache] = Json.format[Cache]
 
-  val mongoFormats: Format[Cache] = MongoFormats.mongoEntity {
-    cacheFormat
-  }
+  val mongoFormats: Format[Cache] = cacheFormat
 }
 
 
 trait Cacheable {
 
-  val id: Id
+  val _id: Id
   val data: Option[JsValue]
   val modifiedDetails: CreationAndLastModifiedDetail
 

@@ -16,7 +16,7 @@
 
 package models
 
-import play.api.libs.json.{Format, JsPath, Json, OFormat, Reads}
+import play.api.libs.json.{Format, JsPath, Json, OFormat}
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
 import play.api.libs.functional.syntax.{toFunctionalBuilderOps, unlift}
 import play.api.libs.json.JodaWrites._
