@@ -90,14 +90,18 @@ class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: Servi
     val query = and(equal("atedRefNo", liabilityReturn.atedRefNo), equal("id", liabilityReturn.id))
     val updateQuery = set("timeStamp", Codecs.toBson(date))
 
-    preservingMdc(collection.updateOne(query, updateQuery, UpdateOptions().upsert(false)).toFuture()) map { res =>
-      if (res.wasAcknowledged() && res.getModifiedCount == 1) {
-        logger.info(s"[updateTimestamp] Updated timestamp for ${liabilityReturn.id} with $date")
-        DisposeLiabilityReturnDeleted
-      } else {
-        logger.error(s"[updateTimeStamp: LiabilityReturn] Mongo failed to update, problem occurred in collect - ex: $res")
+    preservingMdc(collection.updateOne(query, updateQuery, UpdateOptions().upsert(false)).toFutureOption()) map {
+      case Some(res) =>
+        if (res.wasAcknowledged() && res.getModifiedCount == 1) {
+          logger.info(s"[updateTimestamp] Updated timestamp for ${liabilityReturn.id} with $date")
+          DisposeLiabilityReturnDeleted
+        } else {
+          logger.error(s"[updateTimeStamp: LiabilityReturn] Mongo failed to update, problem occurred in collect - ex: $res")
+          DisposeLiabilityReturnDeleteError
+        }
+      case _ =>
+        logger.error(s"[updateTimeStamp: LiabilityReturn] Mongo failed to update, problem occurred in collect, was not defined")
         DisposeLiabilityReturnDeleteError
-      }
     }
   }
 
@@ -107,23 +111,31 @@ class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: Servi
 
     val query2 = lte("timeStamp", Codecs.toBson(jodaDateTimeThreshold))
 
-    val foundLiabilityReturns: Future[Seq[DisposeLiabilityReturn]] = collection.find(query2).batchSize(batchSize).toFuture()
+    val foundLiabilityReturns: Future[Option[Seq[DisposeLiabilityReturn]]] = collection.find(query2).batchSize(batchSize).collect().toFutureOption()
 
-    foundLiabilityReturns flatMap { returns =>
-      Future.sequence(returns map { rtn =>
-        val deleteQuery = and(equal("atedRefNo", rtn.atedRefNo), equal("id", rtn.id))
+    foundLiabilityReturns flatMap {
+      case Some(res) =>
+        Future.sequence(res map { rtn =>
+          val deleteQuery = and(equal("atedRefNo", rtn.atedRefNo), equal("id", rtn.id))
 
-        preservingMdc(collection.deleteOne(deleteQuery).toFuture()) map { res =>
-          if (res.wasAcknowledged() && res.getDeletedCount == 1) {
-            1
-          } else {
-            logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated liability return - ex: $res")
-            0
+          preservingMdc(collection.deleteOne(deleteQuery).toFutureOption()) map {
+            case Some(res) =>
+              if (res.wasAcknowledged() && res.getDeletedCount == 1) {
+                1
+              } else {
+                logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated liability return - ex: $res")
+                0
+              }
+            case None =>
+              logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated liability return, no DeleteResult")
+              0
           }
+        }) map {
+          _.sum
         }
-      }) map {
-        _.sum
-      }
+      case None =>
+        logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to delete outdated liability returns")
+        Future.successful(0)
     }
   }
 
@@ -134,18 +146,23 @@ class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: Servi
     val replaceOptions = ReplaceOptions().upsert(true)
 
     preservingMdc(
-      collection.replaceOne(query, disposeLiabilityReturnTimestampUpdate, replaceOptions).toFuture().map { writeResult =>
+      collection.replaceOne(query, disposeLiabilityReturnTimestampUpdate, replaceOptions).toFutureOption().map {
+        case Some(writeResult) =>
           timerContext.stop()
           if (writeResult.wasAcknowledged() && writeResult.getModifiedCount == 1) {
-          DisposeLiabilityReturnCached
-        } else {
-          DisposeLiabilityReturnCacheError
-        }
-      } recover {
-        case e => logger.warn("Failed to remove draft dispose liability", e)
+            DisposeLiabilityReturnCached
+          } else {
+            DisposeLiabilityReturnCacheError
+          }
+        case None =>
+          logger.warn("Failed to remove draft dispose liability")
           timerContext.stop()
           DisposeLiabilityReturnCacheError
-      }
+        } recover {
+          case e => logger.warn("Failed to remove draft dispose liability", e)
+            timerContext.stop()
+            DisposeLiabilityReturnCacheError
+        }
     )
   }
 
@@ -153,14 +170,14 @@ class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: Servi
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchDispLiability)
     val query = equal("atedRefNo", atedRefNo)
 
-    val result: Future[Seq[DisposeLiabilityReturn]] = preservingMdc {
-      collection.find(query).toFuture()
+    val result: Future[Option[Seq[DisposeLiabilityReturn]]] = preservingMdc {
+      collection.find(query).collect().toFutureOption()
     }
 
     result onComplete {
       _ => timerContext.stop()
     }
 
-    result
+    result map { _.toSeq.flatten}
   }
 }

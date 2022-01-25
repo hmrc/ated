@@ -95,14 +95,18 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
     val query = and(equal("atedRefNo", propertyDetails.atedRefNo), equal("id", propertyDetails.id), equal("periodKey", propertyDetails.periodKey))
     val updateQuery = set("timeStamp", Codecs.toBson(date))
 
-    preservingMdc(collection.updateOne(query, updateQuery, UpdateOptions().upsert(false)).toFuture()) map { res =>
-      if (res.wasAcknowledged() && res.getModifiedCount == 1) {
-        logger.info(s"[updateTimestamp] Updated timestamp for ${propertyDetails.id} with $date")
-        PropertyDetailsCached
-      } else {
-        logger.error(s"[updateTimeStamp: PropertyDetails] Mongo failed to update, problem occurred in collect - ex: $res")
+    preservingMdc(collection.updateOne(query, updateQuery, UpdateOptions().upsert(false)).toFutureOption()) map {
+      case Some(res) =>
+        if (res.wasAcknowledged() && res.getModifiedCount == 1) {
+          logger.info(s"[updateTimestamp] Updated timestamp for ${propertyDetails.id} with $date")
+          PropertyDetailsCached
+        } else {
+          logger.error(s"[updateTimeStamp: PropertyDetails] Mongo failed to update, problem occurred in collect - ex: $res")
+          PropertyDetailsCacheError
+        }
+      case None =>
+        logger.error(s"[updateTimeStamp: PropertyDetails] Mongo failed to update, res was None")
         PropertyDetailsCacheError
-      }
     }
   }
 
@@ -112,24 +116,32 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
 
     val query2 = lte("timeStamp", Codecs.toBson(jodaDateTimeThreshold))
 
-    val foundPropertyDetails: Future[Seq[PropertyDetails]] = collection.find(query2).batchSize(batchSize).toFuture()
+    val foundPropertyDetails: Future[Option[Seq[PropertyDetails]]] = collection.find(query2).batchSize(batchSize).collect().toFutureOption()
 
-    foundPropertyDetails flatMap { propertyDetails =>
-      Future.sequence(propertyDetails map { propDetails =>
-        val deleteQuery = and(equal("atedRefNo", propDetails.atedRefNo), equal("id", propDetails.id))
+    foundPropertyDetails flatMap {
+      case Some(propertyDetails) =>
+        Future.sequence(propertyDetails map { propDetails =>
+          val deleteQuery = and(equal("atedRefNo", propDetails.atedRefNo), equal("id", propDetails.id))
 
-        preservingMdc(collection.deleteOne(deleteQuery).toFuture()) map { res =>
-          if (res.wasAcknowledged() && res.getDeletedCount == 1) {
-            1
-          } else {
-            logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated property details - ex: $res")
-            0
+          preservingMdc(collection.deleteOne(deleteQuery).toFutureOption()) map {
+            case Some(res) =>
+              if (res.wasAcknowledged() && res.getDeletedCount == 1) {
+                1
+              } else {
+                logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated property details - ex: $res")
+                0
+              }
+            case None =>
+              logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated property details, no DeleteResult")
+              0
           }
-        }
 
-      }) map {
-        _.sum
-      }
+        }) map {
+          _.sum
+        }
+      case None =>
+        logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove any outdated property details")
+        Future.successful(0)
     }
   }
 
@@ -140,18 +152,23 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
     val replaceOptions = ReplaceOptions().upsert(true)
 
     preservingMdc(
-      collection.replaceOne(query, propertyDetailsTimestampUpdate, replaceOptions).toFuture().map { writeResult =>
-        timerContext.stop()
-        if (writeResult.wasAcknowledged() && writeResult.getModifiedCount == 1) {
-          PropertyDetailsCached
-        } else {
-          PropertyDetailsCacheError
-        }
-      } recover {
-        case e => logger.warn("Failed to update or insert property details", e)
+      collection.replaceOne(query, propertyDetailsTimestampUpdate, replaceOptions).toFutureOption().map {
+        case Some(writeResult) =>
+          timerContext.stop()
+          if (writeResult.wasAcknowledged() && writeResult.getModifiedCount == 1) {
+            PropertyDetailsCached
+          } else {
+            PropertyDetailsCacheError
+          }
+        case None =>
+          logger.warn("Failed to update or insert property details, no WriteResult")
           timerContext.stop()
           PropertyDetailsCacheError
-      }
+        } recover {
+          case e => logger.warn("Failed to update or insert property details", e)
+            timerContext.stop()
+            PropertyDetailsCacheError
+        }
     )
   }
 
@@ -159,44 +176,50 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchPropDetails)
     val query = equal("atedRefNo", atedRefNo)
 
-    val result: Future[Seq[PropertyDetails]] = preservingMdc {
-      collection.find(query).toFuture()
+    val result: Future[Option[Seq[PropertyDetails]]] = preservingMdc {
+      collection.find(query).collect().toFutureOption()
     }
 
     result onComplete {
       _ => timerContext.stop()
     }
-    result
+
+    result map { _.toSeq.flatten}
   }
 
   def fetchPropertyDetailsById(atedRefNo: String, id: String): Future[Seq[PropertyDetails]] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchPropDetails)
     val query = and(equal("atedRefNo", atedRefNo), equal("id", id))
 
-    val result: Future[Seq[PropertyDetails]] = preservingMdc {
-      collection.find(query).toFuture()
+    val result: Future[Option[Seq[PropertyDetails]]] = preservingMdc {
+      collection.find(query).collect().toFutureOption()
     }
 
     result onComplete {
       _ => timerContext.stop()
     }
-    result
+
+    result map { _.toSeq.flatten}
   }
 
   def deletePropertyDetailsByfieldName(atedRefNo: String, id: String): Future[PropertyDetailsDelete] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryDeletePropDetailsByFieldName)
     val query = and(equal("atedRefNo", atedRefNo), equal("id", id))
 
-    preservingMdc(collection.deleteOne(query).toFuture()).map { removeResult =>
-      if (removeResult.wasAcknowledged() && removeResult.getDeletedCount == 1) {
-        PropertyDetailsDeleted
-      } else {
+    preservingMdc(collection.deleteOne(query).toFutureOption().map {
+      case Some(removeResult) =>
+        if (removeResult.wasAcknowledged() && removeResult.getDeletedCount == 1) {
+          PropertyDetailsDeleted
+        } else {
+          PropertyDetailsDeleteError
+        }
+      case None => logger.warn("Failed to remove property details, no RemoveResult")
+        timerContext.stop()
         PropertyDetailsDeleteError
-      }
-    }.recover {
+    } recover {
       case e => logger.warn("Failed to remove property details", e)
         timerContext.stop()
         PropertyDetailsDeleteError
-    }
+    })
   }
 }

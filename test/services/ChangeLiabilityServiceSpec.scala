@@ -34,7 +34,6 @@ import repository.{PropertyDetailsCached, PropertyDetailsDeleted, PropertyDetail
 import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
-import uk.gov.hmrc.mongo.DatabaseUpdate
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -42,7 +41,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
 
   val mockPropertyDetailsCache = mock[PropertyDetailsMongoRepository]
-  val mockDatabaseUpdate = mock[DatabaseUpdate[Cache]]
   val mockEtmpConnector = mock[EtmpReturnsConnector]
   val mockAuthConnector = mock[AuthConnector]
   val mockSubscriptionDataService = mock[SubscriptionDataService]
@@ -61,8 +59,6 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
 
     val testChangeLiabilityReturnService: TestChangeLiabilityReturnService = new TestChangeLiabilityReturnService()
   }
-
-  val mockedDatabaseUpdate = mock[DatabaseUpdate[Cache]]
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
 

@@ -88,14 +88,18 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
     val query = and(equal("atedRefNo", relief.atedRefNo), equal("periodKey", relief.periodKey))
     val updateQuery = set("timeStamp", Codecs.toBson(date))
 
-    preservingMdc(collection.updateOne(query, updateQuery, UpdateOptions().upsert(false)).toFuture()) map { res =>
-      if (res.wasAcknowledged() && res.getModifiedCount == 1) {
-        logger.info(s"[updateTimestamp] Updated timestamp for ${relief.atedRefNo} with $date")
-        ReliefCached
-      } else {
-        logger.error(s"[updateTimeStamp: Relief] Mongo failed to update, problem occurred in collect - ex: $res")
+    preservingMdc(collection.updateOne(query, updateQuery, UpdateOptions().upsert(false)).toFutureOption()) map {
+      case Some(res) =>
+        if (res.wasAcknowledged() && res.getModifiedCount == 1) {
+          logger.info(s"[updateTimestamp] Updated timestamp for ${relief.atedRefNo} with $date")
+          ReliefCached
+        } else {
+          logger.error(s"[updateTimeStamp: Relief] Mongo failed to update, problem occurred in collect - ex: $res")
+          ReliefCachedError
+        }
+      case None =>
+        logger.error(s"[updateTimeStamp: Relief] Mongo failed to update, no UpdateResult")
         ReliefCachedError
-      }
     }
   }
 
@@ -105,25 +109,33 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
 
     val query2 = lte("timeStamp", Codecs.toBson(jodaDateTimeThreshold))
 
-    val foundReliefs: Future[Seq[ReliefsTaxAvoidance]] = collection.find(query2).batchSize(batchSize).toFuture()
+    val foundReliefs: Future[Option[Seq[ReliefsTaxAvoidance]]] = collection.find(query2).batchSize(batchSize).collect().toFutureOption()
 
-    foundReliefs flatMap { reliefs =>
-      Future.sequence(reliefs map { relief =>
-        val deleteQuery = and(equal("atedRefNo", relief.atedRefNo), equal("periodKey", relief.periodKey))
+    foundReliefs flatMap {
+      case Some(reliefs) =>
+        Future.sequence(reliefs map { relief =>
+          val deleteQuery = and(equal("atedRefNo", relief.atedRefNo), equal("periodKey", relief.periodKey))
 
-        preservingMdc(collection.deleteOne(deleteQuery).toFuture()) map { res =>
-          if (res.wasAcknowledged() && res.getDeletedCount == 1) {
-            logger.info(s"${relief.atedRefNo} - ${relief.periodKey}")
-            1
-          } else {
-            logger.error(s"[deleteExpiredReliefs] Mongo failed to remove an outdated relief - ex: $res")
-            0
+          preservingMdc(collection.deleteOne(deleteQuery).toFutureOption()) map {
+            case Some(res) =>
+              if (res.wasAcknowledged() && res.getDeletedCount == 1) {
+                logger.info(s"${relief.atedRefNo} - ${relief.periodKey}")
+                1
+              } else {
+                logger.error(s"[deleteExpiredReliefs] Mongo failed to remove an outdated relief - ex: $res")
+                0
+              }
+            case None =>
+              logger.error(s"[deleteExpiredReliefs] Mongo failed to remove an outdated relief, no DeleteResult")
+              0
           }
         }
-      }
-      ) map {
-        _.sum
-      }
+        ) map {
+          _.sum
+        }
+      case None =>
+        logger.error(s"[deleteExpiredReliefs] Mongo failed to return FindResults")
+        Future.successful(0)
     }
   }
 
@@ -134,17 +146,23 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
     val replaceOptions = ReplaceOptions().upsert(true)
 
     preservingMdc(
-      collection.replaceOne(query, reliefTimestampUpdate, replaceOptions).toFuture().map { writeResult =>
-        timerContext.stop()
-        if (writeResult.wasAcknowledged()) {
-          ReliefCached
-        } else {
+      collection.replaceOne(query, reliefTimestampUpdate, replaceOptions).toFutureOption().map {
+        case Some(writeResult) =>
+          timerContext.stop()
+          if (writeResult.wasAcknowledged()) {
+            ReliefCached
+          } else {
+            ReliefCachedError
+          }
+        case None =>
+          logger.warn("Failed to update or insert relief, no WriteResult")
+          timerContext.stop()
           ReliefCachedError
-        }
-      }.recover {
-      case e => logger.warn("Failed to update or insert relief", e)
-        timerContext.stop()
-        ReliefCachedError
+      } recover {
+        case e =>
+          logger.warn("Failed to update or insert relief", e)
+          timerContext.stop()
+          ReliefCachedError
       }
     )
   }
@@ -153,26 +171,32 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchRelief)
     val query = equal("atedRefNo", atedRefNo)
 
-    val result: Future[Seq[ReliefsTaxAvoidance]] = preservingMdc {
-      collection.find(query).toFuture()
+    val result: Future[Option[Seq[ReliefsTaxAvoidance]]] = preservingMdc {
+      collection.find(query).collect().toFutureOption()
     }
 
     result onComplete {
       _ => timerContext.stop()
     }
-    result
+
+    result map { _.toSeq.flatten}
   }
 
   def deleteReliefs(atedRefNo: String): Future[ReliefDelete] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryDeleteRelief)
     val query = and(equal("atedRefNo", atedRefNo))
 
-    preservingMdc(collection.deleteOne(query).toFuture()).map { removeResult =>
-      if (removeResult.wasAcknowledged()) {
-        ReliefDeleted
-      } else {
+    preservingMdc(collection.deleteOne(query).toFutureOption()).map {
+      case Some(removeResult) =>
+        if (removeResult.wasAcknowledged()) {
+          ReliefDeleted
+        } else {
+          ReliefDeletedError
+        }
+      case None =>
+        logger.warn("Failed to remove relief, no RemoveResult")
+        timerContext.stop()
         ReliefDeletedError
-      }
     }.recover {
       case e => logger.warn("Failed to remove relief", e)
         timerContext.stop()
@@ -184,12 +208,17 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryDeleteReliefByYear)
     val query = and(equal("atedRefNo", atedRefNo), equal("periodKey", periodKey))
 
-    preservingMdc(collection.deleteOne(query).toFuture()).map { removeResult =>
-      if (removeResult.wasAcknowledged()) {
-        ReliefDeleted
-      } else {
+    preservingMdc(collection.deleteOne(query).toFutureOption()).map {
+      case Some(removeResult) =>
+        if (removeResult.wasAcknowledged()) {
+          ReliefDeleted
+        } else {
+          ReliefDeletedError
+        }
+      case None =>
+        logger.warn("Failed to remove relief by year, no RemoveResult")
+        timerContext.stop()
         ReliefDeletedError
-      }
     }.recover {
       case e => logger.warn("Failed to remove relief by year", e)
         timerContext.stop()

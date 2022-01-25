@@ -19,7 +19,6 @@ package models
 import play.api.libs.json._
 import org.bson.types.ObjectId
 import uk.gov.hmrc.mongo.play.json.formats.MongoFormats.Implicits._
-import uk.gov.hmrc.mongo.CreationAndLastModifiedDetail
 import scala.collection.Set
 import scala.language.implicitConversions
 
