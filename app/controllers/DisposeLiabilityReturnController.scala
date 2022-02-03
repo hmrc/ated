@@ -56,6 +56,8 @@ trait DisposeLiabilityReturnController extends BackendController with Logging {
   }
 
   def updateDisposalDate(atedRef: String, oldFormBundleNo: String): Action[JsValue] = Action.async(parse.json) {
+    implicit val disposeLiabilityFormat: OFormat[DisposeLiability] = DisposeLiability.formats
+
     implicit request => withJsonBody[DisposeLiability] {
       updatedDate => disposeLiabilityReturnService.updateDraftDisposeLiabilityReturnDate(atedRef, oldFormBundleNo, updatedDate) map {
         case Some(x) => Ok(Json.toJson(x))

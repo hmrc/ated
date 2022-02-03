@@ -19,7 +19,8 @@ import scala.concurrent.Future
 class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionHelpers with FutureAwaits {
   implicit val crypto: CryptoWithKeysFromConfig = app.injector.instanceOf[ApplicationCrypto].JsonCrypto
   implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
-  implicit val formats: OFormat[DisposeLiabilityReturn] = Json.format[DisposeLiabilityReturn]
+  implicit val formats: OFormat[DisposeLiability] = DisposeLiability.formats
+  
   val deleteLiabilityReturnsService: DeleteLiabilityReturnsService = app.injector.instanceOf[DeleteLiabilityReturnsService]
   val date59DaysAgo: DateTime = DateTime.now.withHourOfDay(0).minusDays(59)
   val date60DaysAgo: DateTime = date59DaysAgo.minusDays(1)

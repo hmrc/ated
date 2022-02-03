@@ -19,7 +19,6 @@ package models
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits._
 
 case class TaxAvoidance(
                          rentalBusinessScheme: Option[String] = None,
@@ -69,7 +68,17 @@ case class Reliefs( periodKey: Int,
                   )
 
 object Reliefs {
-  implicit val formats = Json.format[Reliefs]
+  implicit val formats: OFormat[Reliefs] = {
+    import play.api.libs.json.JodaReads._
+    import play.api.libs.json.JodaWrites._
+
+    Json.format[Reliefs]
+  }
+  val mongoFormats: OFormat[Reliefs] = {
+    import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits._
+
+    Json.format[Reliefs]
+  }
 }
 
 case class ReliefsTaxAvoidance(atedRefNo: String,
@@ -82,27 +91,64 @@ case class ReliefsTaxAvoidance(atedRefNo: String,
 
 object ReliefsTaxAvoidance {
 
-  val reliefTaxAvoidanceReads: Reads[ReliefsTaxAvoidance] = (
+  val (reliefTaxAvoidanceReads, reliefTaxAvoidanceWrites) = {
+    import play.api.libs.json.JodaReads._
+    import play.api.libs.json.JodaWrites._
+
+    val reliefReads: Reads[ReliefsTaxAvoidance] = (
       (JsPath \ "atedRefNo").read[String] and
-      (JsPath \ "periodKey").read[Int] and
-      (JsPath \ "reliefs").read[Reliefs] and
-      (JsPath \ "taxAvoidance").read[TaxAvoidance] and
-      (JsPath \ "periodStartDate").read[LocalDate] and
-      (JsPath \ "periodEndDate").read[LocalDate]
-    )((atedRefNo, periodKey, reliefs, taxAvoidance, periodStartDate, periodEndDate) =>
-    ReliefsTaxAvoidance(atedRefNo = atedRefNo, periodKey = periodKey, reliefs = reliefs, taxAvoidance = taxAvoidance,
-      periodStartDate = periodStartDate, periodEndDate = periodEndDate))
+        (JsPath \ "periodKey").read[Int] and
+        (JsPath \ "reliefs").read[Reliefs] and
+        (JsPath \ "taxAvoidance").read[TaxAvoidance] and
+        (JsPath \ "periodStartDate").read[LocalDate] and
+        (JsPath \ "periodEndDate").read[LocalDate]
+      )((atedRefNo, periodKey, reliefs, taxAvoidance, periodStartDate, periodEndDate) =>
+      ReliefsTaxAvoidance(atedRefNo = atedRefNo, periodKey = periodKey, reliefs = reliefs, taxAvoidance = taxAvoidance,
+        periodStartDate = periodStartDate, periodEndDate = periodEndDate))
 
-  val reliefTaxAvoidanceWrites: OWrites[ReliefsTaxAvoidance] = (
-    (JsPath \ "atedRefNo").write[String] and
-    (JsPath \ "periodKey").write[Int] and
-    (JsPath \ "reliefs").write[Reliefs] and
-    (JsPath \ "taxAvoidance").write[TaxAvoidance] and
-    (JsPath \ "periodStartDate").write[LocalDate] and
-    (JsPath \ "periodEndDate").write[LocalDate] and
-    (JsPath \ "timeStamp").write[DateTime]
-  )((reliefsTaxAvoidance) => (reliefsTaxAvoidance.atedRefNo,reliefsTaxAvoidance.periodKey, reliefsTaxAvoidance.reliefs,
-    reliefsTaxAvoidance.taxAvoidance, reliefsTaxAvoidance.periodStartDate, reliefsTaxAvoidance.periodEndDate, reliefsTaxAvoidance.timeStamp))
+    val reliefWrites: OWrites[ReliefsTaxAvoidance] = (
+      (JsPath \ "atedRefNo").write[String] and
+        (JsPath \ "periodKey").write[Int] and
+        (JsPath \ "reliefs").write[Reliefs] and
+        (JsPath \ "taxAvoidance").write[TaxAvoidance] and
+        (JsPath \ "periodStartDate").write[LocalDate] and
+        (JsPath \ "periodEndDate").write[LocalDate] and
+        (JsPath \ "timeStamp").write[DateTime]
+      )(reliefsTaxAvoidance => (reliefsTaxAvoidance.atedRefNo,reliefsTaxAvoidance.periodKey, reliefsTaxAvoidance.reliefs,
+      reliefsTaxAvoidance.taxAvoidance, reliefsTaxAvoidance.periodStartDate, reliefsTaxAvoidance.periodEndDate, reliefsTaxAvoidance.timeStamp))
 
-  implicit val formats = OFormat(reliefTaxAvoidanceReads, reliefTaxAvoidanceWrites)
+    (reliefReads, reliefWrites)
+  }
+
+  implicit val formats: OFormat[ReliefsTaxAvoidance] = OFormat(reliefTaxAvoidanceReads, reliefTaxAvoidanceWrites)
+
+  val (mongoReads, mongoWrites) = {
+    import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits._
+
+    val mongoReliefReads: Reads[ReliefsTaxAvoidance] = (
+      (JsPath \ "atedRefNo").read[String] and
+        (JsPath \ "periodKey").read[Int] and
+        (JsPath \ "reliefs").read[Reliefs](Reliefs.mongoFormats) and
+        (JsPath \ "taxAvoidance").read[TaxAvoidance] and
+        (JsPath \ "periodStartDate").read[LocalDate] and
+        (JsPath \ "periodEndDate").read[LocalDate]
+      )((atedRefNo, periodKey, reliefs, taxAvoidance, periodStartDate, periodEndDate) =>
+      ReliefsTaxAvoidance(atedRefNo = atedRefNo, periodKey = periodKey, reliefs = reliefs, taxAvoidance = taxAvoidance,
+        periodStartDate = periodStartDate, periodEndDate = periodEndDate))
+
+    val mongoReliefWrites: OWrites[ReliefsTaxAvoidance] = (
+      (JsPath \ "atedRefNo").write[String] and
+        (JsPath \ "periodKey").write[Int] and
+        (JsPath \ "reliefs").write[Reliefs](Reliefs.mongoFormats) and
+        (JsPath \ "taxAvoidance").write[TaxAvoidance] and
+        (JsPath \ "periodStartDate").write[LocalDate] and
+        (JsPath \ "periodEndDate").write[LocalDate] and
+        (JsPath \ "timeStamp").write[DateTime]
+      )(reliefsTaxAvoidance => (reliefsTaxAvoidance.atedRefNo,reliefsTaxAvoidance.periodKey, reliefsTaxAvoidance.reliefs,
+      reliefsTaxAvoidance.taxAvoidance, reliefsTaxAvoidance.periodStartDate, reliefsTaxAvoidance.periodEndDate, reliefsTaxAvoidance.timeStamp))
+
+    (mongoReliefReads, mongoReliefWrites)
+  }
+
+  val mongoFormats: OFormat[ReliefsTaxAvoidance] = OFormat(mongoReads, mongoWrites)
 }

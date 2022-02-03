@@ -51,6 +51,7 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
   implicit lazy val compositeSymmetricCrypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
   implicit lazy val crypto: CryptoWithKeysFromConfig = compositeSymmetricCrypto.JsonCrypto
   implicit lazy val format: OFormat[DisposeLiabilityReturn] = DisposeLiabilityReturn.formats
+  implicit lazy val liabilityFormat: OFormat[DisposeLiability] = DisposeLiability.formats
 
   trait Setup {
     val cc: ControllerComponents = app.injector.instanceOf[ControllerComponents]

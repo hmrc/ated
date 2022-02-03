@@ -75,7 +75,7 @@ class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: Servi
   extends PlayMongoRepository[DisposeLiabilityReturn](
     collectionName = "disposeLiabilityReturns",
     mongoComponent = mongo,
-    domainFormat = DisposeLiabilityReturn.formats,
+    domainFormat = DisposeLiabilityReturn.mongoFormats,
     indexes = Seq(
       IndexModel(ascending("id"), IndexOptions().name("idIndex").unique(true).sparse(true)),
       IndexModel(ascending("id", "periodKey", "atedRefNo"), IndexOptions().name("idAndperiodKeyAndAtedRefIndex").unique(true)),
@@ -84,7 +84,7 @@ class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: Servi
     )
   ) with DisposeLiabilityReturnMongoRepository with Logging {
 
-  implicit val format: OFormat[DisposeLiabilityReturn] = DisposeLiabilityReturn.formats
+  implicit val format: OFormat[DisposeLiabilityReturn] = DisposeLiabilityReturn.mongoFormats
 
   override def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: DateTime): Future[DisposeLiabilityReturnDelete] = {
     val query = and(equal("atedRefNo", liabilityReturn.atedRefNo), equal("id", liabilityReturn.id))

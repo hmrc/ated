@@ -75,7 +75,7 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
   extends  PlayMongoRepository[ReliefsTaxAvoidance](
     collectionName = "reliefs",
     mongoComponent = mongo,
-    domainFormat = ReliefsTaxAvoidance.formats,
+    domainFormat = ReliefsTaxAvoidance.mongoFormats,
     indexes = Seq(
       IndexModel(ascending("id"), IndexOptions().name("idIndex").unique(true).sparse(true)),
       IndexModel(ascending("periodKey", "atedRefNo"), IndexOptions().name("periodKeyAndAtedRefIndex").unique(true)),
