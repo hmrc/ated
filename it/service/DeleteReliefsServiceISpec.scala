@@ -8,7 +8,7 @@ import play.api.http.Status._
 import play.api.libs.json.Json
 import play.api.libs.ws.WSResponse
 import play.api.test.FutureAwaits
-import repository.{ReliefsMongoRepository, ReliefsMongoWrapper}
+import repository.{ReliefCached, ReliefCachedError, ReliefsMongoRepository, ReliefsMongoWrapper}
 import scheduler.DeleteReliefsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -69,6 +69,15 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
       .post(Json.toJson(reliefTaxAvoidance("SoDoesThis")))
 
     "not delete any drafts" when {
+      "when the timestamp cannot be updated" in new Setup {
+        await(createRelief)
+        val res: ReliefCached = await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234569XX"), dateOneMinAgo))
+
+        res match {
+          case ReliefCachedError => ()
+        }
+      }
+
       "the draft has only just been added" in new Setup {
         stubAuthPost
 

@@ -68,15 +68,13 @@ case class Reliefs( periodKey: Int,
                   )
 
 object Reliefs {
-  implicit val formats: OFormat[Reliefs] = {
-    import play.api.libs.json.JodaReads._
-    import play.api.libs.json.JodaWrites._
+  import play.api.libs.json.JodaReads._
+  import play.api.libs.json.JodaWrites._
 
+  implicit val formats: OFormat[Reliefs] = {
     Json.format[Reliefs]
   }
   val mongoFormats: OFormat[Reliefs] = {
-    import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits._
-
     Json.format[Reliefs]
   }
 }
@@ -91,10 +89,10 @@ case class ReliefsTaxAvoidance(atedRefNo: String,
 
 object ReliefsTaxAvoidance {
 
-  val (reliefTaxAvoidanceReads, reliefTaxAvoidanceWrites) = {
-    import play.api.libs.json.JodaReads._
-    import play.api.libs.json.JodaWrites._
+  import play.api.libs.json.JodaReads._
+  import play.api.libs.json.JodaWrites._
 
+  val (reliefTaxAvoidanceReads, reliefTaxAvoidanceWrites) = {
     val reliefReads: Reads[ReliefsTaxAvoidance] = (
       (JsPath \ "atedRefNo").read[String] and
         (JsPath \ "periodKey").read[Int] and
@@ -123,7 +121,7 @@ object ReliefsTaxAvoidance {
   implicit val formats: OFormat[ReliefsTaxAvoidance] = OFormat(reliefTaxAvoidanceReads, reliefTaxAvoidanceWrites)
 
   val (mongoReads, mongoWrites) = {
-    import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits._
+    import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 
     val mongoReliefReads: Reads[ReliefsTaxAvoidance] = (
       (JsPath \ "atedRefNo").read[String] and
@@ -143,7 +141,7 @@ object ReliefsTaxAvoidance {
         (JsPath \ "taxAvoidance").write[TaxAvoidance] and
         (JsPath \ "periodStartDate").write[LocalDate] and
         (JsPath \ "periodEndDate").write[LocalDate] and
-        (JsPath \ "timeStamp").write[DateTime]
+        (JsPath \ "timeStamp").write[DateTime](MongoJodaFormats.Implicits.jotDateTimeFormat)
       )(reliefsTaxAvoidance => (reliefsTaxAvoidance.atedRefNo,reliefsTaxAvoidance.periodKey, reliefsTaxAvoidance.reliefs,
       reliefsTaxAvoidance.taxAvoidance, reliefsTaxAvoidance.periodStartDate, reliefsTaxAvoidance.periodEndDate, reliefsTaxAvoidance.timeStamp))
 
