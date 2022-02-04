@@ -5,8 +5,6 @@ import models._
 import org.joda.time.{DateTime, LocalDate}
 import play.api.http.Status._
 import play.api.libs.json.{Format, Json, OFormat}
-import play.api.libs.json.JodaWrites._
-import play.api.libs.json.JodaReads._
 import play.api.libs.ws.WSResponse
 import play.api.test.FutureAwaits
 import repository.{DisposeLiabilityReturnMongoRepository, DisposeLiabilityReturnMongoWrapper}
