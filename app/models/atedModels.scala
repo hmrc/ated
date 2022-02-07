@@ -50,11 +50,6 @@ object DisposeLiability {
 
     Json.format[DisposeLiability]
   }
-  val mongoFormats: OFormat[DisposeLiability] = {
-    import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits._
-
-    Json.format[DisposeLiability]
-  }
 }
 
 case class DisposeCalculated(liabilityAmount: BigDecimal, amountDueOrRefund: BigDecimal)
@@ -88,7 +83,7 @@ object DisposeLiabilityReturn {
 
     implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
 
-    implicit val disposeLiabilityFormat: OFormat[DisposeLiability] = DisposeLiability.mongoFormats
+    implicit val disposeLiabilityFormat: OFormat[DisposeLiability] = DisposeLiability.formats
 
     Json.format[DisposeLiabilityReturn]
   }
