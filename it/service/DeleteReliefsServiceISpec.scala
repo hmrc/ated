@@ -8,8 +8,7 @@ import play.api.http.Status._
 import play.api.libs.json.Json
 import play.api.libs.ws.WSResponse
 import play.api.test.FutureAwaits
-import reactivemongo.api.ReadConcern
-import repository.{ReliefsMongoRepository, ReliefsMongoWrapper}
+import repository.{ReliefCached, ReliefCachedError, ReliefsMongoRepository, ReliefsMongoWrapper}
 import scheduler.DeleteReliefsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -58,7 +57,7 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
   class Setup {
     val repo: ReliefsMongoRepository = app.injector.instanceOf[ReliefsMongoWrapper].apply()
 
-    await(repo.drop)
+    await(repo.collection.drop().toFuture())
     await(repo.ensureIndexes)
   }
 
@@ -70,6 +69,16 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
       .post(Json.toJson(reliefTaxAvoidance("SoDoesThis")))
 
     "not delete any drafts" when {
+      "when the timestamp cannot be updated" in new Setup {
+        await(createRelief)
+        val res: ReliefCached = await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234569XX"), dateOneMinAgo))
+
+        res match {
+          case ReliefCachedError => ()
+          case _ => fail
+        }
+      }
+
       "the draft has only just been added" in new Setup {
         stubAuthPost
 
@@ -114,7 +123,7 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
         await(createRelief)
         await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), date61DaysAgo))
 
-        await(repo.collection.count(None, None, 0, None, readConcern = ReadConcern.Local)) mustBe 1
+        await(repo.collection.countDocuments().toFuture()) mustBe 1
 
         val deleteCount = await(deleteReliefsService.invoke())
         val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
@@ -129,7 +138,7 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
         await(createRelief)
         await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), date61DaysMinsAgo))
 
-        await(repo.collection.count(None, None, 0, None, readConcern = ReadConcern.Local)) mustBe 1
+        await(repo.collection.countDocuments().toFuture()) mustBe 1
 
         val deleteCount = await(deleteReliefsService.invoke())
         val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
@@ -148,7 +157,7 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
       await(repo.updateTimeStamp(reliefTaxAvoidance("ATE7654321XX"), date59DaysAgo))
 
 
-      await(repo.collection.count(None, None, 0, None, readConcern = ReadConcern.Local)) mustBe 2
+      await(repo.collection.countDocuments().toFuture()) mustBe 2
 
       val deleteCount = await(deleteReliefsService.invoke())
       val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
@@ -167,11 +176,11 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
       await(repo.updateTimeStamp(reliefTaxAvoidance("ATE1234567XX"), date61DaysMinsAgo))
       await(repo.updateTimeStamp(reliefTaxAvoidance("ATE7654321XX"), date61DaysAgo))
 
-      await(repo.collection.count(None, None, 0, None, readConcern = ReadConcern.Local)) mustBe 2
+      await(repo.collection.countDocuments().toFuture()) mustBe 2
 
       val deleteCount = await(deleteReliefsService.invoke())
 
-      await(repo.collection.count(None, None, 0, None, readConcern = ReadConcern.Local)) mustBe 0
+      await(repo.collection.countDocuments().toFuture()) mustBe 0
 
       val deletedDraft = await(hitApplicationEndpoint(s"/ated/ATE1234567XX/ated/reliefs/$periodKey").get())
       val foundDraft = await(hitApplicationEndpoint(s"/ated/ATE7654321XX/ated/reliefs/$periodKey").get())

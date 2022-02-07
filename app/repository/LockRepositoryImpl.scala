@@ -16,14 +16,12 @@
 
 package repository
 
-import javax.inject.Inject
-import play.modules.reactivemongo.ReactiveMongoComponent
-import uk.gov.hmrc.lock.{LockMongoRepository, LockRepository}
+import com.google.inject.Inject
+import uk.gov.hmrc.mongo.lock._
 
-class DefaultLockRepositoryProvider @Inject()(reactiveMongoComponent: ReactiveMongoComponent) extends LockRepositoryProvider {
-
-  lazy val repo = LockMongoRepository(reactiveMongoComponent.mongoConnector.db)
+class DefaultLockRepositoryProvider @Inject()(component: MongoLockRepository) extends LockRepositoryProvider {
+  lazy val repo: MongoLockRepository = component
 }
 trait LockRepositoryProvider {
-  val repo: LockRepository
+  val repo: MongoLockRepository
 }

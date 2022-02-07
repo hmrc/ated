@@ -16,11 +16,11 @@
 
 package scheduler
 
-import org.joda.time.Duration
 import play.api.{Configuration, Environment, Logging}
 import repository.{DisposeLiabilityReturnMongoRepository, DisposeLiabilityReturnMongoWrapper, LockRepositoryProvider}
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
+import scala.concurrent.duration.{SECONDS, Duration}
+import uk.gov.hmrc.mongo.lock.LockService
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.http.logging.Mdc
 
@@ -37,12 +37,8 @@ class DefaultDeleteLiabilityReturnsService @Inject()(val servicesConfig: Service
 
   override val documentBatchSize: Int = servicesConfig.getInt("schedules.delete-liability-returns-job.cleardown.batchSize")
   lazy val lockoutTimeout: Int = servicesConfig.getInt("schedules.delete-liability-returns-job.lockTimeout")
+  val lockService: LockService = LockService(lockRepositoryProvider.repo, lockId = "delete-liability-returns-job-lock", ttl = Duration.create(lockoutTimeout, SECONDS))
 
-  lazy val lockKeeper: LockKeeper = new LockKeeper() {
-    override val lockId = "delete-liability-returns-job-lock"
-    override val forceLockReleaseAfter: Duration = Duration.standardSeconds(lockoutTimeout)
-    override lazy val repo: LockRepository = lockRepositoryProvider.repo
-  }
 }
 
 trait DeleteLiabilityReturnsService extends ScheduledService[Int] with Logging {
@@ -52,7 +48,7 @@ trait DeleteLiabilityReturnsService extends ScheduledService[Int] with Logging {
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
   val repository: DisposeLiabilityReturnMongoWrapper
-  val lockKeeper: LockKeeper
+  val lockService: LockService
   val documentBatchSize: Int
 
   private def deleteOldLiabilityReturns(): Future[Int] = {
@@ -60,7 +56,7 @@ trait DeleteLiabilityReturnsService extends ScheduledService[Int] with Logging {
   }
 
   def invoke()(implicit ec: ExecutionContext): Future[Int] = {
-    Mdc.preservingMdc(lockKeeper.tryLock(deleteOldLiabilityReturns())) map {
+    Mdc.preservingMdc(lockService.withLock(deleteOldLiabilityReturns())) map {
       case Some(result) =>
         logger.info(s"[DeleteLiabilityReturnsService] Deleted $result draft documents past the given day limit")
         result

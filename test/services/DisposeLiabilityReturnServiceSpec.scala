@@ -34,7 +34,6 @@ import repository.{DisposeLiabilityReturnCached, DisposeLiabilityReturnMongoRepo
 import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
-import uk.gov.hmrc.mongo.DatabaseUpdate
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -42,7 +41,6 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
   override val mockAuthConnector = mock[AuthConnector]
   val mockDisposeLiabilityReturnRepository: DisposeLiabilityReturnMongoRepository = mock[DisposeLiabilityReturnMongoRepository]
   val mockEtmpConnector: EtmpReturnsConnector = mock[EtmpReturnsConnector]
-  val mockedDatabaseUpdate = mock[DatabaseUpdate[Cache]]
   val mockSubscriptionDataService = mock[SubscriptionDataService]
   val mockEmailConnector = mock[EmailConnector]
   val mockNotificationService = mock[NotificationService]

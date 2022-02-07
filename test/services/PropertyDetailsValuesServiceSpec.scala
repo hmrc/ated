@@ -27,11 +27,9 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.test.Helpers._
-import reactivemongo.api.commands.WriteResult
 import repository.{PropertyDetailsCached, PropertyDetailsMongoRepository}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.{HeaderCarrier, SessionId}
-import uk.gov.hmrc.mongo.DatabaseUpdate
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
@@ -39,8 +37,6 @@ import scala.concurrent.{ExecutionContext, Future}
 class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
   val mockPropertyDetailsCache = mock[PropertyDetailsMongoRepository]
-  val mockWriteResult = mock[WriteResult]
-  val mockDatabaseUpdate = mock[DatabaseUpdate[Cache]]
   val mockEtmpConnector = mock[EtmpReturnsConnector]
   val mockAuthConnector = mock[AuthConnector]
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global

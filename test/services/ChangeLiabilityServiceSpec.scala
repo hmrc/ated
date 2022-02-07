@@ -30,12 +30,10 @@ import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
-import reactivemongo.api.commands.WriteResult
 import repository.{PropertyDetailsCached, PropertyDetailsDeleted, PropertyDetailsMongoRepository}
 import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
-import uk.gov.hmrc.mongo.DatabaseUpdate
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -43,8 +41,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
 
   val mockPropertyDetailsCache = mock[PropertyDetailsMongoRepository]
-  val mockWriteResult = mock[WriteResult]
-  val mockDatabaseUpdate = mock[DatabaseUpdate[Cache]]
   val mockEtmpConnector = mock[EtmpReturnsConnector]
   val mockAuthConnector = mock[AuthConnector]
   val mockSubscriptionDataService = mock[SubscriptionDataService]
@@ -63,8 +59,6 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
 
     val testChangeLiabilityReturnService: TestChangeLiabilityReturnService = new TestChangeLiabilityReturnService()
   }
-
-  val mockedDatabaseUpdate = mock[DatabaseUpdate[Cache]]
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
 

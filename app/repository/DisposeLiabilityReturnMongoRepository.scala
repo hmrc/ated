@@ -19,18 +19,20 @@ package repository
 import metrics.{MetricsEnum, ServiceMetrics}
 import models.DisposeLiabilityReturn
 import org.joda.time.{DateTime, DateTimeZone}
-import play.api.libs.json.{Json, OFormat}
-import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.Cursor.FailOnError
-import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.api.{Cursor, DB}
-import reactivemongo.bson.{BSONDocument, BSONObjectID}
-import reactivemongo.play.json.ImplicitBSONHandlers._
+import org.mongodb.scala._
+import org.mongodb.scala.model.Filters.{equal, _}
+import org.mongodb.scala.model.Indexes.ascending
+import org.mongodb.scala.model.Updates.set
+import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions, UpdateOptions}
+import play.api.Logging
+import play.api.libs.json.OFormat
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
-import uk.gov.hmrc.mongo.ReactiveRepository
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.play.http.logging.Mdc
+import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
+import uk.gov.hmrc.play.http.logging.Mdc.preservingMdc
+import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits._
 
+import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -42,7 +44,7 @@ sealed trait DisposeLiabilityReturnDelete
 case object DisposeLiabilityReturnDeleted extends DisposeLiabilityReturnDelete
 case object DisposeLiabilityReturnDeleteError extends DisposeLiabilityReturnDelete
 
-trait DisposeLiabilityReturnMongoRepository extends ReactiveRepository[DisposeLiabilityReturn, BSONObjectID] {
+trait DisposeLiabilityReturnMongoRepository extends PlayMongoRepository[DisposeLiabilityReturn] {
   def cacheDisposeLiabilityReturns(disposeLiabilityReturn: DisposeLiabilityReturn): Future[DisposeLiabilityReturnCache]
   def fetchDisposeLiabilityReturns(atedRefNo: String): Future[Seq[DisposeLiabilityReturn]]
   def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: DateTime): Future[DisposeLiabilityReturnDelete]
@@ -51,115 +53,131 @@ trait DisposeLiabilityReturnMongoRepository extends ReactiveRepository[DisposeLi
 }
 
 @Singleton
-class DisposeLiabilityReturnMongoWrapperImpl @Inject()(val mongo: ReactiveMongoComponent,
+class DisposeLiabilityReturnMongoWrapperImpl @Inject()(val mongo: MongoComponent,
                                                        val serviceMetrics: ServiceMetrics,
                                                        val crypto: ApplicationCrypto)(
   override implicit val ec: ExecutionContext) extends DisposeLiabilityReturnMongoWrapper
 
 trait DisposeLiabilityReturnMongoWrapper {
   implicit val ec: ExecutionContext
-  val mongo: ReactiveMongoComponent
+  val mongo: MongoComponent
   val serviceMetrics: ServiceMetrics
   val crypto: ApplicationCrypto
   implicit val compositeCrypto: CryptoWithKeysFromConfig = crypto.JsonCrypto
 
-  private lazy val disposeLiabilityReturnRepository = new DisposeLiabilityReturnReactiveMongoRepository(mongo.mongoConnector.db, serviceMetrics)
+  private lazy val disposeLiabilityReturnRepository = new DisposeLiabilityReturnRepository(mongo, serviceMetrics)
 
   def apply(): DisposeLiabilityReturnMongoRepository = disposeLiabilityReturnRepository
 }
 
-class DisposeLiabilityReturnReactiveMongoRepository(mongo: () => DB, val metrics: ServiceMetrics)(
-  implicit crypto: CompositeSymmetricCrypto, ec: ExecutionContext)
-  extends ReactiveRepository[DisposeLiabilityReturn, BSONObjectID](collectionName = "disposeLiabilityReturns",
-                                                                   mongo,
-                                                                   DisposeLiabilityReturn.formats,
-                                                                   ReactiveMongoFormats.objectIdFormats
-                                                                  ) with DisposeLiabilityReturnMongoRepository {
-
-  implicit val format: OFormat[DisposeLiabilityReturn] = DisposeLiabilityReturn.formats
-
-  override def indexes: Seq[Index] = {
-    Seq(
-      Index(Seq("id" -> IndexType.Ascending), name = Some("idIndex"), unique = true, sparse = true),
-      Index(Seq("id" -> IndexType.Ascending, "periodKey" -> IndexType.Ascending, "atedRefNo" -> IndexType.Ascending), name = Some("idAndperiodKeyAndAtedRefIndex"), unique = true),
-      Index(Seq("atedRefNo" -> IndexType.Ascending), name = Some("atedRefIndex")),
-      Index(Seq("timestamp" -> IndexType.Ascending), Some("dispLiabilityDraftExpiry"), options = BSONDocument("expireAfterSeconds" -> 60 * 60 * 24 * 28), sparse = true, background = true)
+class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: ServiceMetrics)
+                                                   (implicit crypto: CompositeSymmetricCrypto, ec: ExecutionContext)
+  extends PlayMongoRepository[DisposeLiabilityReturn](
+    collectionName = "disposeLiabilityReturns",
+    mongoComponent = mongo,
+    domainFormat = DisposeLiabilityReturn.mongoFormats,
+    indexes = Seq(
+      IndexModel(ascending("id"), IndexOptions().name("idIndex").unique(true).sparse(true)),
+      IndexModel(ascending("id", "periodKey", "atedRefNo"), IndexOptions().name("idAndperiodKeyAndAtedRefIndex").unique(true)),
+      IndexModel(ascending("atedRefNo"), IndexOptions().name("atedRefIndex")),
+      IndexModel(ascending("timestamp"), IndexOptions().name("dispLiabilityDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
     )
-  }
+  ) with DisposeLiabilityReturnMongoRepository with Logging {
+
+  implicit val format: OFormat[DisposeLiabilityReturn] = DisposeLiabilityReturn.mongoFormats
 
   override def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: DateTime): Future[DisposeLiabilityReturnDelete] = {
-    val query = BSONDocument("atedRefNo" -> liabilityReturn.atedRefNo, "id" -> liabilityReturn.id)
-    Mdc.preservingMdc(collection.update(ordered = false).one(query, liabilityReturn.copy(timeStamp = date), upsert = false, multi = false)) map { res =>
-      if (res.ok && res.nModified != 0) {
-        logger.info(s"[updateTimestamp] Updated timestamp for ${liabilityReturn.id} with $date")
-        DisposeLiabilityReturnDeleted
-      } else {
-        logger.error(s"[updateTimeStamp: LiabilityReturn] Mongo failed to update, problem occurred in collect - ex: $res")
+    val query = and(equal("atedRefNo", liabilityReturn.atedRefNo), equal("id", liabilityReturn.id))
+    val updateQuery = set("timeStamp", Codecs.toBson(date))
+
+    preservingMdc(collection.updateOne(query, updateQuery, UpdateOptions().upsert(false)).toFutureOption()) map {
+      case Some(res) =>
+        if (res.wasAcknowledged() && res.getModifiedCount == 1) {
+          logger.info(s"[updateTimestamp] Updated timestamp for ${liabilityReturn.id} with $date")
+          DisposeLiabilityReturnDeleted
+        } else {
+          logger.error(s"[updateTimeStamp: LiabilityReturn] Mongo failed to update, problem occurred in collect - ex: $res")
+          DisposeLiabilityReturnDeleteError
+        }
+      case _ =>
+        logger.error(s"[updateTimeStamp: LiabilityReturn] Mongo failed to update, problem occurred in collect, was not defined")
         DisposeLiabilityReturnDeleteError
-      }
     }
   }
 
   def deleteExpired60DayLiabilityReturns(batchSize: Int): Future[Int] = {
-    val query = BSONDocument("timeStamp" -> Json.obj("$lte" -> DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(61).toString()))
+    val dayThreshold = 61
+    val jodaDateTimeThreshold = DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(dayThreshold)
 
-    val logOnError = Cursor.ContOnError[Seq[DisposeLiabilityReturn]]((_, ex) =>
-      logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed, problem occurred in collect - ex: ${ex.getMessage}")
-    )
-    val foundLiabilityReturns: Future[Seq[DisposeLiabilityReturn]] = collection.find(query, Option.empty)(BSONDocumentWrites, BSONDocumentWrites)
-      .cursor[DisposeLiabilityReturn]()
-      .collect[Seq](batchSize, logOnError)
+    val query2 = lte("timeStamp", Codecs.toBson(jodaDateTimeThreshold))
 
-    foundLiabilityReturns flatMap { returns =>
-      Future.sequence(returns map { rtn =>
-        Mdc.preservingMdc(collection.delete().one(BSONDocument("atedRefNo" -> rtn.atedRefNo, "id" -> rtn.id))) map { res =>
-          if (res.ok && res.n == 1) {
-            1
-          } else {
-            logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated liability return - ex: $res")
-            0
+    val foundLiabilityReturns: Future[Option[Seq[DisposeLiabilityReturn]]] = collection.find(query2).batchSize(batchSize).collect().toFutureOption()
+
+    foundLiabilityReturns flatMap {
+      case Some(res) =>
+        Future.sequence(res map { rtn =>
+          val deleteQuery = and(equal("atedRefNo", rtn.atedRefNo), equal("id", rtn.id))
+
+          preservingMdc(collection.deleteOne(deleteQuery).toFutureOption()) map {
+            case Some(res) =>
+              if (res.wasAcknowledged() && res.getDeletedCount == 1) {
+                1
+              } else {
+                logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated liability return - ex: $res")
+                0
+              }
+            case None =>
+              logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated liability return, no DeleteResult")
+              0
           }
+        }) map {
+          _.sum
         }
-      }) map {
-        _.sum
-      }
+      case None =>
+        logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to delete outdated liability returns")
+        Future.successful(0)
     }
   }
 
   def cacheDisposeLiabilityReturns(disposeLiabilityReturn: DisposeLiabilityReturn): Future[DisposeLiabilityReturnCache] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryInsertDispLiability)
-    val query = BSONDocument("atedRefNo" -> disposeLiabilityReturn.atedRefNo, "id" -> disposeLiabilityReturn.id)
+    val query = and(equal("atedRefNo", disposeLiabilityReturn.atedRefNo), equal("id", disposeLiabilityReturn.id))
+    val disposeLiabilityReturnTimestampUpdate = disposeLiabilityReturn.copy(timeStamp = DateTime.now(DateTimeZone.UTC))
+    val replaceOptions = ReplaceOptions().upsert(true)
 
-    Mdc.preservingMdc(collection.update(ordered = false)
-      .one(query, disposeLiabilityReturn.copy(timeStamp = DateTime.now(DateTimeZone.UTC)),
-        upsert = true, multi = false)).map { writeResult =>
-      timerContext.stop()
-      if (writeResult.ok) {
-        DisposeLiabilityReturnCached
-      } else {
-        DisposeLiabilityReturnCacheError
-      }
-    }.recover {
-      case e => logger.warn("Failed to remove draft dispose liability", e)
-        timerContext.stop()
-        DisposeLiabilityReturnCacheError
-    }
+    preservingMdc(
+      collection.replaceOne(query, disposeLiabilityReturnTimestampUpdate, replaceOptions).toFutureOption().map {
+        case Some(writeResult) =>
+          timerContext.stop()
+          if (writeResult.wasAcknowledged() && writeResult.getModifiedCount == 1) {
+            DisposeLiabilityReturnCached
+          } else {
+            DisposeLiabilityReturnCacheError
+          }
+        case None =>
+          logger.warn("Failed to remove draft dispose liability")
+          timerContext.stop()
+          DisposeLiabilityReturnCacheError
+        } recover {
+          case e => logger.warn("Failed to remove draft dispose liability", e)
+            timerContext.stop()
+            DisposeLiabilityReturnCacheError
+        }
+    )
   }
 
   def fetchDisposeLiabilityReturns(atedRefNo: String): Future[Seq[DisposeLiabilityReturn]] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchDispLiability)
-    val query = BSONDocument("atedRefNo" -> atedRefNo)
+    val query = equal("atedRefNo", atedRefNo)
 
-    //TODO: Replace with find from ReactiveRepository
-    val result: Future[Seq[DisposeLiabilityReturn]] =
-      Mdc.preservingMdc {
-        collection.find(query, Option.empty)(BSONDocumentWrites, BSONDocumentWrites)
-          .cursor[DisposeLiabilityReturn]().collect[Seq](maxDocs = -1, err = FailOnError[Seq[DisposeLiabilityReturn]]())
+    val result: Future[Option[Seq[DisposeLiabilityReturn]]] = preservingMdc {
+      collection.find(query).collect().toFutureOption()
+    }
 
-      }
     result onComplete {
       _ => timerContext.stop()
     }
-    result
+
+    result map { _.toSeq.flatten}
   }
 }
