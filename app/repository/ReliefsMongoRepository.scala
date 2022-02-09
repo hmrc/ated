@@ -31,7 +31,7 @@ import org.mongodb.scala.model.Updates._
 import org.mongodb.scala.model._
 import uk.gov.hmrc.mongo._
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
-import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits._
+import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 import uk.gov.hmrc.play.http.logging.Mdc.preservingMdc
 
 import java.util.concurrent.TimeUnit
@@ -81,12 +81,14 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
       IndexModel(ascending("periodKey", "atedRefNo"), IndexOptions().name("periodKeyAndAtedRefIndex").unique(true)),
       IndexModel(ascending("atedRefNo"), IndexOptions().name("atedRefIndex")),
       IndexModel(ascending("timestamp"), IndexOptions().name("dispLiabilityDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
-    )
+    ),
+    extraCodecs = Seq(Codecs.playFormatCodec(MongoJodaFormats.dateTimeFormat)),
+    replaceIndexes = true
   ) with ReliefsMongoRepository with Logging {
 
   def updateTimeStamp(relief: ReliefsTaxAvoidance, date: DateTime): Future[ReliefCached] = {
     val query = and(equal("atedRefNo", relief.atedRefNo), equal("periodKey", relief.periodKey))
-    val updateQuery = set("timeStamp", Codecs.toBson(date))
+    val updateQuery = set("timeStamp", date)
 
     preservingMdc(collection.updateOne(query, updateQuery, UpdateOptions().upsert(false)).toFutureOption()) map {
       case Some(res) =>
@@ -107,7 +109,7 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
     val dayThreshold = 61
     val jodaDateTimeThreshold = DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(dayThreshold)
 
-    val query2 = lte("timeStamp", Codecs.toBson(jodaDateTimeThreshold))
+    val query2 = lte("timeStamp", jodaDateTimeThreshold)
 
     val foundReliefs: Future[Option[Seq[ReliefsTaxAvoidance]]] = collection.find(query2).batchSize(batchSize).collect().toFutureOption()
 

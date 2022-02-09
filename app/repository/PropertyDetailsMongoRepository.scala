@@ -25,7 +25,6 @@ import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions, UpdateOptions}
 import play.api.Logging
-import play.api.libs.json.OFormat
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
 import org.mongodb.scala._
 import org.mongodb.scala.model.Filters._
@@ -35,7 +34,7 @@ import org.mongodb.scala.model._
 import uk.gov.hmrc.mongo._
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.play.http.logging.Mdc.preservingMdc
-import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits._
+import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
@@ -86,14 +85,14 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
       IndexModel(ascending("id", "periodKey", "atedRefNo"), IndexOptions().name("idAndperiodKeyAndAtedRefIndex").unique(true)),
       IndexModel(ascending("atedRefNo"), IndexOptions().name("atedRefIndex")),
       IndexModel(ascending("timestamp"), IndexOptions().name("propDetailsDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
-    ))
-    with PropertyDetailsMongoRepository with Logging {
-
-  implicit val format: OFormat[PropertyDetails] = PropertyDetails.formats
+    ),
+    extraCodecs = Seq(Codecs.playFormatCodec(MongoJodaFormats.dateTimeFormat)),
+    replaceIndexes = true
+  ) with PropertyDetailsMongoRepository with Logging {
 
   def updateTimeStamp(propertyDetails: PropertyDetails, date: DateTime): Future[PropertyDetailsCache] = {
     val query = and(equal("atedRefNo", propertyDetails.atedRefNo), equal("id", propertyDetails.id), equal("periodKey", propertyDetails.periodKey))
-    val updateQuery = set("timeStamp", Codecs.toBson(date))
+    val updateQuery = set("timeStamp", date)
 
     preservingMdc(collection.updateOne(query, updateQuery, UpdateOptions().upsert(false)).toFutureOption()) map {
       case Some(res) =>
@@ -114,7 +113,7 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
     val dayThreshold = 61
     val jodaDateTimeThreshold = DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(dayThreshold)
 
-    val query2 = lte("timeStamp", Codecs.toBson(jodaDateTimeThreshold))
+    val query2 = lte("timeStamp", jodaDateTimeThreshold)
 
     val foundPropertyDetails: Future[Option[Seq[PropertyDetails]]] = collection.find(query2).batchSize(batchSize).collect().toFutureOption()
 

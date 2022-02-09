@@ -25,13 +25,11 @@ import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions, UpdateOptions}
 import play.api.Logging
-import play.api.libs.json.OFormat
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.play.http.logging.Mdc.preservingMdc
-import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits._
-
+import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -81,14 +79,14 @@ class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: Servi
       IndexModel(ascending("id", "periodKey", "atedRefNo"), IndexOptions().name("idAndperiodKeyAndAtedRefIndex").unique(true)),
       IndexModel(ascending("atedRefNo"), IndexOptions().name("atedRefIndex")),
       IndexModel(ascending("timestamp"), IndexOptions().name("dispLiabilityDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
-    )
+    ),
+    extraCodecs = Seq(Codecs.playFormatCodec(MongoJodaFormats.dateTimeFormat)),
+    replaceIndexes = true
   ) with DisposeLiabilityReturnMongoRepository with Logging {
-
-  implicit val format: OFormat[DisposeLiabilityReturn] = DisposeLiabilityReturn.mongoFormats
 
   override def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: DateTime): Future[DisposeLiabilityReturnDelete] = {
     val query = and(equal("atedRefNo", liabilityReturn.atedRefNo), equal("id", liabilityReturn.id))
-    val updateQuery = set("timeStamp", Codecs.toBson(date))
+    val updateQuery = set("timeStamp", date)
 
     preservingMdc(collection.updateOne(query, updateQuery, UpdateOptions().upsert(false)).toFutureOption()) map {
       case Some(res) =>
@@ -109,7 +107,7 @@ class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: Servi
     val dayThreshold = 61
     val jodaDateTimeThreshold = DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(dayThreshold)
 
-    val query2 = lte("timeStamp", Codecs.toBson(jodaDateTimeThreshold))
+    val query2 = lte("timeStamp", jodaDateTimeThreshold)
 
     val foundLiabilityReturns: Future[Option[Seq[DisposeLiabilityReturn]]] = collection.find(query2).batchSize(batchSize).collect().toFutureOption()
 
