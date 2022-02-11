@@ -20,6 +20,8 @@ import play.api.libs.json.{Format, Json, OFormat}
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
 import play.api.libs.functional.syntax.toFunctionalBuilderOps
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
+import play.api.libs.json.JodaReads._
+import play.api.libs.json.JodaWrites._
 
 case class ClientsAgent(
                          arn: String,
@@ -45,9 +47,6 @@ case class DisposeLiability(dateOfDisposal: Option[LocalDate] = None, periodKey:
 
 object DisposeLiability {
   val formats: OFormat[DisposeLiability] = {
-    import play.api.libs.json.JodaReads._
-    import play.api.libs.json.JodaWrites._
-
     Json.format[DisposeLiability]
   }
 }
@@ -68,22 +67,17 @@ case class DisposeLiabilityReturn(atedRefNo: String,
 
 object DisposeLiabilityReturn {
   def formats(implicit crypto: CompositeSymmetricCrypto): OFormat[DisposeLiabilityReturn] = {
-    import play.api.libs.json.JodaReads._
-    import play.api.libs.json.JodaWrites._
-
     implicit val disposeLiabilityFormat: OFormat[DisposeLiability] = DisposeLiability.formats
-
     implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
 
     Json.format[DisposeLiabilityReturn]
   }
 
   def mongoFormats(implicit crypto: CompositeSymmetricCrypto): OFormat[DisposeLiabilityReturn] = {
-    import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits._
-
     implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
-
     implicit val disposeLiabilityFormat: OFormat[DisposeLiability] = DisposeLiability.formats
+
+    import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits.jotDateTimeFormat
 
     Json.format[DisposeLiabilityReturn]
   }
