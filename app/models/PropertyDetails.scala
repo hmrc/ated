@@ -37,7 +37,8 @@ object PropertyDetails {
   def formats(implicit crypto: CompositeSymmetricCrypto): OFormat[PropertyDetails] = {
     implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
 
-    import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits.jotDateTimeFormat
+    import models.MongoDateTimeFormats.Implicits.mdDateTimeFormat
+
     Json.format[PropertyDetails]
   }
 }
