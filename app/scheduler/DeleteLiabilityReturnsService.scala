@@ -32,7 +32,7 @@ class DefaultDeleteLiabilityReturnsService @Inject()(val servicesConfig: Service
                                             val environment: Environment,
                                             val lockRepositoryProvider: LockRepositoryProvider,
                                             val configuration: Configuration,
-                                                     override implicit val ec: ExecutionContext
+                                            override implicit val ec: ExecutionContext
                                             ) extends DeleteLiabilityReturnsService {
 
   override val documentBatchSize: Int = servicesConfig.getInt("schedules.delete-liability-returns-job.cleardown.batchSize")

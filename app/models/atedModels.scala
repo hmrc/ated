@@ -77,7 +77,7 @@ object DisposeLiabilityReturn {
     implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
     implicit val disposeLiabilityFormat: OFormat[DisposeLiability] = DisposeLiability.formats
 
-    import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits.jotDateTimeFormat
+    import models.MongoDateTimeFormats.Implicits.mdDateTimeFormat
 
     Json.format[DisposeLiabilityReturn]
   }

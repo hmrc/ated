@@ -38,6 +38,7 @@ object PropertyDetails {
     implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
 
     import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits.jotDateTimeFormat
+
     Json.format[PropertyDetails]
   }
 }

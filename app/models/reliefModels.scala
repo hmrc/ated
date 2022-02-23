@@ -141,7 +141,7 @@ object ReliefsTaxAvoidance {
         (JsPath \ "taxAvoidance").write[TaxAvoidance] and
         (JsPath \ "periodStartDate").write[LocalDate] and
         (JsPath \ "periodEndDate").write[LocalDate] and
-        (JsPath \ "timeStamp").write[DateTime](MongoJodaFormats.Implicits.jotDateTimeFormat)
+        (JsPath \ "timeStamp").write[DateTime](MongoJodaFormats.dateTimeFormat)
       )(reliefsTaxAvoidance => (reliefsTaxAvoidance.atedRefNo,reliefsTaxAvoidance.periodKey, reliefsTaxAvoidance.reliefs,
       reliefsTaxAvoidance.taxAvoidance, reliefsTaxAvoidance.periodStartDate, reliefsTaxAvoidance.periodEndDate, reliefsTaxAvoidance.timeStamp))
 
