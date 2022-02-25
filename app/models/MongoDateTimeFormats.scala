@@ -30,7 +30,7 @@ trait MongoDateTimeFormats {
           case err2 @ JsError(_) => err2
           case _ @ JsSuccess(dt, pth) => JsSuccess(DateTime.parse(dt), pth)
         }
-      case JsSuccess(dt, pth) => JsSuccess(new DateTime(dt.toLong), pth)
+      case JsSuccess(dt, pth) => JsSuccess(new DateTime(dt.toLong, DateTimeZone.UTC), pth)
     }
 
   final val tolerantDateTimeFormat: Format[DateTime] =
