@@ -26,9 +26,13 @@ trait MongoDateTimeFormats {
     (js \ "$date" \ "$numberLong").validate[String] match {
       case _ @ JsError(_) =>
         // Fall back to try and read date as string
-        js.validate[String] match {
-          case err2 @ JsError(_) => err2
-          case _ @ JsSuccess(dt, pth) => JsSuccess(DateTime.parse(dt), pth)
+        js.validate[Long] match {
+          case _ @ JsError(_) =>
+            js.validate[String] match {
+              case _ @ JsSuccess(dt, pth) => JsSuccess(DateTime.parse(dt), pth)
+              case err3 @ JsError(_) => err3
+            }
+          case _ @ JsSuccess(dt, pth) => JsSuccess(new DateTime(dt, DateTimeZone.UTC), pth)
         }
       case JsSuccess(dt, pth) => JsSuccess(new DateTime(dt.toLong, DateTimeZone.UTC), pth)
     }
