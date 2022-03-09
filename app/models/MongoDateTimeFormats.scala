@@ -38,7 +38,7 @@ trait MongoDateTimeFormats {
     }
 
   final val tolerantDateTimeFormat: Format[DateTime] =
-    Format(tolerantDateTimeReads, MongoJodaFormats.dateTimeFormat)
+    Format(tolerantDateTimeReads, MongoJodaFormats.dateTimeWrites)
 
   trait Implicits {
     implicit val mdLocalDateTimeFormat: Format[time.LocalDateTime] = MongoJodaFormats.localDateTimeFormat
