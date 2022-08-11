@@ -33,6 +33,8 @@ import repository._
 import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse, InternalServerException, SessionId}
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.model.Audit
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
@@ -44,6 +46,8 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
   val mockAuthConnector = mock[AuthConnector]
   val mockSubscriptionDataService = mock[SubscriptionDataService]
   val mockEmailConnector = mock[EmailConnector]
+  val mockAuditConnector = mock[AuditConnector]
+  val mockAudit = mock[Audit]
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   trait Setup {
@@ -54,6 +58,8 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       override val authConnector = mockAuthConnector
       override val subscriptionDataService = mockSubscriptionDataService
       override val emailConnector = mockEmailConnector
+      override val audit = mockAudit
+      val auditConnector = mockAuditConnector
     }
     val testPropertyDetailsService = new TestPropertyDetailsService()
   }
@@ -658,6 +664,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       val failureResponse = Json.parse( """{ "reason": "Error"}""")
       when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, failureResponse, Map.empty[String, Seq[String]])))
+      when(mockAudit.sendDataEvent).thenReturn(_ => ())
       val result = testPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
 
       val thrown = the[BadRequestException] thrownBy await(result)

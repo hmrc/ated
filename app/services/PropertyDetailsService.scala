@@ -16,18 +16,21 @@
 
 package services
 
+import audit.Auditable
 import connectors.{EmailConnector, EtmpReturnsConnector}
-
-import javax.inject.Inject
 import models._
+import play.api.Logging
 import play.api.http.Status._
 import play.api.libs.json.{JsValue, Json}
 import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse, InternalServerException}
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.model.Audit
 import utils.AtedUtils._
 import utils._
 
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class PropertyDetailsServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnector,
@@ -35,12 +38,14 @@ class PropertyDetailsServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnect
                                            val subscriptionDataService: SubscriptionDataService,
                                            val emailConnector: EmailConnector,
                                            val propertyDetailsMongoWrapper: PropertyDetailsMongoWrapper,
+                                           val auditConnector: AuditConnector,
                                            override implicit val ec: ExecutionContext
                                           ) extends PropertyDetailsService {
+  val audit: Audit = new Audit("ated", auditConnector)
   lazy val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetailsMongoWrapper()
 }
 
-trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConstants with NotificationService with AuthFunctionality {
+trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConstants with NotificationService with AuthFunctionality with Logging with Auditable {
 
   implicit val ec: ExecutionContext
 
@@ -60,6 +65,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       Future.successful(Some(PropertyDetails(atedRefNo = atedRefNo, periodKey = periodKey, id = createPropertyKey, addressProperty = updatedAddress)))
     }
+
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
 
@@ -73,6 +79,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
       }
       Future.successful(updatedPropertyDetails)
     }
+
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
 
@@ -86,6 +93,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
       }
       Future.successful(updatedPropertyDetails)
     }
+
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
 
@@ -119,6 +127,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
   def getLiabilityAmount(atedRefNo: String, id: String,
                          propertyDetails: PropertyDetails, agentRefNo: Option[String] = None)
                         (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[BigDecimal]] = {
+
     def getLiabilityAmount(response: JsValue): Option[BigDecimal] = {
       val liabilityResponses = response.as[SubmitEtmpReturnsResponse]
       val result = liabilityResponses.liabilityReturnResponse.flatMap {
@@ -126,12 +135,22 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
       }
       result.map(_.liabilityAmount)
     }
+
     val etmpSubmitReturnRequest = LiabilityUtils.createPreCalculationReturnsRequest(id, propertyDetails, agentRefNo)
     etmpSubmitReturnRequest match {
       case Some(returnRequest) => etmpConnector.submitReturns(atedRefNo, returnRequest).map { response =>
         response.status match {
           case OK => getLiabilityAmount(response.json)
-          case BAD_REQUEST => throw new BadRequestException(response.body)
+          case BAD_REQUEST =>
+            sendDataEvent("getLiabilityAmountFailed",
+              detail = Map("Id" -> s"""$id""",
+                "Property Details" -> s"""$propertyDetails""",
+                "agentRefNo" -> s"""$agentRefNo""",
+                "returnRequest" -> s"""$returnRequest""",
+                "Response" -> s"""$response"""))
+            logger.warn(
+              s"""[PropertyDetailsService][getLiabilityAmount]: failed with status 400""")
+            throw new BadRequestException(response.body)
           case status => throw new InternalServerException("[PropertyDetailsService][getLiabilityAmount] No Liability Amount Found")
         }
       }
@@ -161,6 +180,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
       }
       Future.successful(updatedPropertyDetails)
     }
+
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
 
@@ -182,6 +202,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
       }
       Future.successful(updatedPropertyDetails)
     }
+
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
 
@@ -201,6 +222,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
       }
       Future.successful(updatedPropertyDetails)
     }
+
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
 
@@ -217,6 +239,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
       }
       Future.successful(updatedPropertyDetails)
     }
+
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
 
@@ -243,7 +266,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
           case OK =>
             for {
               _ <- deleteDraftPropertyDetail(atedRefNo, id)
-              _ <- sendMail (subscriptionData.json, "chargeable_return_submit")
+              _ <- sendMail(subscriptionData.json, "chargeable_return_submit")
             } yield HttpResponse(
               submitResponse.status,
               json = Json.toJson(submitResponse.json.as[SubmitEtmpReturnsResponse]),
