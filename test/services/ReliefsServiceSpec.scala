@@ -141,6 +141,7 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
 
         val reliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(accountRef, periodKey, reliefs, taxAvoidance)
         when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq(reliefsTaxAvoidance)))
+        when(mockReliefsCache.fetchReliefsByYear(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(Seq(reliefsTaxAvoidance)))
         when(mockReliefsCache.cacheRelief(ArgumentMatchers.any())).thenReturn(Future.successful(ReliefCached))
         when(mockAuthConnector.authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
         when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
@@ -209,7 +210,7 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
       await(fetchResult) must be(Seq(reliefsTaxAvoidance))
 
       when(mockReliefsCache.deleteDraftReliefByYear(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(ReliefDeleted))
-      when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq()))
+      when(mockReliefsCache.fetchReliefsByYear(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(Seq()))
       val result = testReliefsService.deleteAllDraftReliefByYear("accountRef", 2017)
 
       await(result) must be(Seq())
