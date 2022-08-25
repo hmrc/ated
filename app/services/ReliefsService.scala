@@ -115,7 +115,7 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
     implicit ec: ExecutionContext): Future[Seq[ReliefsTaxAvoidance]] = {
     for {
       _ <- reliefsCache.deleteDraftReliefByYear(atedRefNo, periodKey)
-      reliefsList <- reliefsCache.fetchReliefs(atedRefNo)
+      reliefsList <- reliefsCache.fetchReliefsByYear(atedRefNo, periodKey)
     } yield {
       reliefsList
     }

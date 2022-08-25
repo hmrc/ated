@@ -63,6 +63,7 @@ trait ReliefsMongoWrapper {
 trait ReliefsMongoRepository extends PlayMongoRepository[ReliefsTaxAvoidance] {
   def cacheRelief(reliefs: ReliefsTaxAvoidance): Future[ReliefCached]
   def fetchReliefs(atedRefNo: String): Future[Seq[ReliefsTaxAvoidance]]
+  def fetchReliefsByYear(atedRefNo: String, periodKey: Int): Future[Seq[ReliefsTaxAvoidance]]
   def deleteReliefs(atedRefNo: String): Future[ReliefDelete]
   def deleteDraftReliefByYear(atedRefNo: String, periodKey: Int): Future[ReliefDelete]
   def updateTimeStamp(relief: ReliefsTaxAvoidance, date: DateTime): Future[ReliefCached]
@@ -171,6 +172,21 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
   def fetchReliefs(atedRefNo: String): Future[Seq[ReliefsTaxAvoidance]] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchRelief)
     val query = equal("atedRefNo", atedRefNo)
+
+    val result: Future[Option[Seq[ReliefsTaxAvoidance]]] = preservingMdc {
+      collection.find(query).collect().toFutureOption()
+    }
+
+    result onComplete {
+      _ => timerContext.stop()
+    }
+
+    result map { _.toSeq.flatten}
+  }
+
+  def fetchReliefsByYear(atedRefNo: String, periodKey: Int): Future[Seq[ReliefsTaxAvoidance]] = {
+    val timerContext = metrics.startTimer(MetricsEnum.RepositoryFetchRelief)
+    val query = and(equal("atedRefNo", atedRefNo), equal("periodKey", periodKey))
 
     val result: Future[Option[Seq[ReliefsTaxAvoidance]]] = preservingMdc {
       collection.find(query).collect().toFutureOption()

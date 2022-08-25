@@ -71,11 +71,14 @@ class ReliefsServiceISpec extends IntegrationSpec with AssertionHelpers with Fut
       val periodKey2019 = 2019
       val periodKey2020 = 2020
 
+      await(repo.cacheRelief(reliefTaxAvoidance("123456719", 2018)))
+      await(repo.cacheRelief(reliefTaxAvoidance("123456719", 2017)))
       await(repo.cacheRelief(reliefTaxAvoidance("123456719", periodKey2019)))
       await(repo.cacheRelief(reliefTaxAvoidance("123456720", periodKey2020)))
-      await(repo.collection.find().toFuture()).size must be(2)
-      await(reliefsService.deleteAllDraftReliefByYear("123456719", periodKey2019))
-      await(repo.collection.find().toFuture()).size must be(1)
+      await(repo.collection.find().toFuture()).size must be(4)
+      val remaining = await(reliefsService.deleteAllDraftReliefByYear("123456719", periodKey2019))
+      remaining.size must be(0)
+      await(repo.collection.find().toFuture()).size must be(3)
     }
     "not throw an exception if draft reliefs cannot be deleted by year" in new Setup {
       val periodKey2019 = 2019
