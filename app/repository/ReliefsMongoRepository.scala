@@ -203,7 +203,7 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryDeleteRelief)
     val query = and(equal("atedRefNo", atedRefNo))
 
-    preservingMdc(collection.deleteOne(query).toFutureOption()).map {
+    preservingMdc(collection.deleteMany(query).toFutureOption()).map {
       case Some(removeResult) =>
         if (removeResult.wasAcknowledged()) {
           ReliefDeleted
