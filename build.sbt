@@ -22,7 +22,7 @@ lazy val scoverageSettings: Seq[Def.Setting[_ >: String with Double with Boolean
   )
 }
 
-val silencerVersion = "1.7.1"
+val silencerVersion = "1.7.6"
 
 lazy val microservice = Project(appName, file("."))
   .enablePlugins(Seq(play.sbt.PlayScala) ++ plugins: _*)
@@ -35,15 +35,15 @@ lazy val microservice = Project(appName, file("."))
   .settings(
     addTestReportOption(IntegrationTest, "int-test-reports"),
     inConfig(IntegrationTest)(Defaults.itSettings),
-    scalaVersion := "2.12.12",
+    scalaVersion := "2.12.15",
     targetJvm := "jvm-1.8",
     libraryDependencies ++= appDependencies,
-    parallelExecution in Test := false,
-    fork in Test := true,
+    Test / parallelExecution := false,
+    Test / fork := true,
     retrieveManaged := true,
     routesGenerator := InjectedRoutesGenerator,
-    Keys.fork                  in IntegrationTest :=  false,
-    unmanagedSourceDirectories in IntegrationTest :=  (baseDirectory in IntegrationTest)(base => Seq(base / "it")).value,
+    IntegrationTest / Keys.fork :=  false,
+    IntegrationTest / unmanagedSourceDirectories :=  (IntegrationTest / baseDirectory)(base => Seq(base / "it")).value,
     parallelExecution in IntegrationTest := false,
     scalacOptions += "-P:silencer:pathFilters=views;routes",
     libraryDependencies ++= Seq(
