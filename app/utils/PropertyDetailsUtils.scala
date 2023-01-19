@@ -298,6 +298,8 @@ object PropertyDetailsUtils extends ReliefConstants {
     (firstOccDate, localAuthRegDate) match {
       case (Some(a), Some(b)) if a.isBefore(b) || a.isEqual(b) => Some(a)
       case (Some(_), Some(b)) => Some(b)
+      case (None, Some(b)) => Some(b)
+      case (Some(a), None) => Some(a)
       case _ => None
     }
   }
