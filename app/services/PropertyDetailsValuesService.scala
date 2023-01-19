@@ -171,7 +171,9 @@ trait PropertyDetailsValuesService extends ReliefConstants {
           else {
             val updatedValue = foundPropertyDetails.value.map(_.copy(
               newBuildDate = updatedDetails.newBuildOccupyDate,
-              localAuthRegDate = updatedDetails.newBuildRegisterDate
+              isBuildDateKnown = updatedDetails.newBuildOccupyDate.fold(Some(false))(_ => Some(true)),
+              localAuthRegDate = updatedDetails.newBuildRegisterDate,
+              isLocalAuthRegDateKnown = updatedDetails.newBuildRegisterDate.fold(Some(false))(_ => Some(true))
             ))
             foundPropertyDetails.copy(value = updatedValue, calculated = None)
           }

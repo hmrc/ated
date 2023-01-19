@@ -409,10 +409,51 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
 
       val newValue = newProp.get.value.get
       newValue.newBuildDate must be(updateValue.newBuildOccupyDate)
+      newValue.isBuildDateKnown must be(None)
       newValue.localAuthRegDate must be(updateValue.newBuildRegisterDate)
+      newValue.isLocalAuthRegDateKnown must be(None)
     }
 
     "update the value in the cache if it has been changed" in new Setup {
+      val updateValue = new PropertyDetailsNewBuildDates(Some(LocalDate.now), None)
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
+
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuildDates(accountRef,
+        propertyDetails3.id,
+        updateValue)
+
+      val newProp = await(result)
+      newProp.isDefined must be(true)
+      newProp.get.periodKey must be(propertyDetails3.periodKey)
+      newProp.get.addressProperty must be(propertyDetails3.addressProperty)
+      newProp.get.period.isDefined must be(true)
+      newProp.get.period must be(propertyDetails3.period)
+      newProp.get.calculated.isDefined must be(false)
+
+      newProp.get.value.isDefined must be(true)
+      val newValue = newProp.get.value.get
+      newValue.anAcquisition must be(Some(true))
+      newValue.isOwnedBeforePolicyYear.isDefined must be(true)
+      newValue.ownedBeforePolicyYearValue.isDefined must be(true)
+      newValue.isPropertyRevalued.isDefined must be(true)
+      newValue.revaluedValue.isDefined must be(true)
+      newValue.revaluedDate.isDefined must be(true)
+      newValue.isValuedByAgent.isDefined must be(true)
+
+      newValue.newBuildDate must be(updateValue.newBuildOccupyDate)
+      newValue.localAuthRegDate must be(updateValue.newBuildRegisterDate)
+      newValue.isBuildDateKnown must be(Some(updateValue.newBuildOccupyDate.isDefined))
+      newValue.isLocalAuthRegDateKnown must be(Some(updateValue.newBuildRegisterDate.isDefined))
+
+
+    }
+
+    "update the value in the cache if one date has been changed" in new Setup {
       val updateValue = new PropertyDetailsNewBuildDates()
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
@@ -445,6 +486,9 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
 
       newValue.newBuildDate must be(updateValue.newBuildOccupyDate)
       newValue.localAuthRegDate must be(updateValue.newBuildRegisterDate)
+      newValue.isBuildDateKnown must be(Some(updateValue.newBuildOccupyDate.isDefined))
+      newValue.isLocalAuthRegDateKnown must be(Some(updateValue.newBuildRegisterDate.isDefined))
+
 
     }
 

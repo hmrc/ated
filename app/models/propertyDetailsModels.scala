@@ -53,7 +53,9 @@ case class PropertyDetailsValue(anAcquisition: Option[Boolean] = None,
                                 ownedBeforePolicyYearValue: Option[BigDecimal] = None,
                                 isNewBuild: Option[Boolean] = None,
                                 newBuildValue: Option[BigDecimal] = None,
+                                isBuildDateKnown: Option[Boolean] = None,
                                 newBuildDate: Option[LocalDate] = None,
+                                isLocalAuthRegDateKnown: Option[Boolean] = None,
                                 localAuthRegDate: Option[LocalDate] = None,
                                 notNewBuildValue: Option[BigDecimal] = None,
                                 notNewBuildDate: Option[LocalDate] = None,
@@ -73,7 +75,9 @@ object PropertyDetailsValue {
       (JsPath \ "ownedBeforePolicyYearValue").read[BigDecimal].map(Option(_)).orElse((JsPath \ "ownedBefore2012Value").readNullable[BigDecimal]) and
       (JsPath \ "isNewBuild").readNullable[Boolean] and
       (JsPath \ "newBuildValue").readNullable[BigDecimal] and
+      (JsPath \ "isBuildDateKnown").readNullable[Boolean] and
       (JsPath \ "newBuildDate").readNullable[LocalDate] and
+      (JsPath \ "isLocalAuthRegDateKnown").readNullable[Boolean] and
       (JsPath \ "localAuthRegDate").readNullable[LocalDate] and
       (JsPath \ "notNewBuildValue").readNullable[BigDecimal] and
       (JsPath \ "notNewBuildDate").readNullable[LocalDate] and
