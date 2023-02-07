@@ -19,14 +19,17 @@ package utils
 import models._
 import org.joda.time.LocalDate
 import uk.gov.hmrc.http.InternalServerException
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 
 object PropertyDetailsUtils extends ReliefConstants {
 
   val _2012ValuationPolicyDate: Option[LocalDate] = Some(new LocalDate("2012-04-01"))
   val _2017ValuationPolicyDate: Option[LocalDate] = Some(new LocalDate("2017-04-01"))
+  val _2022ValuationPolicyDate: Option[LocalDate] = Some(new LocalDate("2022-04-01"))
 
-  def propertyDetailsCalculated(propertyDetails: PropertyDetails): PropertyDetailsCalculated = {
+  def propertyDetailsCalculated(propertyDetails: PropertyDetails)
+                               (implicit servicesConfig: ServicesConfig): PropertyDetailsCalculated = {
 
     def getProfessionalValuation(propertyDetails: PropertyDetails): Option[Boolean] = {
       propertyDetails.value.flatMap { v =>
@@ -115,13 +118,17 @@ object PropertyDetailsUtils extends ReliefConstants {
     }
   }
 
-  def getValuationDate(propertyDetailsValue: Option[PropertyDetailsValue], acquistionDateToUse: Option[LocalDate], periodKey: Int): Option[LocalDate] = {
+  def getValuationDate(propertyDetailsValue: Option[PropertyDetailsValue], acquistionDateToUse: Option[LocalDate], periodKey: Int)
+                      (implicit servicesConfig: ServicesConfig): Option[LocalDate] = {
 
     def getBasicValuationDate(value: PropertyDetailsValue): Option[LocalDate] = {
+      val valuation2022Active: Boolean = servicesConfig.getBoolean("feature.valuation2022DateActive")
       val ownedBeforeData = PropertyDetailsOwnedBefore(value.isOwnedBeforePolicyYear, value.ownedBeforePolicyYearValue)
+
       (ownedBeforeData.policyYear(periodKey), value.isNewBuild) match {
         case (IsOwnedBefore2012, _) => _2012ValuationPolicyDate
         case (IsOwnedBefore2017, _) => _2017ValuationPolicyDate
+        case (IsOwnedBefore2022, _) if valuation2022Active => _2022ValuationPolicyDate
         case (NotOwnedBeforePolicyYear, Some(true)) => calculateEarliestDate(value.newBuildDate, value.localAuthRegDate)
         case (NotOwnedBeforePolicyYear, Some(false)) => value.notNewBuildDate
         case _ => None
@@ -140,13 +147,14 @@ object PropertyDetailsUtils extends ReliefConstants {
     }
   }
 
-  def getInitialValueForSubmission(propertyDetailsValue: Option[PropertyDetailsValue], periodKey: Int): Option[BigDecimal] = {
+  def getInitialValueForSubmission(propertyDetailsValue: Option[PropertyDetailsValue], periodKey: Int)
+                                  (implicit servicesConfig: ServicesConfig): Option[BigDecimal] = {
     propertyDetailsValue match {
       case None => None
       case Some(value) =>
         val ownedBefore = PropertyDetailsOwnedBefore(value.isOwnedBeforePolicyYear, value.ownedBeforePolicyYearValue)
         (ownedBefore.policyYear(periodKey), value.isNewBuild, value.isPropertyRevalued) match {
-          case (IsOwnedBefore2012 | IsOwnedBefore2017, _, _) => value.ownedBeforePolicyYearValue
+          case (IsOwnedBefore2012 | IsOwnedBefore2017 | IsOwnedBefore2022, _, _) => value.ownedBeforePolicyYearValue
           case (NotOwnedBeforePolicyYear, Some(true), _) => value.newBuildValue
           case (NotOwnedBeforePolicyYear, Some(false), _) => value.notNewBuildValue
           case (_, _, Some(true)) => value.revaluedValue
@@ -157,11 +165,13 @@ object PropertyDetailsUtils extends ReliefConstants {
   }
 
 
-  def getAcquisitionValueAndDate(value: PropertyDetailsValue, periodKey: Int): (Option[BigDecimal], Option[LocalDate]) = {
+  def getAcquisitionValueAndDate(value: PropertyDetailsValue, periodKey: Int)
+                                (implicit servicesConfig: ServicesConfig): (Option[BigDecimal], Option[LocalDate]) = {
     val ownedBefore = PropertyDetailsOwnedBefore(value.isOwnedBeforePolicyYear, value.ownedBeforePolicyYearValue)
     (ownedBefore.policyYear(periodKey), value.isNewBuild, value.isPropertyRevalued) match {
       case (IsOwnedBefore2012, _, _) => (value.ownedBeforePolicyYearValue, _2012ValuationPolicyDate)
       case (IsOwnedBefore2017, _, _) => (value.ownedBeforePolicyYearValue, _2017ValuationPolicyDate)
+      case (IsOwnedBefore2022, _, _) => (value.ownedBeforePolicyYearValue, _2022ValuationPolicyDate)
       case (NotOwnedBeforePolicyYear, Some(true), _) => (value.newBuildValue, calculateEarliestDate(value.newBuildDate,
         value.localAuthRegDate))
       case (NotOwnedBeforePolicyYear, Some(false), _) => (value.notNewBuildValue, value.notNewBuildDate)
@@ -171,7 +181,8 @@ object PropertyDetailsUtils extends ReliefConstants {
     }
   }
 
-  def getAcquisitionData(propertyDetailsValue: Option[PropertyDetailsValue], periodKey: Int): (Option[BigDecimal], Option[LocalDate]) = {
+  def getAcquisitionData(propertyDetailsValue: Option[PropertyDetailsValue], periodKey: Int)
+                        (implicit servicesConfig: ServicesConfig): (Option[BigDecimal], Option[LocalDate]) = {
     propertyDetailsValue match {
       case None => (None, None)
       case Some(value) => getAcquisitionValueAndDate(value, periodKey)

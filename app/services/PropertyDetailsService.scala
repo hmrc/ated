@@ -27,6 +27,7 @@ import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse, InternalServerException}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.Audit
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import utils.AtedUtils._
 import utils._
 
@@ -99,7 +100,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
 
 
   def calculateDraftPropertyDetails(atedRefNo: String, id: String)(
-    implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    implicit hc: HeaderCarrier, ec: ExecutionContext, servicesConfig: ServicesConfig): Future[Option[PropertyDetails]] = {
 
     retrieveAgentRefNumberFor { agentRefNo =>
       def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {

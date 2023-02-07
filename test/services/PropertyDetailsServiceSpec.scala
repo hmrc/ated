@@ -35,6 +35,7 @@ import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enr
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse, InternalServerException, SessionId}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.Audit
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
@@ -47,6 +48,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
   val mockSubscriptionDataService = mock[SubscriptionDataService]
   val mockEmailConnector = mock[EmailConnector]
   val mockAuditConnector = mock[AuditConnector]
+  implicit val mockServicesConfig: ServicesConfig = mock[ServicesConfig]
   val mockAudit = mock[Audit]
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
