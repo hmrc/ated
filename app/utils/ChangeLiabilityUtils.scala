@@ -19,6 +19,7 @@ package utils
 import models.BankDetailsConversions._
 import models._
 import org.joda.time.LocalDate
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import utils.PropertyDetailsUtils._
 
 object ChangeLiabilityUtils extends ReliefConstants {
@@ -81,7 +82,8 @@ object ChangeLiabilityUtils extends ReliefConstants {
   }
 
 
-  def changeLiabilityCalculated(changeLiability: PropertyDetails, liabilityAmount: Option[BigDecimal] = None): PropertyDetailsCalculated = {
+  def changeLiabilityCalculated(changeLiability: PropertyDetails, liabilityAmount: Option[BigDecimal] = None)
+                               (implicit servicesConfig: ServicesConfig): PropertyDetailsCalculated = {
 
     val valueToUse = changeLiabilityInitialValueForPeriod(changeLiability)
     val (acquisitionValueToUse, acquisitionDateToUse) = getAcquisitionData(changeLiability)
@@ -99,7 +101,8 @@ object ChangeLiabilityUtils extends ReliefConstants {
     )
   }
 
-  private def getChangeLiabilityValuationDate(changeLiability: PropertyDetails, acquisitionDateToUse: Option[LocalDate]): Option[LocalDate] = {
+  private def getChangeLiabilityValuationDate(changeLiability: PropertyDetails, acquisitionDateToUse: Option[LocalDate])
+                                             (implicit servicesConfig: ServicesConfig): Option[LocalDate] = {
     changeLiability.value.flatMap(_.hasValueChanged ) match {
       case Some(false) => changeLiability.formBundleReturn.flatMap(_.dateOfAcquisition)
       case Some(true)  => getValuationDate(changeLiability.value, acquisitionDateToUse, changeLiability.periodKey)
@@ -107,7 +110,7 @@ object ChangeLiabilityUtils extends ReliefConstants {
     }
   }
 
-  def changeLiabilityInitialValueForPeriod(changeLiability: PropertyDetails): Option[BigDecimal] = {
+  def changeLiabilityInitialValueForPeriod(changeLiability: PropertyDetails)(implicit servicesConfig: ServicesConfig): Option[BigDecimal] = {
     def getEarliestValue(formBundlePeriods : Option[Seq[FormBundleProperty]]) :Option[BigDecimal] = {
       implicit val localDateOrdering: Ordering[LocalDate] = Ordering.by(_.toDate.getTime)
       implicit val lineItemOrdering: Ordering[FormBundleProperty] = Ordering.by(_.dateFrom)
@@ -126,7 +129,7 @@ object ChangeLiabilityUtils extends ReliefConstants {
     }
   }
 
-  private def getAcquisitionData(changeLiability: PropertyDetails): (Option[BigDecimal], Option[LocalDate]) = {
+  private def getAcquisitionData(changeLiability: PropertyDetails)(implicit servicesConfig: ServicesConfig): (Option[BigDecimal], Option[LocalDate]) = {
     changeLiability.value match {
       case None => (None, None)
       case Some(value) =>
@@ -159,7 +162,7 @@ object ChangeLiabilityUtils extends ReliefConstants {
     }
     def createUkBankDetails(bankDetails: BankDetails) : Option[EtmpBankDetails] = {
       (bankDetails.accountName, bankDetails.sortCode, bankDetails.accountNumber) match {
-        case (Some(accountName), Some(sortCode), Some(accountNo)) if (accountName.length > 0 && accountNo.length > 0) =>
+        case (Some(accountName), Some(sortCode), Some(accountNo)) if accountName.nonEmpty && accountNo.nonEmpty =>
           Some(EtmpBankDetails(accountName = accountName,
             ukAccount = Some(UKAccount(
               sortCode = sortCode.firstElement + sortCode.secondElement + sortCode.thirdElement,

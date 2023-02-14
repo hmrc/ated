@@ -33,6 +33,7 @@ import services.ChangeLiabilityService
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -52,6 +53,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
   implicit lazy val compositeSymmetricCrypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
   implicit lazy val crypto: CryptoWithKeysFromConfig = compositeSymmetricCrypto.JsonCrypto
   implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
+  implicit val mockServicesConfig: ServicesConfig = mock[ServicesConfig]
 
   trait Setup {
     val cc: ControllerComponents = app.injector.instanceOf[ControllerComponents]
@@ -60,6 +62,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
       override implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
       override val changeLiabilityService: ChangeLiabilityService = mockChangeLiabilityReturnService
       override val crypto: ApplicationCrypto = compositeSymmetricCrypto
+      implicit val servicesConfig: ServicesConfig = mockServicesConfig
     }
 
     val controller = new TestChangeLiabilityReturnController()
@@ -117,7 +120,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
         lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
 
         when(mockChangeLiabilityReturnService.calculateDraftChangeLiability(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"))(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"))(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest()
         val result = controller.calculateDraftChangeLiability(testAccountRef, "1").apply(fakeRequest)
@@ -129,7 +132,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
         val testAccountRef = "ATED1223123"
 
         when(mockChangeLiabilityReturnService.calculateDraftChangeLiability(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"))(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"))(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest()
         val result = controller.calculateDraftChangeLiability(testAccountRef, "1").apply(fakeRequest)

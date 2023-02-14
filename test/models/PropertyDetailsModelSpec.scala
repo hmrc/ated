@@ -16,10 +16,14 @@
 
 package models
 
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.Json
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
-class PropertyDetailsModelSpec extends PlaySpec {
+class PropertyDetailsModelSpec extends PlaySpec with MockitoSugar {
+
+  implicit val mockServicesConfig: ServicesConfig = mock[ServicesConfig]
 
   ".policyYear on PropertyDetailsOwnedBefore" should {
 

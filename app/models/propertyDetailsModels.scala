@@ -21,6 +21,7 @@ import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import play.api.libs.json.JodaWrites._
 import play.api.libs.json.JodaReads._
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 case class PropertyDetailsAddress(line_1: String, line_2: String, line_3: Option[String], line_4: Option[String],
                                   postcode: Option[String] = None) {
@@ -115,18 +116,25 @@ case object IsOwnedBefore2012 extends OwnedBeforePolicyYear
 
 case object IsOwnedBefore2017 extends OwnedBeforePolicyYear
 
+case object IsOwnedBefore2022 extends OwnedBeforePolicyYear
+
 case object NotOwnedBeforePolicyYear extends OwnedBeforePolicyYear
 
 case class PropertyDetailsOwnedBefore(isOwnedBeforePolicyYear: Option[Boolean] = None,
                                       ownedBeforePolicyYearValue: Option[BigDecimal] = None) {
 
-  def policyYear(periodKey: Int) = isOwnedBeforePolicyYear match {
-    case Some(true) => periodKey match {
-      case p if p >= 2018 => IsOwnedBefore2017
-      case p if p >= 2013 && p < 2018 => IsOwnedBefore2012
-      case _ => throw new RuntimeException("Invalid liability period")
+  def policyYear(periodKey: Int)(implicit servicesConfig: ServicesConfig) : OwnedBeforePolicyYear = {
+    val valuation2022Active: Boolean = servicesConfig.getBoolean("feature.valuation2022DateActive")
+
+    isOwnedBeforePolicyYear match {
+      case Some(true) => periodKey match {
+        case p if valuation2022Active && p >= 2023 => IsOwnedBefore2022
+        case p if p >= 2018 && (!valuation2022Active || p < 2023) => IsOwnedBefore2017
+        case p if p >= 2013 && p < 2018 => IsOwnedBefore2012
+        case _ => throw new RuntimeException("Invalid liability period")
+      }
+      case _ => NotOwnedBeforePolicyYear
     }
-    case _ => NotOwnedBeforePolicyYear
   }
 }
 

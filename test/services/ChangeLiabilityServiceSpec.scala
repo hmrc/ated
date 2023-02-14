@@ -34,6 +34,7 @@ import repository.{PropertyDetailsCached, PropertyDetailsDeleted, PropertyDetail
 import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -45,6 +46,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
   val mockAuthConnector = mock[AuthConnector]
   val mockSubscriptionDataService = mock[SubscriptionDataService]
   val mockEmailConnector = mock[EmailConnector]
+  implicit val mockServicesConfig: ServicesConfig = mock[ServicesConfig]
 
   trait Setup {
 
