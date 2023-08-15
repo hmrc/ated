@@ -22,8 +22,6 @@ lazy val scoverageSettings: Seq[Def.Setting[_ >: String with Double with Boolean
   )
 }
 
-val silencerVersion = "1.7.6"
-
 lazy val microservice = Project(appName, file("."))
   .enablePlugins(Seq(play.sbt.PlayScala) ++ plugins: _*)
   .settings(playSettings ++ scoverageSettings: _*)
