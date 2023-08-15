@@ -57,7 +57,7 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
     val repo: ReliefsMongoRepository = app.injector.instanceOf[ReliefsMongoWrapper].apply()
 
     await(repo.collection.drop().toFuture())
-    await(repo.ensureIndexes)
+    await(repo.ensureIndexes())
   }
 
   "deleteReliefsService" should {

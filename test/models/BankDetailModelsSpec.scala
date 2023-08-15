@@ -19,7 +19,7 @@ package models
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsPath, JsSuccess, Json}
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig, Protected}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, Encrypter, Decrypter, Protected}
 
 class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
 
@@ -78,7 +78,7 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
     "read" when {
       "when there are protected bank details" in {
         val crypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
-        implicit val jsonCrypto: CryptoWithKeysFromConfig = crypto.JsonCrypto
+        implicit val jsonCrypto: Encrypter with Decrypter = crypto.JsonCrypto
 
         val json =
           s"""

@@ -18,7 +18,7 @@ package models
 
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.{Format, Json, OFormat}
-import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
+import uk.gov.hmrc.crypto.{Encrypter, Decrypter}
 
 case class PropertyDetails(atedRefNo: String,
                            id: String,
@@ -34,7 +34,7 @@ case class PropertyDetails(atedRefNo: String,
 
 object PropertyDetails {
 
-  def formats(implicit crypto: CompositeSymmetricCrypto): OFormat[PropertyDetails] = {
+  def formats(implicit crypto: Encrypter with Decrypter): OFormat[PropertyDetails] = {
     implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
 
     import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits.jotDateTimeFormat

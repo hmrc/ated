@@ -18,7 +18,7 @@ package models
 
 import play.api.libs.json.{Format, Json, OFormat}
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
-import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
+import uk.gov.hmrc.crypto.{Encrypter, Decrypter}
 import play.api.libs.json.JodaReads._
 import play.api.libs.json.JodaWrites._
 
@@ -65,14 +65,14 @@ case class DisposeLiabilityReturn(atedRefNo: String,
                                   timeStamp: DateTime = DateTime.now(DateTimeZone.UTC))
 
 object DisposeLiabilityReturn {
-  def formats(implicit crypto: CompositeSymmetricCrypto): OFormat[DisposeLiabilityReturn] = {
+  def formats(implicit crypto: Encrypter with Decrypter): OFormat[DisposeLiabilityReturn] = {
     implicit val disposeLiabilityFormat: OFormat[DisposeLiability] = DisposeLiability.formats
     implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
 
     Json.format[DisposeLiabilityReturn]
   }
 
-  def mongoFormats(implicit crypto: CompositeSymmetricCrypto): OFormat[DisposeLiabilityReturn] = {
+  def mongoFormats(implicit crypto: Encrypter with Decrypter): OFormat[DisposeLiabilityReturn] = {
     implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
     implicit val disposeLiabilityFormat: OFormat[DisposeLiability] = DisposeLiability.formats
 

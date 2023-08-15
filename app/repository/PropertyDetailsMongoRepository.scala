@@ -25,7 +25,7 @@ import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions, UpdateOptions}
 import play.api.Logging
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, Encrypter, Decrypter}
 import org.mongodb.scala._
 import uk.gov.hmrc.mongo._
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
@@ -63,7 +63,7 @@ trait PropertyDetailsMongoWrapper {
   val mongo: MongoComponent
   val serviceMetrics: ServiceMetrics
   val crypto: ApplicationCrypto
-  implicit val compositeCrypto: CryptoWithKeysFromConfig = crypto.JsonCrypto
+  implicit val compositeCrypto: Encrypter with Decrypter = crypto.JsonCrypto
 
   private lazy val propertyDetailsRepository = new PropertyDetailsReactiveMongoRepository(mongo, serviceMetrics)
 
@@ -71,7 +71,7 @@ trait PropertyDetailsMongoWrapper {
 }
 
 class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics: ServiceMetrics)
-                                            (implicit crypto: CompositeSymmetricCrypto, ec: ExecutionContext)
+                                            (implicit crypto: Encrypter with Decrypter, ec: ExecutionContext)
   extends PlayMongoRepository[PropertyDetails](
     collectionName = "propertyDetails",
     mongoComponent = mongo,

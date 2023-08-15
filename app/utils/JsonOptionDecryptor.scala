@@ -17,9 +17,10 @@
 package utils
 
 import play.api.libs.json._
-import uk.gov.hmrc.crypto.{Crypted, Protected, CompositeSymmetricCrypto}
+import uk.gov.hmrc.crypto.{Crypted, Protected}
+import uk.gov.hmrc.crypto.{Encrypter, Decrypter}
 
-class JsonOptionDecryptor[T](implicit crypto: CompositeSymmetricCrypto, rds: Reads[T]) extends Reads[Protected[Option[T]]] {
+class JsonOptionDecryptor[T](implicit crypto: Encrypter with Decrypter, rds: Reads[T]) extends Reads[Protected[Option[T]]] {
   override def reads(json: JsValue): JsResult[Protected[Option[T]]] = {
       val crypted = Crypted(json.as[String])
       JsSuccess(readFromJson(crypted))

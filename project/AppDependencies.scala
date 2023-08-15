@@ -8,11 +8,11 @@ object AppDependencies {
   val compile: Seq[ModuleID] = Seq(
     ws,
 		"com.enragedginger" %% "akka-quartz-scheduler"      % "1.9.3-akka-2.6.x",
-    "uk.gov.hmrc"       %% "bootstrap-backend-play-28"  % "5.25.0",
-    "uk.gov.hmrc"       %% "domain"                     % "8.1.0-play-28",
-    "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-28"         % "0.70.0",
+    "uk.gov.hmrc"       %% "bootstrap-backend-play-28"  % "7.21.0",
+    "uk.gov.hmrc"       %% "domain"                     % "8.3.0-play-28",
+    "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-28"         % "1.3.0",
     "uk.gov.hmrc"       %% "json-encryption"            % "5.1.0-play-28",
-		"com.typesafe.play" %% "play-json-joda"             % "2.9.2"
+		"com.typesafe.play" %% "play-json-joda"             % "2.9.4"
   )
 
   trait TestDependencies {
@@ -23,12 +23,12 @@ object AppDependencies {
   object Test {
     def apply(): Seq[ModuleID] = new TestDependencies {
       override lazy val test: Seq[ModuleID] = Seq(
-        "uk.gov.hmrc"                  %% "bootstrap-test-play-28"  % "5.25.0"         % scope,
+        "uk.gov.hmrc"                  %% "bootstrap-test-play-28"  % "7.21.0"         % scope,
         "org.scalatestplus.play"       %% "scalatestplus-play"   % "5.1.0"             % scope,
         "org.pegdown"                  %  "pegdown"              % "1.6.0"             % scope,
-        "org.mockito"                  %  "mockito-core"         % "4.7.0"             % scope,
+        "org.mockito"                  %  "mockito-core"         % "5.4.0"             % scope,
         "com.typesafe.play"            %% "play-test"            % PlayVersion.current % scope,
-        "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.3"            % scope
+        "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.15.2"            % scope
       )
     }.test
   }
@@ -41,7 +41,7 @@ object AppDependencies {
 				"org.scalatestplus.play" %% "scalatestplus-play" % "5.1.0"             % scope,
         "org.scalatestplus"      %% "mockito-3-12"       % "3.2.10.0"          % scope,
         "com.vladsch.flexmark"   %  "flexmark-all"       % "0.35.10"           % scope,
-				"com.github.tomakehurst" %  "wiremock-jre8"			 % "2.33.2"            % scope
+				"com.github.tomakehurst" %  "wiremock-jre8"			 % "2.35.0"            % scope
 			)
 		}.test
 	}

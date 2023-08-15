@@ -48,7 +48,7 @@ class ReliefsServiceISpec extends IntegrationSpec with AssertionHelpers with Fut
     val repo: ReliefsMongoRepository = app.injector.instanceOf[ReliefsMongoWrapper].apply()
 
     await(repo.collection.drop().toFuture())
-    await(repo.ensureIndexes)
+    await(repo.ensureIndexes())
 
   }
 

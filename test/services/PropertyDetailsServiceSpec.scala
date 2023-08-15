@@ -666,7 +666,6 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       val failureResponse = Json.parse( """{ "reason": "Error"}""")
       when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, failureResponse, Map.empty[String, Seq[String]])))
-      when(mockAudit.sendDataEvent).thenReturn(_ => ())
       val result = testPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
 
       val thrown = the[BadRequestException] thrownBy await(result)

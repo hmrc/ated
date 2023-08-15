@@ -25,7 +25,7 @@ import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions, UpdateOptions}
 import play.api.Logging
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, Encrypter, Decrypter}
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.play.http.logging.Mdc.preservingMdc
@@ -61,7 +61,7 @@ trait DisposeLiabilityReturnMongoWrapper {
   val mongo: MongoComponent
   val serviceMetrics: ServiceMetrics
   val crypto: ApplicationCrypto
-  implicit val compositeCrypto: CryptoWithKeysFromConfig = crypto.JsonCrypto
+  implicit val compositeCrypto: Encrypter with Decrypter = crypto.JsonCrypto
 
   private lazy val disposeLiabilityReturnRepository = new DisposeLiabilityReturnRepository(mongo, serviceMetrics)
 
@@ -69,7 +69,7 @@ trait DisposeLiabilityReturnMongoWrapper {
 }
 
 class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: ServiceMetrics)
-                                                   (implicit crypto: CompositeSymmetricCrypto, ec: ExecutionContext)
+                                                   (implicit crypto: Encrypter with Decrypter, ec: ExecutionContext)
   extends PlayMongoRepository[DisposeLiabilityReturn](
     collectionName = "disposeLiabilityReturns",
     mongoComponent = mongo,

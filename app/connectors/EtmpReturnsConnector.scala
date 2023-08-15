@@ -163,7 +163,7 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
 
   private def auditSubmitReturns(atedReferenceNo: String,
                                  returns: SubmitEtmpReturnsRequest,
-                                 response: HttpResponse)(implicit hc: HeaderCarrier): Unit = {
+                                 response: HttpResponse)(implicit hc: HeaderCarrier, ec: ExecutionContext): Unit = {
     val eventType = response.status match {
       case OK => EventTypes.Succeeded
       case _ => EventTypes.Failed
@@ -188,7 +188,7 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
   private def auditSubmitEditedLiabilityReturns(atedReferenceNo: String,
                                                 returns: EditLiabilityReturnsRequestModel,
                                                 response: HttpResponse,
-                                                disposal: Boolean)(implicit hc: HeaderCarrier): Unit = {
+                                                disposal: Boolean)(implicit hc: HeaderCarrier, ec: ExecutionContext): Unit = {
     val eventType = response.status match {
       case OK => EventTypes.Succeeded
       case _ => EventTypes.Failed
@@ -222,7 +222,7 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
     auditLiabilityReturnsBankDetails(atedReferenceNo, returns, eventType, typeOfReturn)
   }
 
-  private def auditAddress(addressDetails: Option[EtmpPropertyDetails])(implicit hc: HeaderCarrier) = {
+  private def auditAddress(addressDetails: Option[EtmpPropertyDetails])(implicit hc: HeaderCarrier, ec: ExecutionContext) = {
     addressDetails.map { _ =>
       sendDataEvent(transactionName = "manualAddressSubmitted",
         detail = Map(
@@ -238,7 +238,7 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
   private def auditLiabilityReturnsBankDetails(atedReferenceNo: String,
                                                editedLiabilityReturns: EditLiabilityReturnsRequestModel,
                                                eventType: String,
-                                               typeOfReturn: String)(implicit hc: HeaderCarrier) = {
+                                               typeOfReturn: String)(implicit hc: HeaderCarrier, ec: ExecutionContext) = {
 
     //Only Audit the Bank Details from the Head
     val headBankDetails = editedLiabilityReturns.liabilityReturn.headOption.flatMap(_.bankDetails)
