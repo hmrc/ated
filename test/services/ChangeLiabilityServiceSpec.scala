@@ -72,7 +72,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
   val formBundle3 = "100000000000"
 
 
-  override def beforeEach = {
+  override def beforeEach() = {
     reset(mockPropertyDetailsCache)
     reset(mockAuthConnector)
     reset(mockEtmpConnector)
@@ -157,13 +157,13 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         val respModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson = Json.toJson(respModel)
         when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
-        mockRetrievingNoAuthRef
+        mockRetrievingNoAuthRef()
         val thrown = the[NoLiabilityAmountException] thrownBy await(testChangeLiabilityReturnService.calculateDraftChangeLiability(atedRefNo, formBundle1))
         thrown.message must include("[ChangeLiabilityService][getAmountDueOrRefund] Invalid Data for the request")
       }
 
       "calculate the change liabilty details, when calculated object is present" in new Setup {
-        mockRetrievingNoAuthRef
+        mockRetrievingNoAuthRef()
 
         when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(changeLiability3)))
         when(mockPropertyDetailsCache.cachePropertyDetails(any[PropertyDetails]()))
@@ -182,7 +182,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
 
       "return None, if form-bundle not-found in cache" in new Setup {
         when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Nil))
-        mockRetrievingNoAuthRef
+        mockRetrievingNoAuthRef()
         when(mockPropertyDetailsCache.cachePropertyDetails(any[PropertyDetails]()))
           .thenReturn(Future.successful(PropertyDetailsCached))
         val result = await(testChangeLiabilityReturnService.calculateDraftChangeLiability(atedRefNo, formBundle1))
@@ -236,7 +236,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
 
       "return status NOT_FOUND, if return not-found in cache and hence not-submitted correctly and then not-deleted from cache" in new Setup {
         when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(changeLiability1)))
-        mockRetrievingNoAuthRef
+        mockRetrievingNoAuthRef()
         when(mockSubscriptionDataService.retrieveSubscriptionData(any())(any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         val result = await(testChangeLiabilityReturnService.submitChangeLiability(atedRefNo, formBundle2))
         result.status must be(NOT_FOUND)
@@ -245,7 +245,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
 
       "return status NOT_FOUND, if return found in cache but calculated values don't exist in cache" in new Setup {
         when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(changeLiability1)))
-        mockRetrievingNoAuthRef
+        mockRetrievingNoAuthRef()
         when(mockSubscriptionDataService.retrieveSubscriptionData(any())(any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         val result = await(testChangeLiabilityReturnService.submitChangeLiability(atedRefNo, formBundle1))
         result.status must be(NOT_FOUND)
@@ -256,7 +256,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         val calc1 = generateCalculated
         val changeLiability1Changed = changeLiability1.copy(calculated = Some(calc1))
         when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(changeLiability1Changed, changeLiability2)))
-        mockRetrievingNoAuthRef
+        mockRetrievingNoAuthRef()
         val respModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson = Json.toJson(respModel)
         when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, respJson, Map.empty[String, Seq[String]])))

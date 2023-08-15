@@ -44,7 +44,7 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
   val formBundle2 = "100000000000"
   val periodKey = 2015
 
-  override def beforeEach = {
+  override def beforeEach() = {
     reset(mockDisposeLiabilityReturnService)
   }
 

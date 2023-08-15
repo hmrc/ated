@@ -53,7 +53,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
   val formBundleReturn2 = generateFormBundleResponse(periodKey)
   val disposeCalculated2 = DisposeCalculated(1000, 200)
 
-  override def beforeEach = {
+  override def beforeEach() = {
     reset(mockEtmpConnector)
     reset(mockPropertyDetailsService)
     reset(mockReliefsService)

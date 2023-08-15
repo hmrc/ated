@@ -18,7 +18,6 @@ package models
 
 import play.api.libs.json.{Format, Json, OFormat}
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
-import play.api.libs.functional.syntax.toFunctionalBuilderOps
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 import play.api.libs.json.JodaReads._
 import play.api.libs.json.JodaWrites._

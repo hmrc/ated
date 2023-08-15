@@ -74,7 +74,7 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
 
         res match {
           case ReliefCachedError => ()
-          case _ => fail
+          case _ => fail()
         }
       }
 

@@ -36,7 +36,7 @@ class NotificationServiceSpec extends PlaySpec with GuiceOneServerPerSuite with 
 
   val mockEmailConnector = mock[EmailConnector]
 
-  override def beforeEach = {
+  override def beforeEach() = {
     reset(mockEmailConnector)
   }
 

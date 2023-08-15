@@ -163,7 +163,7 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
 
   private def auditSubmitReturns(atedReferenceNo: String,
                                  returns: SubmitEtmpReturnsRequest,
-                                 response: HttpResponse)(implicit hc: HeaderCarrier) {
+                                 response: HttpResponse)(implicit hc: HeaderCarrier): Unit = {
     val eventType = response.status match {
       case OK => EventTypes.Succeeded
       case _ => EventTypes.Failed
@@ -188,7 +188,7 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
   private def auditSubmitEditedLiabilityReturns(atedReferenceNo: String,
                                                 returns: EditLiabilityReturnsRequestModel,
                                                 response: HttpResponse,
-                                                disposal: Boolean)(implicit hc: HeaderCarrier) {
+                                                disposal: Boolean)(implicit hc: HeaderCarrier): Unit = {
     val eventType = response.status match {
       case OK => EventTypes.Succeeded
       case _ => EventTypes.Failed

@@ -36,7 +36,7 @@ class FormBundleServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
   val formBundle = "form-bundle-01"
   val successResponseJson = Json.parse( """{"sapNumber":"1234567890", "safeId": "EX0012345678909", "agentReferenceNumber": "AARN1234567"}""")
 
-  override def beforeEach = {
+  override def beforeEach() = {
     reset(mockEtmpConnector)
   }
 

@@ -48,7 +48,7 @@ class ReturnsSummaryControllerSpec extends PlaySpec with GuiceOneServerPerSuite 
     val controller = new TestReturnsSummaryController()
   }
 
-  override def beforeEach = {
+  override def beforeEach() = {
     reset(mockReturnSummaryService)
   }
 

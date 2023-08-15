@@ -95,10 +95,13 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
             |}
           """.stripMargin
 
-        val JsSuccess(success, JsPath(List())) = BankDetailsModel.format.reads(Json.parse(json))
-        success.hasBankDetails mustBe false
-        success.protectedBankDetails.get.hasUKBankAccount mustBe Protected(Some(true))
-        success.protectedBankDetails.get.accountName mustBe Protected(Some("ATED Tax Payer"))
+        BankDetailsModel.format.reads(Json.parse(json)) match {
+          case JsSuccess(success, JsPath(List())) =>
+            success.hasBankDetails mustBe false
+            success.protectedBankDetails.get.hasUKBankAccount mustBe Protected(Some(true))
+            success.protectedBankDetails.get.accountName mustBe Protected(Some("ATED Tax Payer"))
+          case _ => fail()
+        }
       }
     }
   }

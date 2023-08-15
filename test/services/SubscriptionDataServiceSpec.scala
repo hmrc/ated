@@ -50,7 +50,7 @@ class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite w
   val accountRef = "ATED-123123"
   val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
 
-  override def beforeEach = {
+  override def beforeEach() = {
     reset(mockEtmpConnector)
     reset(mockAuthConnector)
   }
@@ -75,7 +75,7 @@ class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite w
         implicit val hc = HeaderCarrier()
 
         when(mockEtmpConnector.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
-        mockRetrievingNoAuthRef
+        mockRetrievingNoAuthRef()
         val result = testSubscriptionDataService.updateSubscriptionData(accountRef, updatedData)
         val response = await(result)
         response.status must be(OK)

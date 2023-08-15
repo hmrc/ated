@@ -54,7 +54,7 @@ class DetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
     val controller = new TestDetailsController()
   }
 
-  override def beforeEach = {
+  override def beforeEach() = {
     reset(mockEtmpConnector)
   }
 
