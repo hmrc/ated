@@ -51,7 +51,7 @@ object AtedUtils {
 
   private[utils] def calculateLowerTaxYearBounday(taxYear: Int): LocalDate = {
     val year = if (taxYear <= lowestBound) lowestBound else {
-      lowestBound + (5 * ((taxYear - lowestBound - 1) / 5).floor.toInt)
+      lowestBound + (5 * ((taxYear - lowestBound - 1) / 5.0).floor.toInt)
     }
 
     LocalDate.parse(s"$year-4-1")

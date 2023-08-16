@@ -18,25 +18,21 @@ lazy val scoverageSettings: Seq[Def.Setting[_ >: String with Double with Boolean
     ScoverageKeys.coverageMinimumStmtTotal := 94.9,
     ScoverageKeys.coverageFailOnMinimum := true,
     ScoverageKeys.coverageHighlighting := true,
-    parallelExecution in Test := false
+    Test / parallelExecution := false
   )
 }
-
-val silencerVersion = "1.7.6"
 
 lazy val microservice = Project(appName, file("."))
   .enablePlugins(Seq(play.sbt.PlayScala) ++ plugins: _*)
   .settings(playSettings ++ scoverageSettings: _*)
   .settings( majorVersion := 3 )
   .settings(scalaSettings: _*)
-  .settings(publishingSettings: _*)
   .settings(defaultSettings(): _*)
   .configs(IntegrationTest)
   .settings(
     addTestReportOption(IntegrationTest, "int-test-reports"),
     inConfig(IntegrationTest)(Defaults.itSettings),
-    scalaVersion := "2.12.15",
-    targetJvm := "jvm-1.8",
+    scalaVersion := "2.13.8",
     libraryDependencies ++= appDependencies,
     Test / parallelExecution := false,
     Test / fork := true,
@@ -44,12 +40,9 @@ lazy val microservice = Project(appName, file("."))
     routesGenerator := InjectedRoutesGenerator,
     IntegrationTest / Keys.fork :=  false,
     IntegrationTest / unmanagedSourceDirectories :=  (IntegrationTest / baseDirectory)(base => Seq(base / "it")).value,
-    parallelExecution in IntegrationTest := false,
-    scalacOptions += "-P:silencer:pathFilters=views;routes",
-    libraryDependencies ++= Seq(
-      compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full),
-      "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full
-    )
+    IntegrationTest / parallelExecution := false,
+    scalacOptions += "-Wconf:src=routes/.*:s",
+    scalacOptions += "-Wconf:cat=unused-imports&src=html/.*:s"
   )
   .settings(
     resolvers += Resolver.typesafeRepo("releases"),

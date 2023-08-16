@@ -9,13 +9,13 @@ import play.api.libs.ws.WSResponse
 import play.api.test.FutureAwaits
 import repository.{DisposeLiabilityReturnMongoRepository, DisposeLiabilityReturnMongoWrapper}
 import scheduler.DeleteLiabilityReturnsService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, Encrypter, Decrypter}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionHelpers with FutureAwaits {
-  implicit val crypto: CryptoWithKeysFromConfig = app.injector.instanceOf[ApplicationCrypto].JsonCrypto
+  implicit val crypto: Encrypter with Decrypter = app.injector.instanceOf[ApplicationCrypto].JsonCrypto
   implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
   implicit val formats: OFormat[DisposeLiability] = DisposeLiability.formats
 
@@ -66,7 +66,7 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
     val repo: DisposeLiabilityReturnMongoRepository = app.injector.instanceOf[DisposeLiabilityReturnMongoWrapper].apply()
 
     await(repo.collection.drop().toFuture())
-    await(repo.ensureIndexes)
+    await(repo.ensureIndexes())
   }
 
   "deleteLiabilityReturnsService" should {

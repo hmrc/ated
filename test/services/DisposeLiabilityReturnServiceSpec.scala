@@ -62,7 +62,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
   val enrolmentsWithName: Retrieval = Some(name)
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
-  override def beforeEach = {
+  override def beforeEach() = {
     reset(mockDisposeLiabilityReturnRepository)
     reset(mockEtmpConnector)
     reset(mockAuthConnector)
@@ -206,7 +206,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         val dL1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(dateOfDisposal = Some(new LocalDate("2015-05-01")), periodKey = periodKey)), bankDetails = None)
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(dL1, disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        mockRetrievingNoAuthRef
+        mockRetrievingNoAuthRef()
         val respModel = generateEditLiabilityReturnResponse(formBundle1.toString)
         val respJson = Json.toJson(respModel)
         when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
@@ -225,7 +225,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         val dL1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(dateOfDisposal = Some(new LocalDate("2015-05-01")), periodKey = periodKey)), bankDetails = Some(protectedBankDetails))
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(dL1, disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        mockRetrievingNoAuthRef
+        mockRetrievingNoAuthRef()
         val respModel = generateEditLiabilityReturnResponse(formBundle1.toString)
         val respJson = Json.toJson(respModel)
 
@@ -241,7 +241,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         lazy val bank1 = generateLiabilityBankDetails
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        mockRetrievingNoAuthRef
+        mockRetrievingNoAuthRef()
         val result = await(testDisposeLiabilityReturnService.updateDraftDisposeBankDetails(atedRefNo, formBundle1, bank1.bankDetails.get))
         result must be(None)
         verify(mockEtmpConnector, times(0)).submitEditedLiabilityReturns(any(), any(), any())(any(), any())
@@ -256,7 +256,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         val dL1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(dateOfDisposal = Some(new LocalDate("2015-05-01")), periodKey = periodKey)), bankDetails = Some(protectedBankDetails))
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(dL1, disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        mockRetrievingNoAuthRef
+        mockRetrievingNoAuthRef()
         val respModel = generateEditLiabilityReturnResponse(formBundle1.toString)
         val respJson = Json.toJson(respModel)
 
@@ -272,7 +272,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
 
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disposeLiability1, disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        mockRetrievingNoAuthRef
+        mockRetrievingNoAuthRef()
 
         when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
           .thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, "")))
@@ -285,7 +285,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
       "return None, if form-bundle-no is not found in cache, in such case don't do pre-calculation call" in new Setup {
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        mockRetrievingNoAuthRef
+        mockRetrievingNoAuthRef()
         val result = await(testDisposeLiabilityReturnService.calculateDraftDispose(atedRefNo, formBundle1))
         result must be(None)
         verify(mockEtmpConnector, times(0)).submitEditedLiabilityReturns(any(), any(), any())(any(), any())
@@ -412,7 +412,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
       }
       "return NOT_FOUND as status, if form-bundle not found in list" in new Setup {
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disposeLiability2)))
-        mockRetrievingNoAuthRef
+        mockRetrievingNoAuthRef()
         when(mockSubscriptionDataService.retrieveSubscriptionData(any())(any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         val result = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
         result.status must be(NOT_FOUND)
@@ -423,7 +423,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         lazy val disp1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(Some(new LocalDate("2015-05-01")), periodKey)), bankDetails = Some(bank1), calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        mockRetrievingNoAuthRef
+        mockRetrievingNoAuthRef()
         when(mockSubscriptionDataService.retrieveSubscriptionData(any())(any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
           .thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, Json.parse("""{"reason": "Server error"}"""), Map.empty[String, Seq[String]])))

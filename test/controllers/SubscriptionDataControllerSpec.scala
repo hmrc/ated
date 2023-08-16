@@ -60,7 +60,7 @@ class SubscriptionDataControllerSpec extends PlaySpec with GuiceOneServerPerSuit
     val testAgentRetrieveClientSubController: TestAgentRetrieveClientSubscriptionDataController = new TestAgentRetrieveClientSubscriptionDataController
   }
 
-  override def beforeEach: Unit = {
+  override def beforeEach(): Unit = {
     reset(mockSubscriptionDataService)
   }
 

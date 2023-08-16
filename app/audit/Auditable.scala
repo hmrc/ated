@@ -19,6 +19,7 @@ package audit
 import uk.gov.hmrc.play.audit.AuditExtensions
 import uk.gov.hmrc.play.audit.model.{Audit, DataEvent}
 import uk.gov.hmrc.http.HeaderCarrier
+import scala.concurrent.ExecutionContext
 
 trait Auditable {
 
@@ -28,7 +29,7 @@ trait Auditable {
                     path: String = "N/A",
                     tags: Map[String, String] = Map.empty[String, String],
                     detail: Map[String, String]
-                   )(implicit hc: HeaderCarrier): Unit = {
+                   )(implicit hc: HeaderCarrier, ec: ExecutionContext): Unit = {
     audit.sendDataEvent(
       DataEvent(
         "ated",
@@ -39,7 +40,7 @@ trait Auditable {
     )
   }
 
-  def doFailedAudit(auditType: String, requestUrl: String, request: Option[String], response: String)(implicit hc:HeaderCarrier): Unit = {
+  def doFailedAudit(auditType: String, requestUrl: String, request: Option[String], response: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Unit = {
 
     val auditDetails = Map("requestUrl" -> requestUrl,
                            "response" -> response)
@@ -54,7 +55,7 @@ trait Auditable {
     sendDataEvent(auditType, detail = auditDetails ++ requestDetails)
   }
 
-  def doHeaderEvent(auditType: String, allHeaders: Map[String, scala.Seq[String]])(implicit hc:HeaderCarrier): Unit = {
+  def doHeaderEvent(auditType: String, allHeaders: Map[String, scala.Seq[String]])(implicit hc: HeaderCarrier, ec: ExecutionContext): Unit = {
     val auditDetails = Map("headers" -> allHeaders.toString())
 
     sendDataEvent(auditType, detail = auditDetails)

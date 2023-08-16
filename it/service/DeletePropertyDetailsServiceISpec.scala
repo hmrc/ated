@@ -11,13 +11,13 @@ import play.api.libs.ws.WSResponse
 import play.api.test.FutureAwaits
 import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
 import scheduler.DeletePropertyDetailsService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, Encrypter, Decrypter}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class DeletePropertyDetailsServiceISpec extends IntegrationSpec with AssertionHelpers with FutureAwaits {
-  implicit val crypto: CryptoWithKeysFromConfig = app.injector.instanceOf[ApplicationCrypto].JsonCrypto
+  implicit val crypto: Encrypter with Decrypter = app.injector.instanceOf[ApplicationCrypto].JsonCrypto
   implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
   implicit val formats: OFormat[PropertyDetails] = Json.format[PropertyDetails]
 
@@ -63,7 +63,7 @@ class DeletePropertyDetailsServiceISpec extends IntegrationSpec with AssertionHe
     val repo: PropertyDetailsMongoRepository = app.injector.instanceOf[PropertyDetailsMongoWrapper].apply()
 
     await(repo.collection.drop().toFuture())
-    await(repo.ensureIndexes)
+    await(repo.ensureIndexes())
   }
 
   def createDraftProperty60: Future[WSResponse] = hitApplicationEndpoint("/ated/ATE1234568XX/property-details/create/2020")

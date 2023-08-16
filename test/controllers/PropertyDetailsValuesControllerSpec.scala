@@ -29,7 +29,6 @@ import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.PropertyDetailsValuesService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 

@@ -23,7 +23,7 @@ import play.api.libs.json.JodaReads._
 import play.api.libs.json.{Json, OFormat}
 import play.api.mvc.ControllerComponents
 import services.PropertyDetailsPeriodService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, Encrypter, Decrypter}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext
@@ -40,7 +40,7 @@ class PropertyDetailsPeriodControllerImpl @Inject()(
 trait PropertyDetailsPeriodController extends BackendController {
   implicit val ec: ExecutionContext
   val crypto: ApplicationCrypto
-  implicit lazy val compositeCrypto: CryptoWithKeysFromConfig = crypto.JsonCrypto
+  implicit lazy val compositeCrypto: Encrypter with Decrypter = crypto.JsonCrypto
   implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
 
   def propertyDetailsService: PropertyDetailsPeriodService

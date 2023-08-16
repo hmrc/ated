@@ -29,7 +29,7 @@ class PropertyDetailsServiceISpec extends IntegrationSpec with AssertionHelpers 
     val repo: PropertyDetailsMongoRepository = app.injector.instanceOf[PropertyDetailsMongoWrapper].apply()
 
     await(repo.collection.drop().toFuture())
-    await(repo.ensureIndexes)
+    await(repo.ensureIndexes())
   }
 
   "deleteChargeableDraft" should {

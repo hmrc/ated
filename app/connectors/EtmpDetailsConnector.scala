@@ -168,7 +168,7 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging 
 
   private def auditUpdateSubscriptionData(atedReferenceNo: String,
                                           updateData: UpdateEtmpSubscriptionDataRequest,
-                                          response: HttpResponse)(implicit hc: HeaderCarrier) {
+                                          response: HttpResponse)(implicit hc: HeaderCarrier): Unit = {
     val eventType = response.status match {
       case OK => EventTypes.Succeeded
       case _ => EventTypes.Failed
@@ -187,7 +187,7 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging 
   private def auditUpdateRegistrationDetails(atedReferenceNo: String,
                                              safeId: String,
                                              updateData: UpdateRegistrationDetailsRequest,
-                                             response: HttpResponse)(implicit hc: HeaderCarrier) {
+                                             response: HttpResponse)(implicit hc: HeaderCarrier): Unit = {
     val eventType = response.status match {
       case OK => EventTypes.Succeeded
       case _ => EventTypes.Failed

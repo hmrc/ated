@@ -61,7 +61,7 @@ class ReliefsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
     val testReliefsController = new TestReliefsController()
   }
 
-  override def beforeEach = {
+  override def beforeEach() = {
     reset(mockReliefsService)
     reset(mockAuthConnector)
   }
@@ -123,7 +123,7 @@ class ReliefsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
 
         when(mockReliefsService.saveDraftReliefs(any(), any())(ArgumentMatchers.any()))
           .thenReturn(Future(Seq(testReliefs)))
-        mockRetrievingNoAuthRef
+        mockRetrievingNoAuthRef()
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(testReliefs))
         val result = testReliefsController.saveDraftReliefs(testAccountRef).apply(fakeRequest)

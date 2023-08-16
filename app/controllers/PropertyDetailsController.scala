@@ -22,7 +22,7 @@ import play.api.Logging
 import play.api.libs.json.{Json, OFormat}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.PropertyDetailsService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, Encrypter, Decrypter}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
@@ -40,7 +40,7 @@ trait PropertyDetailsController extends BackendController with Logging {
   implicit val ec: ExecutionContext
   implicit val servicesConfig: ServicesConfig
   val crypto: ApplicationCrypto
-  implicit lazy val compositeCrypto: CryptoWithKeysFromConfig = crypto.JsonCrypto
+  implicit lazy val compositeCrypto: Encrypter with Decrypter = crypto.JsonCrypto
   implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
 
   def propertyDetailsService: PropertyDetailsService

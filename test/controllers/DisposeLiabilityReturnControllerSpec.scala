@@ -30,7 +30,7 @@ import play.api.mvc.ControllerComponents
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.DisposeLiabilityReturnService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CryptoWithKeysFromConfig}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, Encrypter, Decrypter}
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -44,12 +44,12 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
   val formBundle2 = "100000000000"
   val periodKey = 2015
 
-  override def beforeEach = {
+  override def beforeEach() = {
     reset(mockDisposeLiabilityReturnService)
   }
 
   implicit lazy val compositeSymmetricCrypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
-  implicit lazy val crypto: CryptoWithKeysFromConfig = compositeSymmetricCrypto.JsonCrypto
+  implicit lazy val crypto: Encrypter with Decrypter = compositeSymmetricCrypto.JsonCrypto
   implicit lazy val format: OFormat[DisposeLiabilityReturn] = DisposeLiabilityReturn.formats
   implicit lazy val liabilityFormat: OFormat[DisposeLiability] = DisposeLiability.formats
 

@@ -875,7 +875,7 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
     val item4 = FormBundleProperty(updatedValue,new LocalDate(s"${periodKey+1}-2-1"), new LocalDate(s"${periodKey+1}-3-31"), "Liability", None)
     val lineItems = List(item1, item2, item3, item4)
     "return Nil if we have an empty list" in {
-      PropertyDetailsUtils.disposeLineItems(periodKey + "", Nil, None) must be (Nil)
+      PropertyDetailsUtils.disposeLineItems(periodKey.toString, Nil, None) must be (Nil)
     }
 
     "return the list unchanged if we have no dispose date" in {
@@ -885,7 +885,7 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
         EtmpLineItems(item3.propertyValue, item3.dateFrom, item3.dateTo, item3.`type`, item3.reliefDescription),
         EtmpLineItems(item4.propertyValue, item4.dateFrom, item4.dateTo, item4.`type`, item4.reliefDescription)
       )
-      PropertyDetailsUtils.disposeLineItems(periodKey + "", lineItems, None) must be (expected)
+      PropertyDetailsUtils.disposeLineItems(periodKey.toString, lineItems, None) must be (expected)
     }
 
     "if the disposal date falls on the first date of the final period, this should be replaced with a disposal period" in {
@@ -895,7 +895,7 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
         EtmpLineItems(item3.propertyValue, item3.dateFrom, item3.dateTo, item3.`type`, item3.reliefDescription),
         EtmpLineItems(item4.propertyValue, item4.dateFrom, item4.dateTo, TypeDeEnveloped, None)
       )
-      PropertyDetailsUtils.disposeLineItems(periodKey + "", lineItems, Some(item4.dateFrom)) must be (expected)
+      PropertyDetailsUtils.disposeLineItems(periodKey.toString, lineItems, Some(item4.dateFrom)) must be (expected)
     }
 
     "if the disposal date falls on the first date of the second period, this should be replaced with a disposal period and all subsequent periods deleted" in {
@@ -903,7 +903,7 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
         EtmpLineItems(item1.propertyValue, item1.dateFrom, item1.dateTo, item1.`type`, item1.reliefDescription),
         EtmpLineItems(item2.propertyValue, item2.dateFrom, endDate, TypeDeEnveloped, None)
       )
-      PropertyDetailsUtils.disposeLineItems(periodKey + "", lineItems, Some(item2.dateFrom)) must be (expected)
+      PropertyDetailsUtils.disposeLineItems(periodKey.toString, lineItems, Some(item2.dateFrom)) must be (expected)
     }
 
     "if the disposal date falls in the middle of a period then this should be split in 2" in {
@@ -913,7 +913,7 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
         EtmpLineItems(item2.propertyValue, item2.dateFrom, disposalDate.plusDays(-1), item2.`type`, item2.reliefDescription),
         EtmpLineItems(item2.propertyValue, disposalDate, endDate, TypeDeEnveloped, None)
       )
-      PropertyDetailsUtils.disposeLineItems(periodKey + "", lineItems, Some(disposalDate)) must be (expected)
+      PropertyDetailsUtils.disposeLineItems(periodKey.toString, lineItems, Some(disposalDate)) must be (expected)
     }
 
     "if the disposal date falls on the first day of the year" in {
@@ -921,12 +921,12 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
       val expected = List(
         EtmpLineItems(item1.propertyValue, disposalDate, endDate, TypeDeEnveloped, None)
       )
-      PropertyDetailsUtils.disposeLineItems(periodKey + "", lineItems, Some(disposalDate)) must be (expected)
+      PropertyDetailsUtils.disposeLineItems(periodKey.toString, lineItems, Some(disposalDate)) must be (expected)
     }
 
     "throw an exception if the disposal date is after the end date" in {
       val disposalDate = endDate.plusDays(1)
-      val thrown = the[InternalServerException] thrownBy PropertyDetailsUtils.disposeLineItems(periodKey + "", lineItems, Some(disposalDate))
+      val thrown = the[InternalServerException] thrownBy PropertyDetailsUtils.disposeLineItems(periodKey.toString, lineItems, Some(disposalDate))
       thrown.getMessage must include("[PropertyDetailsUtils][disposeLineItems] - Disposal Date is after the end of the period")
     }
 
@@ -949,7 +949,7 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
         EtmpLineItems(item3.propertyValue, item3.dateFrom, disposalDate.plusDays(-1), item3.`type`, item3.reliefDescription),
         EtmpLineItems(item4.propertyValue, disposalDate, endDate, TypeDeEnveloped, None)
       )
-      PropertyDetailsUtils.disposeLineItems(periodKey + "", lineItems, Some(disposalDate)) must be (expected)
+      PropertyDetailsUtils.disposeLineItems(periodKey.toString, lineItems, Some(disposalDate)) must be (expected)
     }
   }
 }

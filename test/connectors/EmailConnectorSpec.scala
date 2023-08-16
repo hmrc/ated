@@ -44,7 +44,7 @@ class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
     val connector = new TestEmailConnector()
   }
 
-  override def beforeEach() {
+  override def beforeEach(): Unit = {
     reset(mockWSHttp)
   }
 

@@ -39,5 +39,5 @@ object SchedulingActor {
 	case class deleteReliefDrafts(service: DeleteReliefsService) extends ScheduledMessage[Int]
 	case class deleteLiabilityReturns(service: DeleteLiabilityReturnsService) extends ScheduledMessage[Int]
 
-	def props: Props = Props[SchedulingActor]
+	def props: Props = Props[SchedulingActor]()
 }

@@ -18,7 +18,7 @@ package models
 
 import play.api.libs.json.{Json, Reads, Writes, _}
 import uk.gov.hmrc.crypto.json.JsonEncryptor
-import uk.gov.hmrc.crypto.{CompositeSymmetricCrypto, Protected}
+import uk.gov.hmrc.crypto.{Encrypter, Decrypter, Protected}
 import utils.JsonOptionDecryptor
 import scala.language.implicitConversions
 
@@ -117,7 +117,7 @@ case class ProtectedBankDetails(hasUKBankAccount: Protected[Option[Boolean]],
                                      iban: Protected[Option[Iban]])
 
 object ProtectedBankDetails {
-  def bankDetailsFormats(implicit crypto: CompositeSymmetricCrypto): OFormat[ProtectedBankDetails] = {
+  def bankDetailsFormats(implicit crypto: Encrypter with Decrypter): OFormat[ProtectedBankDetails] = {
     implicit val encryptedOptionStringFormats: JsonEncryptor[Option[String]] = new JsonEncryptor[Option[String]]
     implicit val encryptedOptionSortCodeFormats: JsonEncryptor[Option[SortCode]] = new JsonEncryptor[Option[SortCode]]
     implicit val encryptedOptionSwiftBicCodeFormats: JsonEncryptor[Option[BicSwiftCode]] = new JsonEncryptor[Option[BicSwiftCode]]
@@ -178,7 +178,7 @@ case class BankDetailsModel(hasBankDetails: Boolean = false,
                             protectedBankDetails: Option[ProtectedBankDetails] = None)
 
 object BankDetailsModel {
-  def format(implicit crypto: CompositeSymmetricCrypto): Format[BankDetailsModel] = {
+  def format(implicit crypto: Encrypter with Decrypter): Format[BankDetailsModel] = {
     val reads = new Reads[BankDetailsModel] {
       override def reads(json: JsValue): JsResult[BankDetailsModel] = {
         val hasBankDetails: Option[Boolean] = (json \ "hasBankDetails").asOpt[Boolean]

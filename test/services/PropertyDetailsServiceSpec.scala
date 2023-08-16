@@ -280,7 +280,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
-      mockRetrievingNoAuthRef
+      mockRetrievingNoAuthRef()
 
       val result = testPropertyDetailsService.calculateDraftPropertyDetails(accountRef,
         updatedpropertyDetails4.id)
@@ -296,7 +296,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         .thenReturn(Future.successful(List(calcPropertyDetails1)))
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
-      mockRetrievingNoAuthRef
+      mockRetrievingNoAuthRef()
 
       val result = testPropertyDetailsService.calculateDraftPropertyDetails(accountRef, calcPropertyDetails1.id)
 
@@ -321,7 +321,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         .thenReturn(Future.successful(List(calcPropertyDetails1)))
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
-      mockRetrievingNoAuthRef
+      mockRetrievingNoAuthRef()
 
       val result = testPropertyDetailsService.calculateDraftPropertyDetails(accountRef,
         calcPropertyDetails1.id)
@@ -666,7 +666,6 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       val failureResponse = Json.parse( """{ "reason": "Error"}""")
       when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, failureResponse, Map.empty[String, Seq[String]])))
-      when(mockAudit.sendDataEvent).thenReturn(_ => ())
       val result = testPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
 
       val thrown = the[BadRequestException] thrownBy await(result)
@@ -737,7 +736,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      mockRetrievingNoAuthRef
+      mockRetrievingNoAuthRef()
       when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
 
       val result = testPropertyDetailsService.submitDraftPropertyDetail(accountRef, "4")
@@ -753,7 +752,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetailsExample, propertyDetails2, propertyDetails3)))
-      mockRetrievingNoAuthRef
+      mockRetrievingNoAuthRef()
       when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
 
       val result = testPropertyDetailsService.submitDraftPropertyDetail(accountRef, "1")

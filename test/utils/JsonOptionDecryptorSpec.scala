@@ -35,7 +35,7 @@ package utils
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsString, Json, OFormat}
 import uk.gov.hmrc.crypto.json._
-import uk.gov.hmrc.crypto.{CompositeSymmetricCrypto, Protected, _}
+import uk.gov.hmrc.crypto.{Encrypter, Decrypter, Protected, _}
 
 class JsonEncryptionSpec extends PlaySpec {
 
@@ -116,13 +116,6 @@ class JsonEncryptionSpec extends PlaySpec {
 
 }
 
-object Crypto extends CompositeSymmetricCrypto {
-  override protected val currentCrypto: Encrypter with Decrypter = new AesCrypto {
-    override protected val encryptionKey: String = "P5xsJ9Nt+quxGZzB4DeLfw=="
-  }
-  override protected val previousCryptos: Seq[Decrypter] = Seq.empty
-}
-
 case class TestEntity(normalString: String,
                       encryptedString: Protected[Option[String]],
                       encryptedBoolean: Protected[Option[Boolean]],
@@ -130,7 +123,7 @@ case class TestEntity(normalString: String,
 
 object TestEntity {
 
-  implicit val crypto: Crypto.type = Crypto
+  implicit val crypto: Encrypter with Decrypter = SymmetricCryptoFactory.aesCrypto("P5xsJ9Nt+quxGZzB4DeLfw==")  
 
   object JsonStringEncryption extends JsonEncryptor[Option[String]]
   object JsonBooleanEncryption extends JsonEncryptor[Option[Boolean]]
