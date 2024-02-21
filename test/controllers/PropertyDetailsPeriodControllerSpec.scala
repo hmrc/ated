@@ -18,13 +18,13 @@ package controllers
 
 import builders.PropertyDetailsBuilder
 import models._
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
-import play.api.libs.json.JodaWrites._
+import play.api.libs.json.Writes._
 import play.api.libs.json.{Json, OFormat}
 import play.api.mvc.ControllerComponents
 import play.api.test.Helpers._

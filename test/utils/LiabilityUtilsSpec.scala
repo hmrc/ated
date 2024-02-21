@@ -17,7 +17,7 @@
 package utils
 
 import builders.PropertyDetailsBuilder
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 

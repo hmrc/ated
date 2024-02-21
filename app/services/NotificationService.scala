@@ -17,8 +17,8 @@
 package services
 
 import connectors.{EmailConnector, EmailNotSent, EmailStatus}
-import org.joda.time.LocalDate
-import org.joda.time.format.DateTimeFormat
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import play.api.libs.json.JsValue
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.http.HeaderCarrier
@@ -46,7 +46,7 @@ trait NotificationService extends AuthFunctionality with Retrievals {
               "first_name" -> recipientFirstName,
               "last_name" -> recipientLastName,
               "company_name" -> companyName,
-              "date" -> DateTimeFormat.forPattern("d MMMM yyyy").print(new LocalDate()))
+              "date" -> LocalDate.now().format(DateTimeFormatter.ofPattern("d MMMM yyyy")))
             emailConnector.sendTemplatedEmail(emailAddress, template, params = params ++ reference)
           case _ => {
             Future.successful(EmailNotSent)

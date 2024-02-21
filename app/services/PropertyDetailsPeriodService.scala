@@ -20,7 +20,7 @@ import connectors.EtmpReturnsConnector
 
 import javax.inject.Inject
 import models._
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
 import uk.gov.hmrc.auth.core.AuthConnector
 import utils.ReliefConstants

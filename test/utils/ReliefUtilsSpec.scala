@@ -18,7 +18,7 @@ package utils
 
 import builders.ReliefBuilder
 import models.{Reliefs, TaxAvoidance}
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import org.scalatestplus.play.PlaySpec
 
 import scala.collection.Seq

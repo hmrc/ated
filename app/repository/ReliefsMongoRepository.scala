@@ -18,7 +18,7 @@ package repository
 
 import metrics.{MetricsEnum, ServiceMetrics}
 import models.ReliefsTaxAvoidance
-import org.joda.time.{DateTime, DateTimeZone}
+import java.time.{ZonedDateTime, ZoneId}
 import org.mongodb.scala.model.Filters.{and, equal, lte}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
@@ -62,7 +62,7 @@ trait ReliefsMongoRepository extends PlayMongoRepository[ReliefsTaxAvoidance] {
   def fetchReliefsByYear(atedRefNo: String, periodKey: Int): Future[Seq[ReliefsTaxAvoidance]]
   def deleteReliefs(atedRefNo: String): Future[ReliefDelete]
   def deleteDraftReliefByYear(atedRefNo: String, periodKey: Int): Future[ReliefDelete]
-  def updateTimeStamp(relief: ReliefsTaxAvoidance, date: DateTime): Future[ReliefCached]
+  def updateTimeStamp(relief: ReliefsTaxAvoidance, date: ZonedDateTime): Future[ReliefCached]
   def deleteExpired60Reliefs(batchSize: Int): Future[Int]
   def metrics: ServiceMetrics
 }
@@ -82,7 +82,7 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
     extraCodecs = Seq(Codecs.playFormatCodec(MongoJodaFormats.dateTimeFormat))
   ) with ReliefsMongoRepository with Logging {
 
-  def updateTimeStamp(relief: ReliefsTaxAvoidance, date: DateTime): Future[ReliefCached] = {
+  def updateTimeStamp(relief: ReliefsTaxAvoidance, date: ZonedDateTime): Future[ReliefCached] = {
     val query = and(equal("atedRefNo", relief.atedRefNo), equal("periodKey", relief.periodKey))
     val updateQuery = set("timeStamp", date)
 
@@ -103,9 +103,9 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
 
   def deleteExpired60Reliefs(batchSize: Int): Future[Int] = {
     val dayThreshold = 61
-    val jodaDateTimeThreshold = DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(dayThreshold)
+    val dateTimeThreshold = ZonedDateTime.now(ZoneId.of("UTC")).withHour(0).minusDays(dayThreshold)
 
-    val query2 = lte("timeStamp", jodaDateTimeThreshold)
+    val query2 = lte("timeStamp", dateTimeThreshold)
 
     val foundReliefs: Future[Option[Seq[ReliefsTaxAvoidance]]] = collection.find(query2).batchSize(batchSize).collect().toFutureOption()
 
@@ -140,7 +140,7 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
   def cacheRelief(relief: ReliefsTaxAvoidance): Future[ReliefCached] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryInsertRelief)
     val query = and(equal("atedRefNo", relief.atedRefNo), equal("periodKey", relief.periodKey))
-    val reliefTimestampUpdate = relief.copy(timeStamp = DateTime.now(DateTimeZone.UTC))
+    val reliefTimestampUpdate = relief.copy(timeStamp = ZonedDateTime.now(ZoneId.of("UTC")))
     val replaceOptions = ReplaceOptions().upsert(true)
 
     preservingMdc(

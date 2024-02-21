@@ -17,7 +17,7 @@
 package utils
 
 import models.{ClientsAgent, IndividualRelationship, OrganisationRelationship, RelationshipDetails}
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import org.scalatestplus.play.PlaySpec
 import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.http.{HeaderCarrier, SessionId}

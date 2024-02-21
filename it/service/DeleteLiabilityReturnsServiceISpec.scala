@@ -2,7 +2,7 @@ package service
 
 import helpers.{AssertionHelpers, IntegrationSpec}
 import models._
-import org.joda.time.{DateTime, DateTimeZone, LocalDate}
+import java.time.{ZonedDateTime, ZoneId, LocalDate}
 import play.api.http.Status._
 import play.api.libs.json.{Format, Json, OFormat}
 import play.api.libs.ws.WSResponse
@@ -20,12 +20,12 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
   implicit val formats: OFormat[DisposeLiability] = DisposeLiability.formats
 
   val deleteLiabilityReturnsService: DeleteLiabilityReturnsService = app.injector.instanceOf[DeleteLiabilityReturnsService]
-  val justAdded: DateTime = DateTime.now(DateTimeZone.UTC).minusMinutes(1)
-  val date59DaysAgo: DateTime = DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(59)
-  val date60DaysAgo: DateTime = date59DaysAgo.minusDays(1)
-  val date60DaysHrsMinsAgo: DateTime = date59DaysAgo.minusDays(1).minusHours(23).minusMinutes(59)
-  val date61DaysAgo: DateTime = date59DaysAgo.minusDays(2)
-  val date61DaysMinsAgo: DateTime = date59DaysAgo.minusDays(2).minusMinutes(1)
+  val justAdded: ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC")).minusMinutes(1)
+  val date59DaysAgo: ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC")).withHourOfDay(0).minusDays(59)
+  val date60DaysAgo: ZonedDateTime = date59DaysAgo.minusDays(1)
+  val date60DaysHrsMinsAgo: ZonedDateTime = date59DaysAgo.minusDays(1).minusHours(23).minusMinutes(59)
+  val date61DaysAgo: ZonedDateTime = date59DaysAgo.minusDays(2)
+  val date61DaysMinsAgo: ZonedDateTime = date59DaysAgo.minusDays(2).minusMinutes(1)
   val periodKey = 2019
 
   override def additionalConfig(a: Map[String, Any]): Map[String, Any] = Map(

@@ -16,7 +16,7 @@
 
 package models
 
-import org.joda.time.{DateTime, DateTimeZone}
+import java.time.{ZonedDateTime, ZoneId}
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsNumber, JsObject, JsResult, JsString, JsSuccess, Json}
@@ -24,15 +24,15 @@ import play.api.libs.json.{JsNumber, JsObject, JsResult, JsString, JsSuccess, Js
 class MongoDateTimeFormatSpec extends PlaySpec with GuiceOneServerPerSuite {
   "MongoDateTimeFormat" should {
     "correctly parse an old string timestamp" in {
-      val reads: JsResult[DateTime] = MongoDateTimeFormats.Implicits.mdDateTimeFormat.reads(JsString("1970-01-20T00:59:41.376Z"))
+      val reads: JsResult[ZonedDateTime] = MongoDateTimeFormats.Implicits.mdDateTimeFormat.reads(JsString("1970-01-20T00:59:41.376Z"))
 
-      reads mustBe JsSuccess(new DateTime(1645181376L, DateTimeZone.UTC))
+      reads mustBe JsSuccess(new ZonedDateTime(1645181376L, ZoneId.of("UTC")))
     }
 
     "correctly parse an old int timestamp" in {
-      val reads: JsResult[DateTime] = MongoDateTimeFormats.Implicits.mdDateTimeFormat.reads(JsNumber(1645181376L))
+      val reads: JsResult[ZonedDateTime] = MongoDateTimeFormats.Implicits.mdDateTimeFormat.reads(JsNumber(1645181376L))
 
-      reads mustBe JsSuccess(new DateTime(1645181376L, DateTimeZone.UTC))
+      reads mustBe JsSuccess(new ZonedDateTime(1645181376L, ZoneId.of("UTC")))
     }
 
     "correctly parse new format dates" in {
@@ -42,9 +42,9 @@ class MongoDateTimeFormatSpec extends PlaySpec with GuiceOneServerPerSuite {
         )
       )
 
-      val reads: JsResult[DateTime] = MongoDateTimeFormats.Implicits.mdDateTimeFormat.reads(jsObject)
+      val reads: JsResult[ZonedDateTime] = MongoDateTimeFormats.Implicits.mdDateTimeFormat.reads(jsObject)
 
-      reads mustBe JsSuccess(new DateTime(1645181376L, DateTimeZone.UTC))
+      reads mustBe JsSuccess(new ZonedDateTime(1645181376L, ZoneId.of("UTC")))
     }
   }
 }

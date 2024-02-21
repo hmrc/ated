@@ -17,16 +17,16 @@
 package utils
 
 import models._
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import uk.gov.hmrc.http.InternalServerException
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 
 object PropertyDetailsUtils extends ReliefConstants {
 
-  val _2012ValuationPolicyDate: Option[LocalDate] = Some(new LocalDate("2012-04-01"))
-  val _2017ValuationPolicyDate: Option[LocalDate] = Some(new LocalDate("2017-04-01"))
-  val _2022ValuationPolicyDate: Option[LocalDate] = Some(new LocalDate("2022-04-01"))
+  val _2012ValuationPolicyDate: Option[LocalDate] = Some(LocalDate.of(2012, 4, 1))
+  val _2017ValuationPolicyDate: Option[LocalDate] = Some(LocalDate.of(2017, 4, 1))
+  val _2022ValuationPolicyDate: Option[LocalDate] = Some(LocalDate.of(2022, 4, 1))
 
   def propertyDetailsCalculated(propertyDetails: PropertyDetails)
                                (implicit servicesConfig: ServicesConfig): PropertyDetailsCalculated = {
@@ -59,8 +59,8 @@ object PropertyDetailsUtils extends ReliefConstants {
     propertyDetailsPeriod.map { periodVal =>
       val totalPeriods = periodVal.liabilityPeriods.size + periodVal.reliefPeriods.size
       if (periodVal.isFullPeriod.contains(true) && totalPeriods == 0) {
-        val startDate = new LocalDate(s"$periodKey-04-01")
-        val endDate = new LocalDate(s"$periodKey-04-01").plusYears(1).minusDays(1)
+        val startDate = LocalDate.of(periodKey, 4, 1)
+        val endDate = LocalDate.of(periodKey, 4, 1).plusYears(1).minusDays(1)
         val period = LineItem(TypeLiability, startDate, endDate)
         createCalculatedPeriod(period, initialValue, updateValue)
       } else {
@@ -224,7 +224,6 @@ object PropertyDetailsUtils extends ReliefConstants {
   }
 
   def getLineItems(propertyCalc: PropertyDetailsCalculated): Seq[EtmpLineItems] = {
-    implicit val localDateOrdering: Ordering[LocalDate] = Ordering.by(_.toDate.getTime)
     implicit val lineItemOrdering: Ordering[EtmpLineItems] = Ordering.by(_.dateFrom)
 
     val etmpReliefLineItems = propertyCalc.reliefPeriods.map(item =>
@@ -264,7 +263,7 @@ object PropertyDetailsUtils extends ReliefConstants {
   }
 
   def disposeLineItems(periodKey: String, lineItems: Seq[FormBundleProperty], dateOfDisposal: Option[LocalDate]): Seq[EtmpLineItems] = {
-    val disposalEndDate = new LocalDate(s"$periodKey-3-31").plusYears(1)
+    val disposalEndDate = LocalDate.of(periodKey.toInt, 3, 31).plusYears(1)
 
     def createDisposeLineItem(item: FormBundleProperty): Seq[EtmpLineItems] = {
       dateOfDisposal match {

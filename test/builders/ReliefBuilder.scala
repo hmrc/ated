@@ -17,7 +17,7 @@
 package builders
 
 import models.{Reliefs, ReliefsTaxAvoidance, TaxAvoidance}
-import org.joda.time.LocalDate
+import java.time.LocalDate
 
 object ReliefBuilder {
 

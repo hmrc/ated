@@ -20,7 +20,7 @@ import builders.ChangeLiabilityReturnBuilder._
 import builders.{AuthFunctionalityHelper, ChangeLiabilityReturnBuilder}
 import connectors.{EmailConnector, EmailSent, EtmpReturnsConnector}
 import models._
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._

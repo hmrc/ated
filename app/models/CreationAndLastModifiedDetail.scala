@@ -16,15 +16,14 @@
 
 package models
 
-import org.joda.time.{DateTime, DateTimeZone}
+import java.time.{ZonedDateTime, ZoneId}
 import play.api.libs.json.Json
-import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits._
 
 case class CreationAndLastModifiedDetail(
-                                          createdAt: DateTime   = DateTime.now.withZone(DateTimeZone.UTC),
-                                          lastUpdated: DateTime = DateTime.now.withZone(DateTimeZone.UTC)) {
+                                          createdAt: ZonedDateTime   = ZonedDateTime.now(ZoneId.of("UTC")),
+                                          lastUpdated: ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC"))) {
 
-  def updated(updatedTime: DateTime): CreationAndLastModifiedDetail = copy(
+  def updated(updatedTime: ZonedDateTime): CreationAndLastModifiedDetail = copy(
     lastUpdated = updatedTime
   )
 }
@@ -32,7 +31,7 @@ case class CreationAndLastModifiedDetail(
 object CreationAndLastModifiedDetail {
   implicit val formats = Json.format[CreationAndLastModifiedDetail]
 
-  def withTime(time: DateTime) = new CreationAndLastModifiedDetail(
+  def withTime(time: ZonedDateTime) = new CreationAndLastModifiedDetail(
     createdAt   = time,
     lastUpdated = time
   )

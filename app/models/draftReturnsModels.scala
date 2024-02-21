@@ -16,7 +16,7 @@
 
 package models
 
-import org.joda.time.LocalDate
+import java.time.LocalDate
 
 case class PeriodSummaryReturn(returnType: String, description: String, status: String, fromDate: Option[LocalDate],
                                toDate: Option[LocalDate], charge: Option[BigDecimal]=None, formBundleId: Option[String]=None)

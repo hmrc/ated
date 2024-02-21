@@ -17,7 +17,7 @@
 package builders
 
 import models._
-import org.joda.time.{DateTime, LocalDate}
+import java.time.{ZonedDateTime, LocalDate}
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import uk.gov.hmrc.crypto.Protected
@@ -232,7 +232,7 @@ object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite
 
   def generateEditLiabilityReturnResponse(oldFormBundleNo: String) = {
     val liability = EditLiabilityReturnsResponse("Post", oldFormBundleNo, Some("1234567890123"), liabilityAmount = BigDecimal(2000.00), amountDueOrRefund = BigDecimal(-500.00), paymentReference = Some("payment-ref-123"))
-    EditLiabilityReturnsResponseModel(processingDate = new DateTime("2016-04-20T12:41:41.839+01:00"), liabilityReturnResponse = Seq(liability), accountBalance = BigDecimal(1200.00))
+    EditLiabilityReturnsResponseModel(processingDate = new ZonedDateTime("2016-04-20T12:41:41.839+01:00"), liabilityReturnResponse = Seq(liability), accountBalance = BigDecimal(1200.00))
   }
 
 }

@@ -16,10 +16,10 @@
 
 package models
 
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import play.api.libs.json.Json
-import play.api.libs.json.JodaWrites._
-import play.api.libs.json.JodaReads._
+import play.api.libs.json.Writes._
+import play.api.libs.json.Reads._
 
 case class DraftReturns(periodKey: Int, // periodKey so that we know which draft belongs to which period
                         id: String,

@@ -18,7 +18,7 @@ package utils
 
 import builders.PropertyDetailsBuilder
 import models._
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{reset, when}
 import org.scalatest.BeforeAndAfterEach

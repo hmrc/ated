@@ -20,7 +20,6 @@ import connectors.EtmpReturnsConnector
 
 import javax.inject.Inject
 import models._
-import org.joda.time.LocalDate
 import play.api.http.Status._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import utils.AtedConstants._
@@ -132,7 +131,6 @@ trait ReturnSummaryService {
   }
 
   def filterReturnsByOldAndNew(etmpPropertySummary : Seq[EtmpPropertySummary]) : (Seq[SubmittedLiabilityReturns], Seq[SubmittedLiabilityReturns]) = {
-    implicit val localDateOrdering: Ordering[LocalDate] = Ordering.by(_.toDate.getTime)
     implicit val returnOrdering: Ordering[EtmpReturn] = Ordering.by{ etmp: EtmpReturn =>
       (etmp.dateOfSubmission, etmp.changeAllowed)
     }

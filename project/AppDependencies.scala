@@ -13,8 +13,7 @@ object AppDependencies {
     "uk.gov.hmrc"       %% "bootstrap-backend-play-28"  % bootstrapVersion,
     "uk.gov.hmrc"       %% "domain"                     % "8.3.0-play-28",
     "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-28"         % "1.3.0",
-    "uk.gov.hmrc"       %% "json-encryption"            % "5.1.0-play-28",
-		"com.typesafe.play" %% "play-json-joda"             % "2.9.4"
+    "uk.gov.hmrc"       %% "json-encryption"            % "5.1.0-play-28"
   )
 
   trait TestDependencies {

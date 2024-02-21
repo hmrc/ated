@@ -20,7 +20,7 @@ import builders.ChangeLiabilityReturnBuilder._
 import builders._
 import connectors.EtmpReturnsConnector
 import models._
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach

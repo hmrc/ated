@@ -18,7 +18,7 @@ package utils
 
 import models.BankDetailsConversions._
 import models._
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import utils.PropertyDetailsUtils._
 
@@ -47,7 +47,7 @@ object ChangeLiabilityUtils extends ReliefConstants {
     )
     val isFullPeriod = x.lineItem.size match {
       case 1 =>
-        val startDate = new LocalDate(s"${x.periodKey}-04-01")
+        val startDate = LocalDate.of(x.periodKey.toInt, 4, 1)
         val endDate = startDate.plusYears(1).minusDays(1)
         x.lineItem.headOption.map(item =>
           item.dateFrom == startDate && item.dateTo == endDate
@@ -112,7 +112,6 @@ object ChangeLiabilityUtils extends ReliefConstants {
 
   def changeLiabilityInitialValueForPeriod(changeLiability: PropertyDetails)(implicit servicesConfig: ServicesConfig): Option[BigDecimal] = {
     def getEarliestValue(formBundlePeriods : Option[Seq[FormBundleProperty]]) :Option[BigDecimal] = {
-      implicit val localDateOrdering: Ordering[LocalDate] = Ordering.by(_.toDate.getTime)
       implicit val lineItemOrdering: Ordering[FormBundleProperty] = Ordering.by(_.dateFrom)
 
       formBundlePeriods.flatMap{

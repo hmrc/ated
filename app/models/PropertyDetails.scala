@@ -16,7 +16,7 @@
 
 package models
 
-import org.joda.time.{DateTime, DateTimeZone}
+import java.time.{ZonedDateTime, ZoneId}
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.crypto.{Encrypter, Decrypter}
 
@@ -30,14 +30,12 @@ case class PropertyDetails(atedRefNo: String,
                            calculated: Option[PropertyDetailsCalculated] = None,
                            formBundleReturn: Option[FormBundleReturn] = None,
                            bankDetails: Option[BankDetailsModel] = None,
-                           timeStamp: DateTime = DateTime.now(DateTimeZone.UTC))
+                           timeStamp: ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC")))
 
 object PropertyDetails {
 
   def formats(implicit crypto: Encrypter with Decrypter): OFormat[PropertyDetails] = {
     implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
-
-    import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats.Implicits.jotDateTimeFormat
 
     Json.format[PropertyDetails]
   }

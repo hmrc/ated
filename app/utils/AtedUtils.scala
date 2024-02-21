@@ -17,7 +17,7 @@
 package utils
 
 import models.{ClientsAgent, RelationshipDetails}
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.http.{HeaderCarrier, SessionId}
 import utils.AtedConstants._
@@ -34,7 +34,7 @@ object AtedUtils {
     java.util.UUID.randomUUID.toString.takeRight(10).toUpperCase()
   }
 
-  def periodStartDate(periodKey: Int): LocalDate = new LocalDate(s"$periodKey-$PeriodStartMonth-$PeriodStartDay")
+  def periodStartDate(periodKey: Int): LocalDate = LocalDate.of(periodKey, PeriodStartMonth.toInt, PeriodStartDay.toInt)
 
   def periodEndDate(periodKey: Int): LocalDate = periodStartDate(periodKey).plusYears(1).minusDays(1)
 
