@@ -23,8 +23,8 @@ import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 
 class LiabilityUtilsSpec extends PlaySpec with ReliefConstants with GuiceOneServerPerSuite {
 
-  val periodStartDate = new LocalDate("2015-04-01")
-  val periodEndDate = new LocalDate("2016-03-30")
+  val periodStartDate = LocalDate.of(2015, 4, 1)
+  val periodEndDate = LocalDate.of(2016, 3, 30)
 
   "createEtmpDraftReturns" must {
 

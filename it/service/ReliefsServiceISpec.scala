@@ -22,7 +22,7 @@ class ReliefsServiceISpec extends IntegrationSpec with AssertionHelpers with Fut
 
   def reliefTaxAvoidance(atedRefNo: String, periodKey: Int) = {
 
-    val startDate: LocalDate = new LocalDate(s"$periodKey-04-01")
+    val startDate: LocalDate = LocalDate.of(periodKey, 4, 1)
 
     ReliefsTaxAvoidance(
       atedRefNo = atedRefNo,

@@ -133,7 +133,7 @@ class EtmpReturnsModelSpec extends PlaySpec with GuiceOneServerPerSuite {
 
       request.propertyValue must be(250000)
       request.dateFrom.getDayOfMonth must be(1)
-      request.dateFrom.getMonthOfYear must be(10)
+      request.dateFrom.getMonthValue must be(10)
       request.dateFrom.getYear must be(2015)
     }
 

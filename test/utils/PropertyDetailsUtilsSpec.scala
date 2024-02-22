@@ -23,15 +23,15 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{reset, when}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
-import org.scalatestplus.play.PlaySpec
 import uk.gov.hmrc.http.InternalServerException
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import org.scalatestplus.play.PlaySpec
 
 
 class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with MockitoSugar with BeforeAndAfterEach {
 
-  val periodStartDate = new LocalDate("2015-06-02")
-  val periodEndDate = new LocalDate("2016-01-10")
+  val periodStartDate = LocalDate.of(2015, 6, 2)
+  val periodEndDate = LocalDate.of(2016, 1, 10)
   val periodKey = 2015
 
   implicit val mockServicesConfig: ServicesConfig = mock[ServicesConfig]
@@ -48,24 +48,24 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
       lazy val propertyDetailsValue = new PropertyDetailsValue(anAcquisition = Some(true),
         isPropertyRevalued = Some(true),
         revaluedValue = Some(BigDecimal(1111.11)),
-        revaluedDate = Some(new LocalDate("1970-02-02")),
-        partAcqDispDate = Some(new LocalDate("1970-01-01")),
+        revaluedDate = Some(LocalDate.of(1970, 2, 2)),
+        partAcqDispDate = Some(LocalDate.of(1970, 1, 1)),
         isOwnedBeforePolicyYear = Some(true),
         ownedBeforePolicyYearValue = Some(BigDecimal(22222.22)),
         isNewBuild = Some(true),
         newBuildValue = Some(BigDecimal(33333.33)),
-        newBuildDate = Some(new LocalDate("1971-01-01")),
+        newBuildDate = Some(LocalDate.of(1971, 1, 1)),
         notNewBuildValue = Some(BigDecimal(44444.44)),
-        notNewBuildDate = Some(new LocalDate("1972-01-01")),
+        notNewBuildDate = Some(LocalDate.of(1972, 1, 1)),
         isValuedByAgent = None
       )
       lazy val propertyDetailsPeriod = basicPropertyDetails.period.map(_.copy(isFullPeriod = Some(false)))
       lazy val updatePropertyDetails = PropertyDetailsUtils.propertyDetailsCalculated(basicPropertyDetails.copy(value = Some(propertyDetailsValue), periodKey = periodKey, period = propertyDetailsPeriod))
 
-      updatePropertyDetails.valuationDateToUse must be(Some(new LocalDate("1970-02-02")))
-      updatePropertyDetails.liabilityPeriods.headOption.get.startDate must be(new LocalDate("2015-04-01"))
+      updatePropertyDetails.valuationDateToUse must be(Some(LocalDate.of(1970, 2, 2)))
+      updatePropertyDetails.liabilityPeriods.headOption.get.startDate must be(LocalDate.of(2015, 4, 1))
       updatePropertyDetails.liabilityPeriods.headOption.get.value must be(BigDecimal(1111.11))
-      updatePropertyDetails.liabilityPeriods.headOption.get.endDate must be(new LocalDate("2015-8-31"))
+      updatePropertyDetails.liabilityPeriods.headOption.get.endDate must be(LocalDate.of(2015, 8, 31))
     }
 
     "Check that the revalued values are returned if the setting are correct and this is for a full period" in {
@@ -74,25 +74,25 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
       lazy val propertyDetailsValue = new PropertyDetailsValue(anAcquisition = Some(true),
         isPropertyRevalued = Some(true),
         revaluedValue = Some(BigDecimal(1111.11)),
-        revaluedDate = Some(new LocalDate("1970-02-02")),
-        partAcqDispDate = Some(new LocalDate("1970-01-01")),
+        revaluedDate = Some(LocalDate.of(1970, 2, 2)),
+        partAcqDispDate = Some(LocalDate.of(1970, 1, 1)),
         isOwnedBeforePolicyYear = Some(true),
         ownedBeforePolicyYearValue = Some(BigDecimal(22222.22)),
         isNewBuild = Some(true),
         newBuildValue = Some(BigDecimal(33333.33)),
-        newBuildDate = Some(new LocalDate("1971-01-01")),
+        newBuildDate = Some(LocalDate.of(1971, 1, 1)),
         notNewBuildValue = Some(BigDecimal(44444.44)),
-        notNewBuildDate = Some(new LocalDate("1972-01-01")),
+        notNewBuildDate = Some(LocalDate.of(1972, 1, 1)),
         isValuedByAgent = None
       )
 
       lazy val propertyDetailsPeriod = basicPropertyDetails.period.map(_.copy(isFullPeriod = Some(true), liabilityPeriods = Nil, reliefPeriods = Nil))
       lazy val updatePropertyDetails = PropertyDetailsUtils.propertyDetailsCalculated(basicPropertyDetails.copy(value = Some(propertyDetailsValue), periodKey = periodKey, period = propertyDetailsPeriod))
 
-      updatePropertyDetails.valuationDateToUse must be(Some(new LocalDate("1970-02-02")))
-      updatePropertyDetails.liabilityPeriods.headOption.get.startDate must be(new LocalDate("2015-04-01"))
+      updatePropertyDetails.valuationDateToUse must be(Some(LocalDate.of(1970, 2, 2)))
+      updatePropertyDetails.liabilityPeriods.headOption.get.startDate must be(LocalDate.of(2015, 4, 1))
       updatePropertyDetails.liabilityPeriods.headOption.get.value must be(BigDecimal(1111.11))
-      updatePropertyDetails.liabilityPeriods.headOption.get.endDate must be(new LocalDate("2016-03-31"))
+      updatePropertyDetails.liabilityPeriods.headOption.get.endDate must be(LocalDate.of(2016, 3, 31))
     }
 
     "ignore the is full period if we have a period" in {
@@ -101,25 +101,25 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
       lazy val propertyDetailsValue = new PropertyDetailsValue(anAcquisition = Some(true),
         isPropertyRevalued = Some(true),
         revaluedValue = Some(BigDecimal(1111.11)),
-        revaluedDate = Some(new LocalDate("1970-02-02")),
-        partAcqDispDate = Some(new LocalDate("1970-01-01")),
+        revaluedDate = Some(LocalDate.of(1970, 2, 2)),
+        partAcqDispDate = Some(LocalDate.of(1970, 1, 1)),
         isOwnedBeforePolicyYear = Some(true),
         ownedBeforePolicyYearValue = Some(BigDecimal(22222.22)),
         isNewBuild = Some(true),
         newBuildValue = Some(BigDecimal(33333.33)),
-        newBuildDate = Some(new LocalDate("1971-01-01")),
+        newBuildDate = Some(LocalDate.of(1971, 1, 1)),
         notNewBuildValue = Some(BigDecimal(44444.44)),
-        notNewBuildDate = Some(new LocalDate("1972-01-01")),
+        notNewBuildDate = Some(LocalDate.of(1972, 1, 1)),
         isValuedByAgent = None
       )
 
       lazy val propertyDetailsPeriod = basicPropertyDetails.period.map(_.copy(isFullPeriod = Some(true)))
       lazy val updatePropertyDetails = PropertyDetailsUtils.propertyDetailsCalculated(basicPropertyDetails.copy(value = Some(propertyDetailsValue), periodKey = periodKey, period = propertyDetailsPeriod))
 
-      updatePropertyDetails.valuationDateToUse must be(Some(new LocalDate("1970-02-02")))
+      updatePropertyDetails.valuationDateToUse must be(Some(LocalDate.of(1970, 2, 2)))
       updatePropertyDetails.liabilityPeriods.headOption.get.value must be(BigDecimal(1111.11))
-      updatePropertyDetails.liabilityPeriods.headOption.get.startDate must be(new LocalDate("2015-04-01"))
-      updatePropertyDetails.liabilityPeriods.headOption.get.endDate must be(new LocalDate("2015-08-31"))
+      updatePropertyDetails.liabilityPeriods.headOption.get.startDate must be(LocalDate.of(2015, 4, 1))
+      updatePropertyDetails.liabilityPeriods.headOption.get.endDate must be(LocalDate.of(2015, 8, 31))
     }
 
     "Check that the revalued values have no dates if we have no periods set" in {
@@ -128,22 +128,22 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
       lazy val propertyDetailsValue = new PropertyDetailsValue(anAcquisition = Some(true),
         isPropertyRevalued = Some(true),
         revaluedValue = Some(BigDecimal(1111.11)),
-        revaluedDate = Some(new LocalDate("1970-02-02")),
-        partAcqDispDate = Some(new LocalDate("1970-01-01")),
+        revaluedDate = Some(LocalDate.of(1970, 2, 2)),
+        partAcqDispDate = Some(LocalDate.of(1970, 1, 1)),
         isOwnedBeforePolicyYear = Some(true),
         ownedBeforePolicyYearValue = Some(BigDecimal(22222.22)),
         isNewBuild = Some(true),
         newBuildValue = Some(BigDecimal(33333.33)),
-        newBuildDate = Some(new LocalDate("1971-01-01")),
+        newBuildDate = Some(LocalDate.of(1971, 1, 1)),
         notNewBuildValue = Some(BigDecimal(44444.44)),
-        notNewBuildDate = Some(new LocalDate("1972-01-01")),
+        notNewBuildDate = Some(LocalDate.of(1972, 1, 1)),
         isValuedByAgent = None
       )
 
       val updatePropertyDetails = PropertyDetailsUtils.propertyDetailsCalculated(basicPropertyDetails.copy(value = Some(propertyDetailsValue), periodKey = periodKey, period = None))
 
 
-      updatePropertyDetails.valuationDateToUse must be(Some(new LocalDate("1970-02-02")))
+      updatePropertyDetails.valuationDateToUse must be(Some(LocalDate.of(1970, 2, 2)))
       updatePropertyDetails.liabilityPeriods.isEmpty must be(true)
       updatePropertyDetails.reliefPeriods.isEmpty must be(true)
     }
@@ -155,20 +155,20 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
       lazy val propertyDetailsValue = new PropertyDetailsValue(anAcquisition = Some(false),
         isPropertyRevalued = None,
         revaluedValue = Some(BigDecimal(1111.11)),
-        revaluedDate = Some(new LocalDate("1970-01-01")),
+        revaluedDate = Some(LocalDate.of(1970, 1, 1)),
         isOwnedBeforePolicyYear = Some(true),
         ownedBeforePolicyYearValue = Some(BigDecimal(22222.22)),
         isNewBuild = Some(true),
         newBuildValue = Some(BigDecimal(33333.33)),
-        newBuildDate = Some(new LocalDate("1971-01-01")),
+        newBuildDate = Some(LocalDate.of(1971, 1, 1)),
         notNewBuildValue = Some(BigDecimal(44444.44)),
-        notNewBuildDate = Some(new LocalDate("1972-01-01")),
+        notNewBuildDate = Some(LocalDate.of(1972, 1, 1)),
         isValuedByAgent = None
       )
 
       val updatePropertyDetails = PropertyDetailsUtils.propertyDetailsCalculated(basicPropertyDetails.copy(value = Some(propertyDetailsValue), periodKey = periodKey))
 
-      updatePropertyDetails.valuationDateToUse must be(Some(new LocalDate("2012-04-01")))
+      updatePropertyDetails.valuationDateToUse must be(Some(LocalDate.of(2012, 4, 1)))
       updatePropertyDetails.liabilityPeriods.headOption.get.value must be(BigDecimal(22222.22))
     }
 
@@ -178,21 +178,21 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
       lazy val propertyDetailsValue = new PropertyDetailsValue(anAcquisition = Some(false),
         isPropertyRevalued = None,
         revaluedValue = Some(BigDecimal(1111.11)),
-        revaluedDate = Some(new LocalDate("1970-01-01")),
+        revaluedDate = Some(LocalDate.of(1970, 1, 1)),
         isOwnedBeforePolicyYear = Some(false),
         ownedBeforePolicyYearValue = Some(BigDecimal(22222.22)),
         isNewBuild = Some(true),
         newBuildValue = Some(BigDecimal(33333.33)),
-        newBuildDate = Some(new LocalDate("1971-01-01")),
-        localAuthRegDate = Some(new LocalDate("1971-01-05")),
+        newBuildDate = Some(LocalDate.of(1971, 1, 1)),
+        localAuthRegDate = Some(LocalDate.of(1971, 1, 5)),
         notNewBuildValue = Some(BigDecimal(44444.44)),
-        notNewBuildDate = Some(new LocalDate("1972-01-01")),
+        notNewBuildDate = Some(LocalDate.of(1972, 1, 1)),
         isValuedByAgent = None
       )
 
       val updatePropertyDetails = PropertyDetailsUtils.propertyDetailsCalculated(basicPropertyDetails.copy(value = Some(propertyDetailsValue), periodKey = periodKey))
 
-      updatePropertyDetails.valuationDateToUse must be(Some(new LocalDate("1971-01-01")))
+      updatePropertyDetails.valuationDateToUse must be(Some(LocalDate.of(1971, 1, 1)))
       updatePropertyDetails.liabilityPeriods.headOption.get.value must be(BigDecimal(33333.33))
     }
 
@@ -202,20 +202,20 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
       lazy val propertyDetailsValue = new PropertyDetailsValue(anAcquisition = Some(false),
         isPropertyRevalued = None,
         revaluedValue = Some(BigDecimal(1111.11)),
-        revaluedDate = Some(new LocalDate("1970-01-01")),
+        revaluedDate = Some(LocalDate.of(1970, 1, 1)),
         isOwnedBeforePolicyYear = Some(false),
         ownedBeforePolicyYearValue = Some(BigDecimal(22222.22)),
         isNewBuild = Some(false),
         newBuildValue = Some(BigDecimal(33333.33)),
-        newBuildDate = Some(new LocalDate("1971-01-01")),
+        newBuildDate = Some(LocalDate.of(1971, 1, 1)),
         notNewBuildValue = Some(BigDecimal(44444.44)),
-        notNewBuildDate = Some(new LocalDate("1972-01-01")),
+        notNewBuildDate = Some(LocalDate.of(1972, 1, 1)),
         isValuedByAgent = None
       )
 
       val updatePropertyDetails = PropertyDetailsUtils.propertyDetailsCalculated(basicPropertyDetails.copy(value = Some(propertyDetailsValue), periodKey = periodKey))
 
-      updatePropertyDetails.valuationDateToUse must be(Some(new LocalDate("1972-01-01")))
+      updatePropertyDetails.valuationDateToUse must be(Some(LocalDate.of(1972, 1, 1)))
       updatePropertyDetails.liabilityPeriods.headOption.get.value must be(BigDecimal(44444.44))
     }
 
@@ -226,22 +226,22 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
       lazy val propertyDetailsValue = new PropertyDetailsValue(anAcquisition = Some(false),
         isPropertyRevalued = None,
         revaluedValue = Some(BigDecimal(1111.11)),
-        revaluedDate = Some(new LocalDate("1970-01-01")),
+        revaluedDate = Some(LocalDate.of(1970, 1, 1)),
         isOwnedBeforePolicyYear = Some(false),
         ownedBeforePolicyYearValue = Some(BigDecimal(22222.22)),
         isNewBuild = Some(true),
         newBuildValue = Some(BigDecimal(33333.33)),
-        newBuildDate = Some(new LocalDate("1971-01-01")),
-        localAuthRegDate = Some(new LocalDate("1971-01-05")),
+        newBuildDate = Some(LocalDate.of(1971, 1, 1)),
+        localAuthRegDate = Some(LocalDate.of(1971, 1, 5)),
         notNewBuildValue = Some(BigDecimal(44444.44)),
-        notNewBuildDate = Some(new LocalDate("1972-01-01")),
+        notNewBuildDate = Some(LocalDate.of(1972, 1, 1)),
         isValuedByAgent = None
       )
 
       val updatePropertyDetails = PropertyDetailsUtils.propertyDetailsCalculated(basicPropertyDetails.copy(value = Some(propertyDetailsValue), periodKey = periodKey))
 
       updatePropertyDetails.acquistionValueToUse must be(Some(BigDecimal(33333.33)))
-      updatePropertyDetails.acquistionDateToUse must be(Some(new LocalDate("1971-01-01")))
+      updatePropertyDetails.acquistionDateToUse must be(Some(LocalDate.of(1971, 1, 1)))
     }
 
 
@@ -251,13 +251,13 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
       lazy val propertyDetailsValue = new PropertyDetailsValue(anAcquisition = Some(false),
         isPropertyRevalued = None,
         revaluedValue = Some(BigDecimal(1111.11)),
-        revaluedDate = Some(new LocalDate("1970-01-01")),
+        revaluedDate = Some(LocalDate.of(1970, 1, 1)),
         isOwnedBeforePolicyYear = Some(false),
         ownedBeforePolicyYearValue = Some(BigDecimal(22222.22)),
         isNewBuild = Some(true),
         newBuildValue = Some(BigDecimal(33333.33)),
         notNewBuildValue = Some(BigDecimal(44444.44)),
-        notNewBuildDate = Some(new LocalDate("1972-01-01")),
+        notNewBuildDate = Some(LocalDate.of(1972, 1, 1)),
         isValuedByAgent = None
       )
 
@@ -273,21 +273,21 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
       lazy val propertyDetailsValue = new PropertyDetailsValue(anAcquisition = Some(false),
         isPropertyRevalued = None,
         revaluedValue = Some(BigDecimal(1111.11)),
-        revaluedDate = Some(new LocalDate("1970-01-01")),
+        revaluedDate = Some(LocalDate.of(1970, 1, 1)),
         isOwnedBeforePolicyYear = Some(false),
         ownedBeforePolicyYearValue = Some(BigDecimal(22222.22)),
         isNewBuild = Some(false),
         newBuildValue = Some(BigDecimal(33333.33)),
-        newBuildDate = Some(new LocalDate("1971-01-01")),
+        newBuildDate = Some(LocalDate.of(1971, 1, 1)),
         notNewBuildValue = Some(BigDecimal(44444.44)),
-        notNewBuildDate = Some(new LocalDate("1972-01-01")),
+        notNewBuildDate = Some(LocalDate.of(1972, 1, 1)),
         isValuedByAgent = None
       )
 
       val updatePropertyDetails = PropertyDetailsUtils.propertyDetailsCalculated(basicPropertyDetails.copy(value = Some(propertyDetailsValue), periodKey = periodKey))
 
       updatePropertyDetails.acquistionValueToUse must be(Some(BigDecimal(44444.44)))
-      updatePropertyDetails.acquistionDateToUse must be(Some(new LocalDate("1972-01-01")))
+      updatePropertyDetails.acquistionDateToUse must be(Some(LocalDate.of(1972, 1, 1)))
     }
 
     "Override the valuation date if we have it populated" in {
@@ -296,22 +296,22 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
       lazy val propertyDetailsValue = new PropertyDetailsValue(anAcquisition = Some(true),
         isPropertyRevalued = Some(true),
         revaluedValue = Some(BigDecimal(1111.11)),
-        revaluedDate = Some(new LocalDate("1970-01-01")),
+        revaluedDate = Some(LocalDate.of(1970, 1, 1)),
         isOwnedBeforePolicyYear = Some(true),
         ownedBeforePolicyYearValue = Some(BigDecimal(22222.22)),
         isNewBuild = Some(true),
         newBuildValue = Some(BigDecimal(33333.33)),
-        newBuildDate = Some(new LocalDate("1971-01-01")),
+        newBuildDate = Some(LocalDate.of(1971, 1, 1)),
         notNewBuildValue = Some(BigDecimal(44444.44)),
-        notNewBuildDate = Some(new LocalDate("1972-01-01")),
+        notNewBuildDate = Some(LocalDate.of(1972, 1, 1)),
         isValuedByAgent = Some(true),
-        partAcqDispDate = Some(new LocalDate("1975-01-01"))
+        partAcqDispDate = Some(LocalDate.of(1975, 1, 1))
       )
 
       val updatePropertyDetails = PropertyDetailsUtils.propertyDetailsCalculated(basicPropertyDetails.copy(value = Some(propertyDetailsValue), periodKey = periodKey))
 
 
-      updatePropertyDetails.valuationDateToUse must be(Some(new LocalDate("2012-04-01")))
+      updatePropertyDetails.valuationDateToUse must be(Some(LocalDate.of(2012, 4, 1)))
       updatePropertyDetails.liabilityPeriods.headOption.get.value must be(BigDecimal(1111.11))
     }
 
@@ -382,10 +382,10 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
 
   "createLiabilityPeriods" must {
     val initialValue = BigDecimal(1000.00)
-    val liability1 = LineItem("Liability",new LocalDate(s"$periodKey-4-1"), new LocalDate(s"$periodKey-8-31"))
-    val liability2 = LineItem("Liability",new LocalDate(s"$periodKey-9-1"), new LocalDate(s"$periodKey-10-31"))
-    val liability3 = LineItem("Liability",new LocalDate(s"$periodKey-11-1"), new LocalDate(s"${periodKey+1}-1-31"))
-    val liability4 = LineItem("Liability",new LocalDate(s"${periodKey+1}-2-1"), new LocalDate(s"${periodKey+1}-3-31"))
+    val liability1 = LineItem("Liability",LocalDate.of(periodKey, 4, 1), LocalDate.of(periodKey, 8, 31))
+    val liability2 = LineItem("Liability",LocalDate.of(periodKey, 9, 1), LocalDate.of(periodKey, 10, 31))
+    val liability3 = LineItem("Liability",LocalDate.of(periodKey, 11, 1), LocalDate.of(periodKey+1, 1, 31))
+    val liability4 = LineItem("Liability",LocalDate.of(periodKey+1, 2, 1), LocalDate.of(periodKey+1, 3, 31))
 
     "Return the line items with the default value if we have some" in {
       val expected = List(
@@ -403,7 +403,7 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
 
     "Return the line items with the new value in all periods if the update date was earler than all periods" in {
       val updateValue = BigDecimal(2000.00)
-      val updateDate = new LocalDate(s"${periodKey-2}-2-10")
+      val updateDate = LocalDate.of(periodKey-2, 2, 10)
       val newValues = Some((updateDate, updateValue))
 
       val expected = List(
@@ -455,7 +455,7 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
 
     "Return the line items with the default value falls within the first period, split this in two" in {
       val updateValue = BigDecimal(2000.00)
-      val updateDate = new LocalDate(s"$periodKey-5-1")
+      val updateDate = LocalDate.of(periodKey, 5, 1)
       val newValues = Some((updateDate, updateValue))
 
       val expected = List(
@@ -474,7 +474,7 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
 
     "Return the line items with the default value falls within the final period, split this in two" in {
       val updateValue = BigDecimal(2000.00)
-      val updateDate = new LocalDate(s"${periodKey+1}-2-10")
+      val updateDate = LocalDate.of(periodKey+1, 2, 10)
       val newValues = Some((updateDate, updateValue))
 
       val expected = List(
@@ -495,15 +495,15 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
 
   "createReliefPeriods" must {
     val initialValue = BigDecimal(1000.00)
-    val relief1 = LineItem("Relief",new LocalDate(s"$periodKey-4-1"), new LocalDate(s"$periodKey-8-31"))
-    val relief2 = LineItem("Relief",new LocalDate(s"$periodKey-9-1"), new LocalDate(s"$periodKey-10-31"))
-    val relief3 = LineItem("Relief",new LocalDate(s"$periodKey-11-1"), new LocalDate(s"${periodKey+1}-1-31"))
-    val relief4 = LineItem("Relief",new LocalDate(s"${periodKey+1}-2-1"), new LocalDate(s"${periodKey+1}-3-31"))
+    val relief1 = LineItem("Relief",LocalDate.of(periodKey, 4, 1), LocalDate.of(periodKey, 8, 31))
+    val relief2 = LineItem("Relief",LocalDate.of(periodKey, 9, 1), LocalDate.of(periodKey, 10, 31))
+    val relief3 = LineItem("Relief",LocalDate.of(periodKey, 11, 1), LocalDate.of(periodKey+1, 1, 31))
+    val relief4 = LineItem("Relief",LocalDate.of(periodKey+1, 2, 1), LocalDate.of(periodKey+1, 3, 31))
 
 
     "Return the line items with the default value falls within the final period, split this in two" in {
       val updateValue = BigDecimal(2000.00)
-      val updateDate = new LocalDate(s"${periodKey+1}-2-10")
+      val updateDate = LocalDate.of(periodKey+1, 2, 10)
       val newValues = Some((updateDate, updateValue))
 
       val expected = List(
@@ -538,7 +538,7 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
       val propertyDetailsValue = PropertyDetailsValue(
         isPropertyRevalued = Some(true),
         revaluedValue = Some(BigDecimal(55555.55)),
-        revaluedDate = Some(new LocalDate(s"$periodKey-4-1"))
+        revaluedDate = Some(LocalDate.of(periodKey, 4, 1))
       )
 
       val (value, changeValueAndDate) = PropertyDetailsUtils.getLineItemValues(Some(propertyDetailsValue), Some(BigDecimal(55555.55)))
@@ -551,7 +551,7 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
       val propertyDetailsValue = PropertyDetailsValue(
         isPropertyRevalued = Some(true),
         revaluedValue = Some(BigDecimal(123.45)),
-        revaluedDate = Some(new LocalDate(s"$periodKey-4-1"))
+        revaluedDate = Some(LocalDate.of(periodKey, 4, 1))
       )
 
       val (value, changeValueAndDate) = PropertyDetailsUtils.getLineItemValues(Some(propertyDetailsValue), Some(BigDecimal(55555.55)))
@@ -563,14 +563,14 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
       val propertyDetailsValue = PropertyDetailsValue(
         isPropertyRevalued = Some(true),
         revaluedValue = Some(BigDecimal(123.45)),
-        partAcqDispDate = Some(new LocalDate(s"$periodKey-5-1"))
+        partAcqDispDate = Some(LocalDate.of(periodKey, 5, 1))
       )
 
       val (value, changeValueAndDate) = PropertyDetailsUtils.getLineItemValues(Some(propertyDetailsValue), Some(BigDecimal(55555.55)))
       value must be (BigDecimal(55555.55))
       changeValueAndDate.isDefined must be (true)
       changeValueAndDate.get._2 must be (BigDecimal(123.45))
-      changeValueAndDate.get._1 must be (new LocalDate(s"$periodKey-5-1"))
+      changeValueAndDate.get._1 must be (LocalDate.of(periodKey, 5, 1))
     }
   }
   def getPropertyDetailsWithMultiplePeriods(liabilityPeriods: List[LineItem], reliefPeriods: List[LineItem]) = {
@@ -658,86 +658,86 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
     "return the revalued value if this has been revalued but we has no build or ownedBefore answers " in {
       val propVal = PropertyDetailsValue(
         isPropertyRevalued = Some(true),
-        revaluedDate = Some(new LocalDate("2013-01-01")),
-        partAcqDispDate = Some(new LocalDate("2013-02-02")),
+        revaluedDate = Some(LocalDate.of(2013, 1, 1)),
+        partAcqDispDate = Some(LocalDate.of(2013, 2, 2)),
         revaluedValue = Some(BigDecimal(1111.11)))
 
       val res = PropertyDetailsUtils.getAcquisitionData(Some(propVal),periodKey)
       res._1 must be (Some(BigDecimal(1111.11)))
-      res._2 must be (Some(new LocalDate("2013-02-02")))
+      res._2 must be (Some(LocalDate.of(2013, 2, 2)))
     }
 
     "return the owned before value if this has been set, even if it's been revalued" in {
       val propVal = PropertyDetailsValue(isOwnedBeforePolicyYear = Some(true),
         isNewBuild = Some(true),
         newBuildValue = Some(BigDecimal(3333.33)),
-        newBuildDate = Some(new LocalDate("2014-01-01")),
+        newBuildDate = Some(LocalDate.of(2014, 1, 1)),
         notNewBuildValue = Some(BigDecimal(4444.44)),
-        notNewBuildDate = Some(new LocalDate("2015-01-01")),
+        notNewBuildDate = Some(LocalDate.of(2015, 1, 1)),
         ownedBeforePolicyYearValue = Some(BigDecimal(2222.22)),
         isPropertyRevalued = Some(true),
-        revaluedDate = Some(new LocalDate("2013-01-01")),
-        partAcqDispDate = Some(new LocalDate("2013-02-02")),
+        revaluedDate = Some(LocalDate.of(2013, 1, 1)),
+        partAcqDispDate = Some(LocalDate.of(2013, 2, 2)),
         revaluedValue = Some(BigDecimal(1111.11)))
 
       val res = PropertyDetailsUtils.getAcquisitionData(Some(propVal),periodKey)
       res._1 must be (Some(BigDecimal(2222.22)))
-      res._2 must be (Some(new LocalDate("2012-04-01")))
+      res._2 must be (Some(LocalDate.of(2012, 4, 1)))
     }
 
     "return the new build value, even if it's been revalued" in {
       val propVal = PropertyDetailsValue(isOwnedBeforePolicyYear = Some(false),
         isNewBuild = Some(true),
         newBuildValue = Some(BigDecimal(3333.33)),
-        newBuildDate = Some(new LocalDate("2014-01-01")),
-        localAuthRegDate = Some(new LocalDate("2014-01-05")),
+        newBuildDate = Some(LocalDate.of(2014, 1, 1)),
+        localAuthRegDate = Some(LocalDate.of(2014, 1, 5)),
         notNewBuildValue = Some(BigDecimal(4444.44)),
-        notNewBuildDate = Some(new LocalDate("2015-01-01")),
+        notNewBuildDate = Some(LocalDate.of(2015, 1, 1)),
         ownedBeforePolicyYearValue = Some(BigDecimal(2222.22)),
         isPropertyRevalued = Some(true),
-        revaluedDate = Some(new LocalDate("2013-01-01")),
-        partAcqDispDate = Some(new LocalDate("2013-02-02")),
+        revaluedDate = Some(LocalDate.of(2013, 1, 1)),
+        partAcqDispDate = Some(LocalDate.of(2013, 2, 2)),
         revaluedValue = Some(BigDecimal(1111.11)))
 
       val res = PropertyDetailsUtils.getAcquisitionData(Some(propVal),periodKey)
       res._1 must be (Some(BigDecimal(3333.33)))
-      res._2 must be (Some(new LocalDate("2014-01-01")))
+      res._2 must be (Some(LocalDate.of(2014, 1, 1)))
     }
 
     "return the not new build value, even if it's been revalued" in {
       val propVal = PropertyDetailsValue(isOwnedBeforePolicyYear = Some(false),
         isNewBuild = Some(false),
         newBuildValue = Some(BigDecimal(3333.33)),
-        newBuildDate = Some(new LocalDate("2014-01-01")),
+        newBuildDate = Some(LocalDate.of(2014, 1, 1)),
         notNewBuildValue = Some(BigDecimal(4444.44)),
-        notNewBuildDate = Some(new LocalDate("2015-01-01")),
+        notNewBuildDate = Some(LocalDate.of(2015, 1, 1)),
         ownedBeforePolicyYearValue = Some(BigDecimal(2222.22)),
         isPropertyRevalued = Some(true),
-        revaluedDate = Some(new LocalDate("2013-01-01")),
-        partAcqDispDate = Some(new LocalDate("2013-02-02")),
+        revaluedDate = Some(LocalDate.of(2013, 1, 1)),
+        partAcqDispDate = Some(LocalDate.of(2013, 2, 2)),
         revaluedValue = Some(BigDecimal(1111.11)))
 
       val res = PropertyDetailsUtils.getAcquisitionData(Some(propVal),periodKey)
       res._1 must be (Some(BigDecimal(4444.44)))
-      res._2 must be (Some(new LocalDate("2015-01-01")))
+      res._2 must be (Some(LocalDate.of(2015, 1, 1)))
     }
 
     "return the not new build value, even if it's not been revalued" in {
       val propVal = PropertyDetailsValue(isOwnedBeforePolicyYear = None,
         isNewBuild = None,
         newBuildValue = Some(BigDecimal(3333.33)),
-        newBuildDate = Some(new LocalDate("2014-01-01")),
+        newBuildDate = Some(LocalDate.of(2014, 1, 1)),
         notNewBuildValue = Some(BigDecimal(4444.44)),
-        notNewBuildDate = Some(new LocalDate("2015-01-01")),
+        notNewBuildDate = Some(LocalDate.of(2015, 1, 1)),
         ownedBeforePolicyYearValue = Some(BigDecimal(2222.22)),
         isPropertyRevalued = Some(false),
-        revaluedDate = Some(new LocalDate("2013-01-01")),
-        partAcqDispDate = Some(new LocalDate("2013-02-02")),
+        revaluedDate = Some(LocalDate.of(2013, 1, 1)),
+        partAcqDispDate = Some(LocalDate.of(2013, 2, 2)),
         revaluedValue = Some(BigDecimal(1111.11)))
 
       val res = PropertyDetailsUtils.getAcquisitionData(Some(propVal),periodKey)
       res._1 must be (Some(BigDecimal(1111.11)))
-      res._2 must be (Some(new LocalDate("2013-02-02")))
+      res._2 must be (Some(LocalDate.of(2013, 2, 2)))
     }
   }
 
@@ -752,92 +752,92 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
     }
 
     "return the revalued date if this is an aquisition that has been revalued " in {
-      val propVal = PropertyDetailsValue(anAcquisition = Some(true), isPropertyRevalued = Some(true), revaluedDate = Some(new LocalDate(s"$periodKey-4-1")))
-      PropertyDetailsUtils.getValuationDate(Some(propVal), Some(new LocalDate(s"$periodKey-4-1")), periodKey) must be (Some(new LocalDate(s"$periodKey-4-1")))
+      val propVal = PropertyDetailsValue(anAcquisition = Some(true), isPropertyRevalued = Some(true), revaluedDate = Some(LocalDate.of(periodKey, 4, 1)))
+      PropertyDetailsUtils.getValuationDate(Some(propVal), Some(LocalDate.of(periodKey, 4, 1)), periodKey) must be (Some(LocalDate.of(periodKey, 4, 1)))
     }
 
     "return April 2012 if this is not revalued but was acquired before 2012 " in {
       val propVal = PropertyDetailsValue(anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(true))
-      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(new LocalDate("2012-04-01")), 2015) must be (Some(new LocalDate("2012-04-01")))
-      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(new LocalDate("2012-04-01")), 2019) must be (Some(new LocalDate("2017-04-01")))
+      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(LocalDate.of(2012, 4, 1)), 2015) must be (Some(LocalDate.of(2012, 4, 1)))
+      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(LocalDate.of(2012, 4, 1)), 2019) must be (Some(LocalDate.of(2017, 4, 1)))
     }
 
 
     "return April 2017 if this is not revalued but was acquired before 2017 " in {
       val propVal = PropertyDetailsValue(anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(true))
-      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(new LocalDate("2013-04-01")), 2019) must be (Some(new LocalDate("2017-04-01")))
+      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(LocalDate.of(2013, 4, 1)), 2019) must be (Some(LocalDate.of(2017, 4, 1)))
     }
 
     "return April 2022 if this is not revalued but was acquired before 2022 and the feature flag is active" in {
       when(mockServicesConfig.getBoolean(ArgumentMatchers.any()))
         .thenReturn(true)
       val propVal = PropertyDetailsValue(anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(true))
-      PropertyDetailsUtils.getValuationDate(Some(propVal), Some(new LocalDate("2018-04-01")), 2023) must be(Some(new LocalDate("2022-04-01")))
+      PropertyDetailsUtils.getValuationDate(Some(propVal), Some(LocalDate.of(2018, 4, 1)), 2023) must be(Some(LocalDate.of(2022, 4, 1)))
     }
 
     "return April 2022 if this is not revalued but was acquired before 2022 and the feature flag is inactive" in {
       when(mockServicesConfig.getBoolean(ArgumentMatchers.any()))
         .thenReturn(false)
       val propVal = PropertyDetailsValue(anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(true))
-      PropertyDetailsUtils.getValuationDate(Some(propVal), Some(new LocalDate("2018-04-01")), 2023) must be(Some(new LocalDate("2017-04-01")))
+      PropertyDetailsUtils.getValuationDate(Some(propVal), Some(LocalDate.of(2018, 4, 1)), 2023) must be(Some(LocalDate.of(2017, 4, 1)))
     }
 
     "return the revalued date if this is an aquisition that has been revalued for policy year 2017" in {
-      val propVal = PropertyDetailsValue(anAcquisition = Some(true), isPropertyRevalued = Some(true), revaluedDate = Some(new LocalDate(s"2019-4-1")))
-      PropertyDetailsUtils.getValuationDate(Some(propVal), Some(new LocalDate(s"2019-4-1")), 2019) must be (Some(new LocalDate(s"2019-4-1")))
+      val propVal = PropertyDetailsValue(anAcquisition = Some(true), isPropertyRevalued = Some(true), revaluedDate = Some(LocalDate.of(2019, 4, 1)))
+      PropertyDetailsUtils.getValuationDate(Some(propVal), Some(LocalDate.of(2019, 4, 1)), 2019) must be (Some(LocalDate.of(2019, 4, 1)))
     }
 
 
     "return the new build date if this is a new build" in {
       val propVal = PropertyDetailsValue(anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(false),
         isNewBuild = Some(true),
-        newBuildDate = Some(new LocalDate(s"$periodKey-4-1")),
-        localAuthRegDate = Some(new LocalDate(s"$periodKey-04-05")),
-        notNewBuildDate = Some(new LocalDate(s"$periodKey-5-1")))
-      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(new LocalDate(s"$periodKey-4-1")), periodKey) must be (Some(new LocalDate(s"$periodKey-4-1")))
+        newBuildDate = Some(LocalDate.of(periodKey, 4, 1)),
+        localAuthRegDate = Some(LocalDate.of(periodKey, 4, 5)),
+        notNewBuildDate = Some(LocalDate.of(periodKey, 5, 1)))
+      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(LocalDate.of(periodKey, 4, 1)), periodKey) must be (Some(LocalDate.of(periodKey, 4, 1)))
     }
 
     "return the not new build date if this is a not a new build" in {
       val propVal = PropertyDetailsValue(anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(false),
         isNewBuild = Some(false),
-        newBuildDate = Some(new LocalDate(s"$periodKey-4-1")),
-        notNewBuildDate = Some(new LocalDate(s"$periodKey-5-1")))
-      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(new LocalDate(s"$periodKey-5-1")), periodKey) must be (Some(new LocalDate(s"$periodKey-5-1")))
+        newBuildDate = Some(LocalDate.of(periodKey, 4, 1)),
+        notNewBuildDate = Some(LocalDate.of(periodKey, 5, 1)))
+      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(LocalDate.of(periodKey, 5, 1)), periodKey) must be (Some(LocalDate.of(periodKey, 5, 1)))
     }
 
     "return the valuation date if we have this but haven't made an acquistion" in {
       val propVal = PropertyDetailsValue(anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(false),
         isNewBuild = Some(false),
-        newBuildDate = Some(new LocalDate(s"$periodKey-4-1")),
-        notNewBuildDate = Some(new LocalDate(s"$periodKey-5-1")),
+        newBuildDate = Some(LocalDate.of(periodKey, 4, 1)),
+        notNewBuildDate = Some(LocalDate.of(periodKey, 5, 1)),
         isValuedByAgent = Some(true)
       )
-      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(new LocalDate(s"$periodKey-6-1")), periodKey) must be (Some(new LocalDate(s"$periodKey-6-1")))
+      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(LocalDate.of(periodKey, 6, 1)), periodKey) must be (Some(LocalDate.of(periodKey, 6, 1)))
     }
 
     "return the max valuation date if we have two" in {
       val propVal = PropertyDetailsValue(anAcquisition = Some(true), isOwnedBeforePolicyYear = Some(false),
         isNewBuild = Some(false),
-        newBuildDate = Some(new LocalDate(s"$periodKey-4-1")),
-        notNewBuildDate = Some(new LocalDate(s"$periodKey-5-1")),
+        newBuildDate = Some(LocalDate.of(periodKey, 4, 1)),
+        notNewBuildDate = Some(LocalDate.of(periodKey, 5, 1)),
         isValuedByAgent = Some(true),
         isPropertyRevalued = Some(true),
-        revaluedDate = Some(new LocalDate(s"$periodKey-7-1"))
+        revaluedDate = Some(LocalDate.of(periodKey, 7, 1))
       )
-      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(new LocalDate(s"$periodKey-5-1")), periodKey) must be (Some(new LocalDate(s"$periodKey-7-1")))
+      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(LocalDate.of(periodKey, 5, 1)), periodKey) must be (Some(LocalDate.of(periodKey, 7, 1)))
     }
 
 
     "return the revalued date we haven't also had a valuation" in {
       val propVal = PropertyDetailsValue(anAcquisition = Some(true), isOwnedBeforePolicyYear = Some(false),
         isNewBuild = Some(false),
-        newBuildDate = Some(new LocalDate(s"$periodKey-4-1")),
-        notNewBuildDate = Some(new LocalDate(s"$periodKey-5-1")),
+        newBuildDate = Some(LocalDate.of(periodKey, 4, 1)),
+        notNewBuildDate = Some(LocalDate.of(periodKey, 5, 1)),
         isValuedByAgent = Some(false),
         isPropertyRevalued = Some(true),
-        revaluedDate = Some(new LocalDate(s"$periodKey-7-1"))
+        revaluedDate = Some(LocalDate.of(periodKey, 7, 1))
       )
-      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(new LocalDate(s"$periodKey-7-1")), periodKey) must be (Some(new LocalDate(s"$periodKey-7-1")))
+      PropertyDetailsUtils.getValuationDate(Some(propVal),Some(LocalDate.of(periodKey, 7, 1)), periodKey) must be (Some(LocalDate.of(periodKey, 7, 1)))
     }
   }
 
@@ -849,30 +849,30 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
     }
 
     "return the first date if thats all we have" in {
-      PropertyDetailsUtils.getLatestDate(Some(new LocalDate("2015-01-01")), None) must be (Some(new LocalDate("2015-01-01")))
+      PropertyDetailsUtils.getLatestDate(Some(LocalDate.of(2015, 1, 1)), None) must be (Some(LocalDate.of(2015, 1, 1)))
     }
 
     "return the second date if thats all we have" in {
-      PropertyDetailsUtils.getLatestDate(None, Some(new LocalDate("2015-03-03"))) must be (Some(new LocalDate("2015-03-03")))
+      PropertyDetailsUtils.getLatestDate(None, Some(LocalDate.of(2015, 3, 3))) must be (Some(LocalDate.of(2015, 3, 3)))
     }
 
     "return the latest date if it's the second one" in {
-      PropertyDetailsUtils.getLatestDate(Some(new LocalDate("2015-01-01")), Some(new LocalDate("2015-03-03"))) must be (Some(new LocalDate("2015-03-03")))
+      PropertyDetailsUtils.getLatestDate(Some(LocalDate.of(2015, 1, 1)), Some(LocalDate.of(2015, 3, 3))) must be (Some(LocalDate.of(2015, 3, 3)))
     }
 
     "return the latest date if it's the first one" in {
-      PropertyDetailsUtils.getLatestDate(Some(new LocalDate("2016-01-01")), Some(new LocalDate("2015-03-03"))) must be (Some(new LocalDate("2016-01-01")))
+      PropertyDetailsUtils.getLatestDate(Some(LocalDate.of(2016, 1, 1)), Some(LocalDate.of(2015, 3, 3))) must be (Some(LocalDate.of(2016, 1, 1)))
     }
   }
 
   "disposeLineItem" must {
     val initialValue = BigDecimal(1000.00)
     val updatedValue = BigDecimal(2000.00)
-    val endDate = new LocalDate(s"${periodKey+1}-3-31")
-    val item1 = FormBundleProperty(initialValue, new LocalDate(s"$periodKey-4-1"), new LocalDate(s"$periodKey-8-31"), "Liability", None)
-    val item2 = FormBundleProperty(updatedValue,new LocalDate(s"$periodKey-9-1"), new LocalDate(s"$periodKey-10-31"), "Liability", None)
-    val item3 = FormBundleProperty(updatedValue,new LocalDate(s"$periodKey-11-1"), new LocalDate(s"${periodKey+1}-1-31"), "Relief", None)
-    val item4 = FormBundleProperty(updatedValue,new LocalDate(s"${periodKey+1}-2-1"), new LocalDate(s"${periodKey+1}-3-31"), "Liability", None)
+    val endDate = LocalDate.of(periodKey+1, 3, 31)
+    val item1 = FormBundleProperty(initialValue, LocalDate.of(periodKey, 4, 1), LocalDate.of(periodKey, 8, 31), "Liability", None)
+    val item2 = FormBundleProperty(updatedValue,LocalDate.of(periodKey, 9, 1), LocalDate.of(periodKey, 10, 31), "Liability", None)
+    val item3 = FormBundleProperty(updatedValue,LocalDate.of(periodKey, 11, 1), LocalDate.of(periodKey+1, 1, 31), "Relief", None)
+    val item4 = FormBundleProperty(updatedValue,LocalDate.of(periodKey+1, 2, 1), LocalDate.of(periodKey+1, 3, 31), "Liability", None)
     val lineItems = List(item1, item2, item3, item4)
     "return Nil if we have an empty list" in {
       PropertyDetailsUtils.disposeLineItems(periodKey.toString, Nil, None) must be (Nil)
@@ -934,14 +934,14 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
       val complexValue = BigDecimal(727000)
       val complexValue2 = BigDecimal(927000)
       val complexValue3 = BigDecimal(1227000)
-      val item1 = FormBundleProperty(complexValue, new LocalDate(s"$periodKey-4-1"), new LocalDate(s"$periodKey-10-31"), "Liability", None)
-      val item2 = FormBundleProperty(complexValue2, new LocalDate(s"$periodKey-11-01"), new LocalDate(s"${periodKey+1}-01-01"), "Liability", None)
-      val item3 = FormBundleProperty(complexValue2, new LocalDate(s"${periodKey+1}-01-02"), new LocalDate(s"${periodKey+1}-01-31"), "Relief", Some("Property developers"))
-      val item4 = FormBundleProperty(complexValue2, new LocalDate(s"${periodKey+1}-02-01"), new LocalDate(s"${periodKey+1}-03-07"), "Relief", Some("Property rental businesses"))
-      val item5 = FormBundleProperty(complexValue3, new LocalDate(s"${periodKey+1}-03-08"), new LocalDate(s"${periodKey+1}-03-31"), "Relief", Some("Property rental businesses"))
+      val item1 = FormBundleProperty(complexValue, LocalDate.of(periodKey, 4, 1), LocalDate.of(periodKey, 10, 31), "Liability", None)
+      val item2 = FormBundleProperty(complexValue2, LocalDate.of(periodKey, 11, 01), LocalDate.of(periodKey+1, 1, 1), "Liability", None)
+      val item3 = FormBundleProperty(complexValue2, LocalDate.of(periodKey+1, 1, 2), LocalDate.of(periodKey+1, 1, 31), "Relief", Some("Property developers"))
+      val item4 = FormBundleProperty(complexValue2, LocalDate.of(periodKey+1, 2, 1), LocalDate.of(periodKey+1, 3, 7), "Relief", Some("Property rental businesses"))
+      val item5 = FormBundleProperty(complexValue3, LocalDate.of(periodKey+1, 3, 8), LocalDate.of(periodKey+1, 3, 31), "Relief", Some("Property rental businesses"))
       val lineItems = List(item1, item2, item3, item4, item5)
 
-      val disposalDate = new LocalDate(s"${periodKey+1}-01-31")
+      val disposalDate = LocalDate.of(periodKey+1, 1, 31)
 
       val expected = List(
         EtmpLineItems(item1.propertyValue, item1.dateFrom, item1.dateTo, item1.`type`, item1.reliefDescription),

@@ -72,11 +72,11 @@ class ChangeLiabilityUtilsSpec extends PlaySpec with GuiceOneServerPerSuite with
           dateOfValuation = LocalDate.now(), professionalValuation = true, ninetyDayRuleApplies = false, dateOfAcquisition = None, valueAtAcquisition = None,
           localAuthorityCode = Some("1234"), dateOfSubmission = LocalDate.now(), taxAvoidanceScheme = None,
           liabilityAmount = BigDecimal(123.23), paymentReference = "payment-ref-123",
-          lineItem = Seq(FormBundleProperty(5000000, new LocalDate("2015-04-01"), new LocalDate("2016-03-31"), "Liability", None)))
+          lineItem = Seq(FormBundleProperty(5000000, LocalDate.of(2015, 4, 1), LocalDate.of(2016, 3, 31), "Liability", None)))
 
         val result = ChangeLiabilityUtils.generatePeriodFromLiabilityReturn(inputFormBundleResponse)
         result must be(PropertyDetailsPeriod(isFullPeriod = Some(true), isInRelief = None,
-          liabilityPeriods = List(LineItem(lineItemType = "Liability", startDate = new LocalDate("2015-04-01"), endDate = new LocalDate("2016-03-31"))),
+          liabilityPeriods = List(LineItem(lineItemType = "Liability", startDate = LocalDate.of(2015, 4, 1), endDate = LocalDate.of(2016, 3, 31))),
           reliefPeriods = Nil, isTaxAvoidance = Some(false), taxAvoidanceScheme = None, supportingInfo = Some("additional details")))
 
       }
@@ -233,11 +233,11 @@ class ChangeLiabilityUtilsSpec extends PlaySpec with GuiceOneServerPerSuite with
         val v2 = value1.copy(hasValueChanged = Some(true), isValuedByAgent = Some(true), anAcquisition = Some(true),
           isPropertyRevalued = Some(true),
           revaluedValue = Some(BigDecimal(5000.00)),
-          revaluedDate = Some(new LocalDate("2015-05-15"))
+          revaluedDate = Some(LocalDate.of(2015, 5, 15))
         )
         val cL2 = cL1.copy(value = Some(v2))
         val result1 = ChangeLiabilityUtils.changeLiabilityCalculated(cL2, None)
-        result1.valuationDateToUse must be(Some(new LocalDate("2015-05-15")))
+        result1.valuationDateToUse must be(Some(LocalDate.of(2015, 5, 15)))
       }
 
       "throw an exception if liabilityValueDetails is not defined" in {
@@ -260,10 +260,10 @@ class ChangeLiabilityUtilsSpec extends PlaySpec with GuiceOneServerPerSuite with
       "return (Some(valuationDate),Some(valueToUse)), due to getValueAndDate - anAcquisition = true & isPropertyRevalued = true" in {
         val cL1 = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(2015, "123456789012")
         val value1 = ChangeLiabilityReturnBuilder.generateLiabilityValueDetails(periodKey = 2015)
-        val v2 = value1.copy(hasValueChanged = Some(true), anAcquisition = Some(true), isPropertyRevalued = Some(true), revaluedValue = Some(BigDecimal(1500000)), revaluedDate = Some(new LocalDate("2015-05-15")))
+        val v2 = value1.copy(hasValueChanged = Some(true), anAcquisition = Some(true), isPropertyRevalued = Some(true), revaluedValue = Some(BigDecimal(1500000)), revaluedDate = Some(LocalDate.of(2015, 5, 15)))
         val cL2 = cL1.copy(value = Some(v2))
         val result1 = ChangeLiabilityUtils.changeLiabilityCalculated(cL2, None)
-        result1.valuationDateToUse must be(Some(new LocalDate("2015-05-15")))
+        result1.valuationDateToUse must be(Some(LocalDate.of(2015, 5, 15)))
       }
 
       "return (Some(valuationDate),Some(valueToUse)), due to getValueAndDate - anAcquisition = false & isOwnedBefore2012 = true" in {
@@ -272,7 +272,7 @@ class ChangeLiabilityUtilsSpec extends PlaySpec with GuiceOneServerPerSuite with
         val v2 = value1.copy(hasValueChanged = Some(true), anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(true), ownedBeforePolicyYearValue = Some(BigDecimal(1500000)))
         val cL2 = cL1.copy(value = Some(v2))
         val result1 = ChangeLiabilityUtils.changeLiabilityCalculated(cL2, None)
-        result1.valuationDateToUse must be(Some(new LocalDate("2012-04-01")))
+        result1.valuationDateToUse must be(Some(LocalDate.of(2012, 4, 1)))
       }
 
       "return (Some(valuationDate),Some(valueToUse)), due to getValueAndDate - anAcquisition = false & isOwnedBeforePolicyYear2017 = true" in {
@@ -281,7 +281,7 @@ class ChangeLiabilityUtilsSpec extends PlaySpec with GuiceOneServerPerSuite with
         val v2 = value1.copy(hasValueChanged = Some(true), anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(true), ownedBeforePolicyYearValue = Some(BigDecimal(1500000)))
         val cL2 = cL1.copy(value = Some(v2))
         val result1 = ChangeLiabilityUtils.changeLiabilityCalculated(cL2, None)
-        result1.valuationDateToUse must be(Some(new LocalDate("2017-04-01")))
+        result1.valuationDateToUse must be(Some(LocalDate.of(2017, 4, 1)))
       }
 
       "return (Some(valuationDate),Some(valueToUse)), due to getValueAndDate - anAcquisition = false & isOwnedBeforePolicyYear2022 = true" in {
@@ -293,7 +293,7 @@ class ChangeLiabilityUtilsSpec extends PlaySpec with GuiceOneServerPerSuite with
         val v2 = value1.copy(hasValueChanged = Some(true), anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(true), ownedBeforePolicyYearValue = Some(BigDecimal(1500000)))
         val cL2 = cL1.copy(value = Some(v2))
         val result1 = ChangeLiabilityUtils.changeLiabilityCalculated(cL2, None)
-        result1.valuationDateToUse must be(Some(new LocalDate("2022-04-01")))
+        result1.valuationDateToUse must be(Some(LocalDate.of(2022, 4, 1)))
       }
 
       "return (Some(valuationDate),Some(valueToUse)), due to getValueAndDate - anAcquisition = false & isOwnedBeforePolicyYear2022 = true which feature flag false for 2017" in {
@@ -305,48 +305,48 @@ class ChangeLiabilityUtilsSpec extends PlaySpec with GuiceOneServerPerSuite with
         val v2 = value1.copy(hasValueChanged = Some(true), anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(true), ownedBeforePolicyYearValue = Some(BigDecimal(1500000)))
         val cL2 = cL1.copy(value = Some(v2))
         val result1 = ChangeLiabilityUtils.changeLiabilityCalculated(cL2, None)
-        result1.valuationDateToUse must be(Some(new LocalDate("2017-04-01")))
+        result1.valuationDateToUse must be(Some(LocalDate.of(2017, 4, 1)))
       }
 
       "return (Some(valuationDate),Some(valueToUse)), due to getValueAndDate - anAcquisition = false & isOwnedBefore2012 = false, isNewBuild = true" in {
         val cL1 = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(2015, "123456789012")
         val value1 = ChangeLiabilityReturnBuilder.generateLiabilityValueDetails(periodKey = 2015)
         val v2 = value1.copy(hasValueChanged = Some(true), anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(false),
-          isNewBuild = Some(true), newBuildValue = Some(BigDecimal(1500000)), newBuildDate = Some(new LocalDate("2015-06-06")),
-          localAuthRegDate = Some(new LocalDate("2015-05-05")))
+          isNewBuild = Some(true), newBuildValue = Some(BigDecimal(1500000)), newBuildDate = Some(LocalDate.of(2015, 6, 6)),
+          localAuthRegDate = Some(LocalDate.of(2015, 5, 5)))
         val cL2 = cL1.copy(value = Some(v2))
         val result1 = ChangeLiabilityUtils.changeLiabilityCalculated(cL2, None)
-        result1.valuationDateToUse must be(Some(new LocalDate("2015-05-05")))
+        result1.valuationDateToUse must be(Some(LocalDate.of(2015, 5, 5)))
       }
 
       "return (Some(valuationDate),Some(valueToUse)), due to getValueAndDate - anAcquisition = false & isOwnedBefore2012 = false, isNewBuild = false" in {
         val cL1 = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(2015, "123456789012")
         val value1 = ChangeLiabilityReturnBuilder.generateLiabilityValueDetails(periodKey = 2016)
-        val v2 = value1.copy(hasValueChanged = Some(true), anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(false), isNewBuild = Some(false), notNewBuildValue = Some(BigDecimal(1500000)), notNewBuildDate = Some(new LocalDate("2015-06-06")))
+        val v2 = value1.copy(hasValueChanged = Some(true), anAcquisition = Some(false), isOwnedBeforePolicyYear = Some(false), isNewBuild = Some(false), notNewBuildValue = Some(BigDecimal(1500000)), notNewBuildDate = Some(LocalDate.of(2015, 6, 6)))
         val cL2 = cL1.copy(value = Some(v2))
         val result1 = ChangeLiabilityUtils.changeLiabilityCalculated(cL2, None)
-        result1.valuationDateToUse must be(Some(new LocalDate("2015-06-06")))
+        result1.valuationDateToUse must be(Some(LocalDate.of(2015, 6, 6)))
       }
 
       "return (Some(acquisitionValueToUse),Some(acquisitionDateToUse)), due to getAcquisitionValueAndDate - partAcqDispDate is defined" in {
         val cL1 = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(2015, "123456789012")
         val value1 = ChangeLiabilityReturnBuilder.generateLiabilityValueDetails(periodKey = 2016)
-        val v2 = value1.copy(hasValueChanged = Some(true), partAcqDispDate = Some(new LocalDate("2015-05-01")),
+        val v2 = value1.copy(hasValueChanged = Some(true), partAcqDispDate = Some(LocalDate.of(2015, 5, 1)),
           anAcquisition = Some(true), isPropertyRevalued = Some(true), revaluedValue = Some(BigDecimal(1200000)))
         val cL2 = cL1.copy(value = Some(v2))
         val result1 = ChangeLiabilityUtils.changeLiabilityCalculated(cL2, None)
-        result1.acquistionDateToUse must be(Some(new LocalDate("2015-05-01")))
+        result1.acquistionDateToUse must be(Some(LocalDate.of(2015, 5, 1)))
         result1.acquistionValueToUse must be(Some(BigDecimal(1200000)))
       }
 
       "return (Some(acquisitionValueToUse),Some(acquisitionDateToUse)), due to getAcquisitionValueAndDate if no periods are defined" in {
         val cL1 = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(2015, "123456789012")
         val value1 = ChangeLiabilityReturnBuilder.generateLiabilityValueDetails(periodKey = 2016)
-        val v2 = value1.copy(hasValueChanged = Some(true), partAcqDispDate = Some(new LocalDate("2015-05-01")),
+        val v2 = value1.copy(hasValueChanged = Some(true), partAcqDispDate = Some(LocalDate.of(2015, 5, 1)),
           anAcquisition = Some(true), isPropertyRevalued = Some(true), revaluedValue = Some(BigDecimal(1200000)))
         val cL2 = cL1.copy(value = Some(v2), period = None)
         val result1 = ChangeLiabilityUtils.changeLiabilityCalculated(cL2, None)
-        result1.acquistionDateToUse must be(Some(new LocalDate("2015-05-01")))
+        result1.acquistionDateToUse must be(Some(LocalDate.of(2015, 5, 1)))
         result1.acquistionValueToUse must be(Some(BigDecimal(1200000)))
       }
     }
@@ -380,9 +380,9 @@ class ChangeLiabilityUtilsSpec extends PlaySpec with GuiceOneServerPerSuite with
         liabilityAmount = BigDecimal(123.23), paymentReference = "payment-ref-123",
         lineItem =
           Seq(
-            FormBundleProperty(20000000, new LocalDate("2016-02-01"), new LocalDate("2016-03-31"), "Liability", None),
-            FormBundleProperty(5000000, new LocalDate("2015-04-01"), new LocalDate("2015-10-31"), "Liability", None),
-            FormBundleProperty(10000000, new LocalDate("2015-11-01"), new LocalDate("2016-01-31"), "Liability", None)
+            FormBundleProperty(20000000, LocalDate.of(2016, 2, 1), LocalDate.of(2016, 3, 31), "Liability", None),
+            FormBundleProperty(5000000, LocalDate.of(2015, 4, 1), LocalDate.of(2015, 10, 31), "Liability", None),
+            FormBundleProperty(10000000, LocalDate.of(2015, 11, 1), LocalDate.of(2016, 1, 31), "Liability", None)
           )
       )
 

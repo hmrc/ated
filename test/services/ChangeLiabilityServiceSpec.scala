@@ -20,7 +20,7 @@ import builders.AuthFunctionalityHelper
 import builders.ChangeLiabilityReturnBuilder._
 import connectors.{EmailConnector, EmailSent, EtmpReturnsConnector}
 import models._
-import java.time.ZonedDateTime
+import java.time.{ZoneId, ZonedDateTime}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
@@ -99,9 +99,9 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
 
       "return Some(ChangeLiabilityReturn) with protected bank details if form-bundle found in cache" in new Setup {
         when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo)))
-          .thenReturn(Future.successful(Seq(updateChangeLiabilityReturnWithProtectedBankDetails(2015, formBundle3, generateLiabilityProtectedBankDetails).copy(timeStamp = new ZonedDateTime(2005, 3, 26, 12, 0, 0, 0)))))
+          .thenReturn(Future.successful(Seq(updateChangeLiabilityReturnWithProtectedBankDetails(2015, formBundle3, generateLiabilityProtectedBankDetails).copy(timeStamp = ZonedDateTime.of(2005, 3, 26, 12, 0, 0, 0, ZoneId.of("UTC"))))))
         val result = await(testChangeLiabilityReturnService.convertSubmittedReturnToCachedDraft(atedRefNo, formBundle3))
-        result must be(Some(updateChangeLiabilityReturnWithBankDetails(2015, formBundle3, generateLiabilityBankDetails).copy(timeStamp = new ZonedDateTime(2005, 3, 26, 12, 0, 0, 0))))
+        result must be(Some(updateChangeLiabilityReturnWithBankDetails(2015, formBundle3, generateLiabilityBankDetails).copy(timeStamp = ZonedDateTime.of(2005, 3, 26, 12, 0, 0, 0, ZoneId.of("UTC")))))
       }
 
       "return Some(ChangeLiabilityReturn) if form-bundle not-found in cache, but found in ETMP - also cache it in mongo - based on previous return" in new Setup {
@@ -193,15 +193,15 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
     "emailTemplate" must {
       val liability = EditLiabilityReturnsResponse("Post", "12345", Some("1234567890123"), BigDecimal(2000.00), amountDueOrRefund = BigDecimal(500.00), paymentReference = Some("payment-ref-123"))
       "return further_return_submit when amountDueOrRefund is greater than 0" in new Setup {
-        val json = Json.toJson(EditLiabilityReturnsResponseModel(processingDate = new ZonedDateTime("2016-04-20T12:41:41.839+01:00"), liabilityReturnResponse = Seq(liability), accountBalance = BigDecimal(1200.00)))
+        val json = Json.toJson(EditLiabilityReturnsResponseModel(processingDate = ZonedDateTime.parse("2016-04-20T12:41:41.839+01:00"), liabilityReturnResponse = Seq(liability), accountBalance = BigDecimal(1200.00)))
         testChangeLiabilityReturnService.emailTemplate(json, "12345") must be("further_return_submit")
       }
       "return amended_return_submit when amountDueOrRefund is less than 0" in new Setup {
-        val json = Json.toJson(EditLiabilityReturnsResponseModel(processingDate = new ZonedDateTime("2016-04-20T12:41:41.839+01:00"), liabilityReturnResponse = Seq(liability.copy(amountDueOrRefund = BigDecimal(-500.00))), accountBalance = BigDecimal(1200.00)))
+        val json = Json.toJson(EditLiabilityReturnsResponseModel(processingDate = ZonedDateTime.parse("2016-04-20T12:41:41.839+01:00"), liabilityReturnResponse = Seq(liability.copy(amountDueOrRefund = BigDecimal(-500.00))), accountBalance = BigDecimal(1200.00)))
         testChangeLiabilityReturnService.emailTemplate(json, "12345") must be("amended_return_submit")
       }
       "return change_details_return_submit when amountDueOrRefund is 0" in new Setup {
-        val json = Json.toJson(EditLiabilityReturnsResponseModel(processingDate = new ZonedDateTime("2016-04-20T12:41:41.839+01:00"), liabilityReturnResponse = Seq(liability.copy(amountDueOrRefund = BigDecimal(0.00))), accountBalance = BigDecimal(1200.00)))
+        val json = Json.toJson(EditLiabilityReturnsResponseModel(processingDate = ZonedDateTime.parse("2016-04-20T12:41:41.839+01:00"), liabilityReturnResponse = Seq(liability.copy(amountDueOrRefund = BigDecimal(0.00))), accountBalance = BigDecimal(1200.00)))
         testChangeLiabilityReturnService.emailTemplate(json, "12345") must be("change_details_return_submit")
       }
     }

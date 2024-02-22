@@ -30,7 +30,7 @@ class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers wi
     "schedules.delete-reliefs-job.cleardown.batchSize" -> 2
   )
 
-  def periodStartDateConverter(periodKey: Int): LocalDate = new LocalDate(s"$periodKey-04-01")
+  def periodStartDateConverter(periodKey: Int): LocalDate = LocalDate.of(periodKey, 4, 1)
 
   def periodEndDateConverter(periodKey: Int): LocalDate = periodStartDateConverter(periodKey).plusYears(1).minusDays(1)
 

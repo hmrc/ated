@@ -138,8 +138,8 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
 
         val expected = SummaryReturnsModel(Some(10000), List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", None, "Liability")), None),
           PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")),
-            Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", new LocalDate("2014-09-05"), new LocalDate("2014-10-05"), new LocalDate("2014-05-05"), None, None)),
-              List(SubmittedLiabilityReturns("12345", "line1 line2", 1000, new LocalDate("2014-09-05"), new LocalDate("2014-10-05"), new LocalDate("2014-05-05"),
+            Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5), None, None)),
+              List(SubmittedLiabilityReturns("12345", "line1 line2", 1000, LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5),
                 true, "pay-123")))))))
 
         when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
@@ -178,12 +178,12 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
           List(
             PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", None, "Liability")), None),
             PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")),
-              Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", new LocalDate("2014-09-05"), new LocalDate("2014-10-05"), new LocalDate("2014-05-05"), None, None)),
+              Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5), None, None)),
                   List(
-                    SubmittedLiabilityReturns("12346", "line1 line2", 1000, new LocalDate("2014-09-05"), new LocalDate("2014-10-05"), new LocalDate("2014-05-05"), true, "pay-123")
+                    SubmittedLiabilityReturns("12346", "line1 line2", 1000, LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5), true, "pay-123")
                   ),
                   List(
-                    SubmittedLiabilityReturns("12345", "line1 line2", 1000, new LocalDate("2014-09-05"), new LocalDate("2014-10-05"), new LocalDate("2014-01-01"), false, "pay-123")
+                    SubmittedLiabilityReturns("12345", "line1 line2", 1000, LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 1, 1), false, "pay-123")
                   )
                 )
               )
@@ -241,8 +241,8 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
 
         val expected = SummaryReturnsModel(Some(0), List(PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789099", "addr1 addr2", None, "Change_Liability"),
           DraftReturns(periodKey, "123456789012", "line1 line2", Some(1000), "Dispose_Liability")),
-          Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", new LocalDate("2014-09-05"), new LocalDate("2014-10-05"),
-            new LocalDate("2014-05-05"), None, None)), List())))))
+          Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5),
+            LocalDate.of(2014, 5, 5), None, None)), List())))))
 
         when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
@@ -355,17 +355,17 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
     }
 
     "return new if we only have one return for each property" in new Setup {
-      val liability1 = EtmpReturn(formBundleNumber = "1", dateOfSubmission = new LocalDate("2014-05-05"),
-            dateFrom = new LocalDate("2014-04-15"),
-            dateTo = new LocalDate("2015-03-31"),
+      val liability1 = EtmpReturn(formBundleNumber = "1", dateOfSubmission = LocalDate.of(2014, 5, 5),
+            dateFrom = LocalDate.of(2014, 4, 15),
+            dateTo = LocalDate.of(2015, 3, 31),
             liabilityAmount = BigDecimal(1000),
             paymentReference = "123123m",
             changeAllowed = false)
       val propertySummary1 = EtmpPropertySummary(contractObject = "", titleNumber = None, addressLine1 = "1", addressLine2 = "2", `return` = List(liability1))
 
-      val liability2 = EtmpReturn(formBundleNumber = "2", dateOfSubmission = new LocalDate("2014-05-05"),
-        dateFrom = new LocalDate("2014-04-15"),
-        dateTo = new LocalDate("2015-03-31"),
+      val liability2 = EtmpReturn(formBundleNumber = "2", dateOfSubmission = LocalDate.of(2014, 5, 5),
+        dateFrom = LocalDate.of(2014, 4, 15),
+        dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
@@ -380,21 +380,21 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
     }
 
     "return new and old if we have multiple returns for a property" in new Setup {
-      val liability1 = EtmpReturn(formBundleNumber = "1", dateOfSubmission = new LocalDate("2014-05-05"),
-        dateFrom = new LocalDate("2014-04-15"),
-        dateTo = new LocalDate("2015-03-31"),
+      val liability1 = EtmpReturn(formBundleNumber = "1", dateOfSubmission = LocalDate.of(2014, 5, 5),
+        dateFrom = LocalDate.of(2014, 4, 15),
+        dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val liability2 = EtmpReturn(formBundleNumber = "2", dateOfSubmission = new LocalDate("2014-05-06"),
-        dateFrom = new LocalDate("2014-04-15"),
-        dateTo = new LocalDate("2015-03-31"),
+      val liability2 = EtmpReturn(formBundleNumber = "2", dateOfSubmission = LocalDate.of(2014, 5, 6),
+        dateFrom = LocalDate.of(2014, 4, 15),
+        dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val liability3 = EtmpReturn(formBundleNumber = "3", dateOfSubmission = new LocalDate("2014-05-04"),
-        dateFrom = new LocalDate("2014-04-15"),
-        dateTo = new LocalDate("2015-03-31"),
+      val liability3 = EtmpReturn(formBundleNumber = "3", dateOfSubmission = LocalDate.of(2014, 5, 4),
+        dateFrom = LocalDate.of(2014, 4, 15),
+        dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
@@ -413,21 +413,21 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
     }
 
     "if two returns have the same date, return the one that is editable as new (last in list is  editable)" in new Setup {
-      val liability1 = EtmpReturn(formBundleNumber = "1", dateOfSubmission = new LocalDate("2014-05-05"),
-        dateFrom = new LocalDate("2014-04-15"),
-        dateTo = new LocalDate("2015-03-31"),
+      val liability1 = EtmpReturn(formBundleNumber = "1", dateOfSubmission = LocalDate.of(2014, 5, 5),
+        dateFrom = LocalDate.of(2014, 4, 15),
+        dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val liability2 = EtmpReturn(formBundleNumber = "2", dateOfSubmission = new LocalDate("2014-05-04"),
-        dateFrom = new LocalDate("2014-04-15"),
-        dateTo = new LocalDate("2015-03-31"),
+      val liability2 = EtmpReturn(formBundleNumber = "2", dateOfSubmission = LocalDate.of(2014, 5, 4),
+        dateFrom = LocalDate.of(2014, 4, 15),
+        dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val liability3 = EtmpReturn(formBundleNumber = "3", dateOfSubmission = new LocalDate("2014-05-05"),
-        dateFrom = new LocalDate("2014-04-15"),
-        dateTo = new LocalDate("2015-03-31"),
+      val liability3 = EtmpReturn(formBundleNumber = "3", dateOfSubmission = LocalDate.of(2014, 5, 5),
+        dateFrom = LocalDate.of(2014, 4, 15),
+        dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = true)
@@ -446,21 +446,21 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
     }
 
     "if two returns have the same date, return the one that is editable as new (first in list is  editable)" in new Setup {
-      val liability1 = EtmpReturn(formBundleNumber = "1", dateOfSubmission = new LocalDate("2014-05-05"),
-        dateFrom = new LocalDate("2014-04-15"),
-        dateTo = new LocalDate("2015-03-31"),
+      val liability1 = EtmpReturn(formBundleNumber = "1", dateOfSubmission = LocalDate.of(2014, 5, 5),
+        dateFrom = LocalDate.of(2014, 4, 15),
+        dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = true)
-      val liability2 = EtmpReturn(formBundleNumber = "2", dateOfSubmission = new LocalDate("2014-05-04"),
-        dateFrom = new LocalDate("2014-04-15"),
-        dateTo = new LocalDate("2015-03-31"),
+      val liability2 = EtmpReturn(formBundleNumber = "2", dateOfSubmission = LocalDate.of(2014, 5, 4),
+        dateFrom = LocalDate.of(2014, 4, 15),
+        dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val liability3 = EtmpReturn(formBundleNumber = "3", dateOfSubmission = new LocalDate("2014-05-05"),
-        dateFrom = new LocalDate("2014-04-15"),
-        dateTo = new LocalDate("2015-03-31"),
+      val liability3 = EtmpReturn(formBundleNumber = "3", dateOfSubmission = LocalDate.of(2014, 5, 5),
+        dateFrom = LocalDate.of(2014, 4, 15),
+        dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
@@ -479,21 +479,21 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
     }
 
     "if two returns have the same date, return the one that is editable as new : if neither is editable, put both in new" in new Setup {
-      val liability1 = EtmpReturn(formBundleNumber = "1", dateOfSubmission = new LocalDate("2014-05-05"),
-        dateFrom = new LocalDate("2014-04-15"),
-        dateTo = new LocalDate("2015-03-31"),
+      val liability1 = EtmpReturn(formBundleNumber = "1", dateOfSubmission = LocalDate.of(2014, 5, 5),
+        dateFrom = LocalDate.of(2014, 4, 15),
+        dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val liability2 = EtmpReturn(formBundleNumber = "2", dateOfSubmission = new LocalDate("2014-05-04"),
-        dateFrom = new LocalDate("2014-04-15"),
-        dateTo = new LocalDate("2015-03-31"),
+      val liability2 = EtmpReturn(formBundleNumber = "2", dateOfSubmission = LocalDate.of(2014, 5, 4),
+        dateFrom = LocalDate.of(2014, 4, 15),
+        dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val liability3 = EtmpReturn(formBundleNumber = "3", dateOfSubmission = new LocalDate("2014-05-05"),
-        dateFrom = new LocalDate("2014-04-15"),
-        dateTo = new LocalDate("2015-03-31"),
+      val liability3 = EtmpReturn(formBundleNumber = "3", dateOfSubmission = LocalDate.of(2014, 5, 5),
+        dateFrom = LocalDate.of(2014, 4, 15),
+        dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
@@ -512,21 +512,21 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
     }
 
     "if two returns have the same date, return the one that is editable as new : if both are editable, put both in new" in new Setup {
-      val liability1 = EtmpReturn(formBundleNumber = "1", dateOfSubmission = new LocalDate("2014-05-05"),
-        dateFrom = new LocalDate("2014-04-15"),
-        dateTo = new LocalDate("2015-03-31"),
+      val liability1 = EtmpReturn(formBundleNumber = "1", dateOfSubmission = LocalDate.of(2014, 5, 5),
+        dateFrom = LocalDate.of(2014, 4, 15),
+        dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = true)
-      val liability2 = EtmpReturn(formBundleNumber = "2", dateOfSubmission = new LocalDate("2014-05-04"),
-        dateFrom = new LocalDate("2014-04-15"),
-        dateTo = new LocalDate("2015-03-31"),
+      val liability2 = EtmpReturn(formBundleNumber = "2", dateOfSubmission = LocalDate.of(2014, 5, 4),
+        dateFrom = LocalDate.of(2014, 4, 15),
+        dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val liability3 = EtmpReturn(formBundleNumber = "3", dateOfSubmission = new LocalDate("2014-05-05"),
-        dateFrom = new LocalDate("2014-04-15"),
-        dateTo = new LocalDate("2015-03-31"),
+      val liability3 = EtmpReturn(formBundleNumber = "3", dateOfSubmission = LocalDate.of(2014, 5, 5),
+        dateFrom = LocalDate.of(2014, 4, 15),
+        dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = true)

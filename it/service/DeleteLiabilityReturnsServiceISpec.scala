@@ -37,19 +37,19 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
   def generateFormBundleResponse(periodKey: Int): FormBundleReturn = {
     val formBundleAddress = FormBundleAddress("line1", "line2", None, None, None, "GB")
     val x = FormBundlePropertyDetails(Some("12345678"), formBundleAddress, additionalDetails = Some("supportingInfo"))
-    val lineItem1 = FormBundleProperty(BigDecimal(5000000), new LocalDate(s"$periodKey-04-01"), new LocalDate(s"$periodKey-08-31"), "Liability", None)
-    val lineItem2 = FormBundleProperty(BigDecimal(5000000), new LocalDate(s"$periodKey-09-01"), new LocalDate(s"${periodKey + 1}-03-31"), "Relief", Some("Relief"))
+    val lineItem1 = FormBundleProperty(BigDecimal(5000000), LocalDate.of(periodKey, 4, 1), LocalDate.of(periodKey, 8, 31), "Liability", None)
+    val lineItem2 = FormBundleProperty(BigDecimal(5000000), LocalDate.of(periodKey, 9, 1), new LocalDate(s"${periodKey + 1}-03-31"), "Relief", Some("Relief"))
 
     FormBundleReturn(periodKey = periodKey.toString,
       propertyDetails = x,
       dateOfAcquisition = None,
       valueAtAcquisition = None,
-      dateOfValuation = new LocalDate(s"$periodKey-05-05"),
+      dateOfValuation = LocalDate.of(periodKey, 5, 5),
       localAuthorityCode = None,
       professionalValuation = true,
       taxAvoidanceScheme = Some("taxAvoidanceScheme"),
       ninetyDayRuleApplies = true,
-      dateOfSubmission = new LocalDate(s"$periodKey-05-05"),
+      dateOfSubmission = LocalDate.of(periodKey, 5, 5),
       liabilityAmount = BigDecimal(123.23),
       paymentReference = "payment-ref-123",
       lineItem = Seq(lineItem1, lineItem2))

@@ -17,7 +17,7 @@
 package builders
 
 import models._
-import java.time.{ZonedDateTime, LocalDate}
+import java.time.{ZonedDateTime, LocalDate, ZoneId, ZoneOffset}
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import uk.gov.hmrc.crypto.Protected
@@ -27,19 +27,19 @@ object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite
   def generateFormBundleResponse(periodKey: Int): FormBundleReturn = {
     val formBundleAddress = FormBundleAddress("line1", "line2", None, None, None, "GB")
     val x = FormBundlePropertyDetails(Some("12345678"), formBundleAddress, additionalDetails = Some("supportingInfo"))
-    val lineItem1 = FormBundleProperty(BigDecimal(5000000), new LocalDate(s"$periodKey-04-01"), new LocalDate(s"$periodKey-08-31"), "Liability", None)
-    val lineItem2 = FormBundleProperty(BigDecimal(5000000), new LocalDate(s"$periodKey-09-01"), new LocalDate(s"${periodKey+1}-03-31"), "Relief", Some("Relief"))
+    val lineItem1 = FormBundleProperty(BigDecimal(5000000), LocalDate.of(periodKey, 4, 1), LocalDate.of(periodKey, 8, 31), "Liability", None)
+    val lineItem2 = FormBundleProperty(BigDecimal(5000000), LocalDate.of(periodKey, 9, 1), LocalDate.of(periodKey, 3, 31), "Relief", Some("Relief"))
 
     FormBundleReturn(periodKey = periodKey.toString,
       propertyDetails = x,
       dateOfAcquisition = None,
       valueAtAcquisition = None,
-      dateOfValuation = new LocalDate(s"$periodKey-05-05"),
+      dateOfValuation = LocalDate.of(periodKey, 5, 5),
       localAuthorityCode = None,
       professionalValuation = true,
       taxAvoidanceScheme = Some("taxAvoidanceScheme"),
       ninetyDayRuleApplies = true,
-      dateOfSubmission = new LocalDate(s"$periodKey-05-05"),
+      dateOfSubmission = LocalDate.of(periodKey, 5, 5),
       liabilityAmount = BigDecimal(123.23),
       paymentReference = "payment-ref-123",
       lineItem = Seq(lineItem1, lineItem2))
@@ -48,19 +48,19 @@ object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite
   def generateFormBundleResponse1(periodKey: Int): FormBundleReturn = {
     val formBundleAddress = FormBundleAddress("line1", "line2", None, None, None, "GB")
     val x = FormBundlePropertyDetails(Some("12345678"), formBundleAddress, additionalDetails = Some("supportingInfo"))
-    val lineItem1 = FormBundleProperty(BigDecimal(5000000), new LocalDate(s"$periodKey-04-01"), new LocalDate(s"$periodKey-08-31"), "Liability", None)
-    val lineItem2 = FormBundleProperty(BigDecimal(5000000), new LocalDate(s"$periodKey-09-01"), new LocalDate(s"${periodKey+1}-03-31"), "Relief", Some("Relief"))
+    val lineItem1 = FormBundleProperty(BigDecimal(5000000), LocalDate.of(periodKey, 4, 1), LocalDate.of(periodKey, 8, 31), "Liability", None)
+    val lineItem2 = FormBundleProperty(BigDecimal(5000000), LocalDate.of(periodKey, 9, 1), LocalDate.of(periodKey, 3, 31), "Relief", Some("Relief"))
 
     FormBundleReturn(periodKey = periodKey.toString,
       propertyDetails = x,
-      dateOfAcquisition = Some(new LocalDate(s"$periodKey-05-05")),
+      dateOfAcquisition = Some(LocalDate.of(periodKey, 5, 5)),
       valueAtAcquisition = None,
-      dateOfValuation = new LocalDate(s"$periodKey-05-05"),
+      dateOfValuation = LocalDate.of(periodKey, 5, 5),
       localAuthorityCode = None,
       professionalValuation = true,
       taxAvoidanceScheme = Some("taxAvoidanceScheme"),
       ninetyDayRuleApplies = true,
-      dateOfSubmission = new LocalDate(s"$periodKey-05-05"),
+      dateOfSubmission = LocalDate.of(periodKey, 5, 5),
       liabilityAmount = BigDecimal(123.23),
       paymentReference = "payment-ref-123",
       lineItem = Seq(lineItem1, lineItem2))
@@ -211,20 +211,20 @@ object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite
   }
 
   def generateCalculated = {
-    val liabilityPeriods = List(CalculatedPeriod(BigDecimal(2500000),new LocalDate("2015-4-1"), new LocalDate("2016-3-31"), "Liability"))
+    val liabilityPeriods = List(CalculatedPeriod(BigDecimal(2500000),LocalDate.of(2015, 4, 1), LocalDate.of(2016, 3, 31), "Liability"))
     val reliefPeriods = Nil
     PropertyDetailsCalculated(liabilityPeriods = liabilityPeriods, reliefPeriods = reliefPeriods,
-      valuationDateToUse = Some(new LocalDate("2015-5-15")),
+      valuationDateToUse = Some(LocalDate.of(2015, 5, 15)),
       acquistionDateToUse = None, acquistionValueToUse = None, professionalValuation = Some(true),
       liabilityAmount = Some(4500),
       amountDueOrRefund = Some(BigDecimal(-500.00)))
   }
 
   def generateCalculated1 = {
-    val liabilityPeriods = List(CalculatedPeriod(BigDecimal(2500000),new LocalDate("2015-4-1"), new LocalDate("2016-3-31"), "Liability"))
+    val liabilityPeriods = List(CalculatedPeriod(BigDecimal(2500000),LocalDate.of(2015, 4, 1), LocalDate.of(2016, 3, 31), "Liability"))
     val reliefPeriods = Nil
     PropertyDetailsCalculated(liabilityPeriods = liabilityPeriods, reliefPeriods = reliefPeriods,
-      valuationDateToUse = Some(new LocalDate("2015-5-15")),
+      valuationDateToUse = Some(LocalDate.of(2015, 5, 15)),
       acquistionDateToUse = None, acquistionValueToUse = None, professionalValuation = Some(true),
       liabilityAmount = None,
       amountDueOrRefund = Some(BigDecimal(-500.00)))
@@ -232,7 +232,7 @@ object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite
 
   def generateEditLiabilityReturnResponse(oldFormBundleNo: String) = {
     val liability = EditLiabilityReturnsResponse("Post", oldFormBundleNo, Some("1234567890123"), liabilityAmount = BigDecimal(2000.00), amountDueOrRefund = BigDecimal(-500.00), paymentReference = Some("payment-ref-123"))
-    EditLiabilityReturnsResponseModel(processingDate = new ZonedDateTime("2016-04-20T12:41:41.839+01:00"), liabilityReturnResponse = Seq(liability), accountBalance = BigDecimal(1200.00))
+    EditLiabilityReturnsResponseModel(processingDate = ZonedDateTime.of(2016, 4, 20, 12, 41, 41, 839, ZoneId.ofOffset("GMT", ZoneOffset.ofHours(1))), liabilityReturnResponse = Seq(liability), accountBalance = BigDecimal(1200.00))
   }
 
 }

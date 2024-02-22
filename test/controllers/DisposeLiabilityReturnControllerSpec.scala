@@ -191,9 +191,10 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
     "submitDisposeLiabilityReturn" must {
       "for successful submit, return OK as response status" in new Setup {
         val successResponse = EditLiabilityReturnsResponseModel(ZonedDateTime.now(), liabilityReturnResponse = Seq(), accountBalance = BigDecimal(0.00))
-        when(mockDisposeLiabilityReturnService.submitDisposeLiability(ArgumentMatchers.eq(atedRefNo),
-          ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockDisposeLiabilityReturnService.submitDisposeLiability(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))
+            (ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, Json.toJson(successResponse), Map.empty[String, Seq[String]])))
+
         val result = controller.submitDisposeLiabilityReturn(atedRefNo, formBundle1).apply(FakeRequest())
         status(result) must be(OK)
       }

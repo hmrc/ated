@@ -145,7 +145,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
 
     "updateDraftDisposeLiabilityReturnDate" must {
       "update, cache and return DisposeLiabilityReturn with the dae of disposal, if found in cache" in new Setup {
-        lazy val inputDisposeLiability = DisposeLiability(dateOfDisposal = Some(new LocalDate("2015-05-01")), periodKey = periodKey)
+        lazy val inputDisposeLiability = DisposeLiability(dateOfDisposal = Some(LocalDate.of(2015, 5, 1)), periodKey = periodKey)
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disposeLiability1, disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
         val result = await(testDisposeLiabilityReturnService.updateDraftDisposeLiabilityReturnDate(atedRefNo, formBundle1, inputDisposeLiability))
@@ -153,7 +153,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
       }
 
       "return None, if not found in mongo cache" in new Setup {
-        lazy val inputDisposeLiability = DisposeLiability(dateOfDisposal = Some(new LocalDate("2015-05-01")), periodKey = periodKey)
+        lazy val inputDisposeLiability = DisposeLiability(dateOfDisposal = Some(LocalDate.of(2015, 5, 1)), periodKey = periodKey)
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
         val result = await(testDisposeLiabilityReturnService.updateDraftDisposeLiabilityReturnDate(atedRefNo, formBundle1, inputDisposeLiability))
@@ -203,7 +203,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
     "updateDraftDisposeBankDetails" must {
       "create bankDetails if we have none" in new Setup {
         lazy val bankDetails = generateLiabilityBankDetails
-        val dL1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(dateOfDisposal = Some(new LocalDate("2015-05-01")), periodKey = periodKey)), bankDetails = None)
+        val dL1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(dateOfDisposal = Some(LocalDate.of(2015, 5, 1)), periodKey = periodKey)), bankDetails = None)
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(dL1, disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
         mockRetrievingNoAuthRef()
@@ -222,7 +222,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
       "update bankDetails and cache that into mongo" in new Setup {
         lazy val bankDetails = generateLiabilityBankDetails
         lazy val protectedBankDetails = generateLiabilityProtectedBankDetails
-        val dL1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(dateOfDisposal = Some(new LocalDate("2015-05-01")), periodKey = periodKey)), bankDetails = Some(protectedBankDetails))
+        val dL1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(dateOfDisposal = Some(LocalDate.of(2015, 5, 1)), periodKey = periodKey)), bankDetails = Some(protectedBankDetails))
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(dL1, disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
         mockRetrievingNoAuthRef()
@@ -253,7 +253,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
       "update the pre calculated values and cache that into mongo" in new Setup {
         lazy val bankDetails = generateLiabilityBankDetails
         lazy val protectedBankDetails = generateLiabilityProtectedBankDetails
-        val dL1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(dateOfDisposal = Some(new LocalDate("2015-05-01")), periodKey = periodKey)), bankDetails = Some(protectedBankDetails))
+        val dL1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(dateOfDisposal = Some(LocalDate.of(2015, 5, 1)), periodKey = periodKey)), bankDetails = Some(protectedBankDetails))
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(dL1, disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
         mockRetrievingNoAuthRef()
@@ -295,14 +295,14 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
     "getPreCalculationAmounts" must {
       "just in case, if returned oldFornBundleReturnNo is not equal to one being passed, return amounts as 0,0" in new Setup {
         val bank1 = generateLiabilityBankDetails
-        val dL1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(dateOfDisposal = Some(new LocalDate("2015-05-01")), periodKey = periodKey)), bankDetails = Some(bank1))
+        val dL1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(dateOfDisposal = Some(LocalDate.of(2015, 5, 1)), periodKey = periodKey)), bankDetails = Some(bank1))
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(dL1, disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
         val respModel = generateEditLiabilityReturnResponse(formBundle1.toString)
         val respJson = Json.toJson(respModel)
         when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
-        val result = await(testDisposeLiabilityReturnService.getPreCalculationAmounts(atedRefNo, formBundleReturn1, DisposeLiability(Some(new LocalDate("2015-05-01")), periodKey), formBundle2))
+        val result = await(testDisposeLiabilityReturnService.getPreCalculationAmounts(atedRefNo, formBundleReturn1, DisposeLiability(Some(LocalDate.of(2015, 5, 1)), periodKey), formBundle2))
         result must be(DisposeCalculated(BigDecimal(0.00), BigDecimal(0.00)))
       }
     }
@@ -327,7 +327,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
       "return HttpResponse wit Status OK, when form-bundle is found in cache and successfully submitted to ETMP" must {
         "getEtmpBankDetails" must {
           "return BankDetails, if valid bank-details-model is passed" in new Setup {
-            lazy val disp1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(Some(new LocalDate("2015-05-01")), periodKey)), bankDetails = Some(ChangeLiabilityReturnBuilder.generateLiabilityProtectedBankDetails), calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
+            lazy val disp1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(Some(LocalDate.of(2015, 5, 1)), periodKey)), bankDetails = Some(ChangeLiabilityReturnBuilder.generateLiabilityProtectedBankDetails), calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
 
             when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
             when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
@@ -345,7 +345,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
             verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
           }
           "return None, if hasBankDetails is false passed" in new Setup {
-            lazy val disp1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(Some(new LocalDate("2015-05-01")), periodKey)), bankDetails = Some(ChangeLiabilityReturnBuilder.generateLiabilityProtectedBankDetailsNoBankDetails), calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
+            lazy val disp1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(Some(LocalDate.of(2015, 5, 1)), periodKey)), bankDetails = Some(ChangeLiabilityReturnBuilder.generateLiabilityProtectedBankDetailsNoBankDetails), calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
 
             when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
             when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
@@ -362,7 +362,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           }
 
           "return None, if accountNumber & accountName & sortCode is not found" in new Setup {
-            lazy val disp1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(Some(new LocalDate("2015-05-01")), periodKey)), bankDetails = Some(ChangeLiabilityReturnBuilder.generateLiabilityProtectedBankDetailsBlank), calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
+            lazy val disp1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(Some(LocalDate.of(2015, 5, 1)), periodKey)), bankDetails = Some(ChangeLiabilityReturnBuilder.generateLiabilityProtectedBankDetailsBlank), calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
             when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
             when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
             when(mockAuthConnector.authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
@@ -378,7 +378,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           }
 
           "return None, if None was passed as bank-details-model" in new Setup {
-            lazy val disp1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(Some(new LocalDate("2015-05-01")), periodKey)), calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
+            lazy val disp1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(Some(LocalDate.of(2015, 5, 1)), periodKey)), calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
             when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
             when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
             when(mockAuthConnector.authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
@@ -420,7 +420,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
       }
       "return the status with body, if etmp call returns any other status other than OK" in new Setup {
         lazy val bank1 = generateLiabilityBankDetails
-        lazy val disp1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(Some(new LocalDate("2015-05-01")), periodKey)), bankDetails = Some(bank1), calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
+        lazy val disp1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(Some(LocalDate.of(2015, 5, 1)), periodKey)), bankDetails = Some(bank1), calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
         mockRetrievingNoAuthRef()

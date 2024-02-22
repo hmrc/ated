@@ -31,7 +31,7 @@ object ReliefBuilder {
                          taxAvoidance: TaxAvoidance = TaxAvoidance()): ReliefsTaxAvoidance = {
 
     def periodStartDate(periodKey: Int): LocalDate = {
-      new LocalDate(s"$periodKey-04-01")
+      LocalDate.of(periodKey, 4, 1)
     }
 
     def periodEndDate(periodKey: Int): LocalDate = {

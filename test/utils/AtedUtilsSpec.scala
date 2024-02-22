@@ -40,15 +40,15 @@ class AtedUtilsSpec extends PlaySpec {
 
     "periodStartDate" must {
       "return start date of period based on period key" in {
-        AtedUtils.periodStartDate(2015) must be(new LocalDate("2015-04-01"))
-        AtedUtils.periodStartDate(2014) must be(new LocalDate("2014-04-01"))
+        AtedUtils.periodStartDate(2015) must be(LocalDate.of(2015, 4, 1))
+        AtedUtils.periodStartDate(2014) must be(LocalDate.of(2014, 4, 1))
       }
     }
 
     "periodEndDate" must {
       "return end date of period based on period key" in {
-        AtedUtils.periodEndDate(2015) must be(new LocalDate("2016-03-31"))
-        AtedUtils.periodEndDate(2014) must be(new LocalDate("2015-03-31"))
+        AtedUtils.periodEndDate(2015) must be(LocalDate.of(2016, 3, 31))
+        AtedUtils.periodEndDate(2014) must be(LocalDate.of(2015, 3, 31))
       }
     }
 

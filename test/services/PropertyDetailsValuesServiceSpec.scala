@@ -257,7 +257,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
 
       val updateValue = new PropertyDetailsRevalued(isPropertyRevalued = Some(true),
         revaluedValue = Some(BigDecimal(222.22)),
-        revaluedDate = Some(new LocalDate("1970-01-01")))
+        revaluedDate = Some(LocalDate.of(1970, 1, 1)))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
@@ -278,7 +278,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       newProp.get.value.get.anAcquisition must be(Some(true))
       newProp.get.value.get.isPropertyRevalued must be(Some(true))
       newProp.get.value.get.revaluedValue must be(Some(BigDecimal(222.22)))
-      newProp.get.value.get.revaluedDate must be(Some(new LocalDate("1970-01-01")))
+      newProp.get.value.get.revaluedDate must be(Some(LocalDate.of(1970, 1, 1)))
       newProp.get.calculated.isDefined must be(false)
     }
 
@@ -687,7 +687,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
     }
 
     "update the value of the cache when the date of acquistion has changed" in new Setup {
-      val updateValue = PropertyDetailsDateOfAcquisition(Some(new LocalDate("2012-01-01")))
+      val updateValue = PropertyDetailsDateOfAcquisition(Some(LocalDate.of(2012, 1, 1)))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
