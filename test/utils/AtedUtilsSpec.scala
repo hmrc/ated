@@ -103,7 +103,7 @@ class AtedUtilsSpec extends PlaySpec {
   }
 
   "calculateLowerTaxYearBounday" should {
-    def year(i: Int) = LocalDate.parse(s"$i-4-1")
+    def year(i: Int) = LocalDate.parse(s"$i-04-01")
 
     "return 2012" when {
       "year is before 2012" in {
@@ -141,39 +141,39 @@ class AtedUtilsSpec extends PlaySpec {
 
     "return 2012-4-1 as valuation year" in {
       Seq(
-        date("2012-4-1") -> 2012,
-        date("2011-3-2") -> 2012,
-        date("2011-3-2") -> 2017
+        date("2012-04-01") -> 2012,
+        date("2011-03-02") -> 2012,
+        date("2011-03-02") -> 2017
       ) foreach { case (valued, period) =>
-        AtedUtils.enforceFiveYearBoundary(valued, period) mustBe date("2012-4-1")
+        AtedUtils.enforceFiveYearBoundary(valued, period) mustBe date("2012-04-01")
       }
     }
 
     "return 2017-4-1 as valuation year" in {
       Seq(
-        date("2016-3-31") -> 2018,
-        date("2016-3-31") -> 2022,
-        date("2017-4-1") -> 2017
+        date("2016-03-31") -> 2018,
+        date("2016-03-31") -> 2022,
+        date("2017-04-01") -> 2017
       ) foreach { case (valued, period) =>
-        AtedUtils.enforceFiveYearBoundary(valued, period) mustBe date("2017-4-1")
+        AtedUtils.enforceFiveYearBoundary(valued, period) mustBe date("2017-04-01")
       }
     }
 
     "return 2022-4-1 as valuation year" in {
       Seq(
-        date("2021-3-31") -> 2023,
-        date("2021-3-31") -> 2027,
-        date("2022-4-1") -> 2022
+        date("2021-03-31") -> 2023,
+        date("2021-03-31") -> 2027,
+        date("2022-04-01") -> 2022
       ) foreach { case (valued, period) =>
-        AtedUtils.enforceFiveYearBoundary(valued, period) mustBe date("2022-4-1")
+        AtedUtils.enforceFiveYearBoundary(valued, period) mustBe date("2022-04-01")
       }
     }
 
     "return the provided date (if within tax boundary) as valuation year" in {
       Seq(
-        date("2014-7-10") -> 2015,
-        date("2019-1-13") -> 2019,
-        date("2023-1-1") -> 2017
+        date("2014-07-10") -> 2015,
+        date("2019-01-13") -> 2019,
+        date("2023-01-01") -> 2017
       ) foreach { case (valued, period) =>
         AtedUtils.enforceFiveYearBoundary(valued, period) mustBe valued
       }

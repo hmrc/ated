@@ -27,7 +27,7 @@ import play.api.Logging
 import org.mongodb.scala._
 import uk.gov.hmrc.mongo._
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
-import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
+import models.mongo.MongoDateTimeFormats
 import uk.gov.hmrc.play.http.logging.Mdc.preservingMdc
 
 import java.util.concurrent.TimeUnit
@@ -79,7 +79,7 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
       IndexModel(ascending("atedRefNo"), IndexOptions().name("atedRefIndex")),
       IndexModel(ascending("timestamp"), IndexOptions().name("reliefDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
     ),
-    extraCodecs = Seq(Codecs.playFormatCodec(MongoJodaFormats.dateTimeFormat))
+    extraCodecs = Seq(Codecs.playFormatCodec(MongoDateTimeFormats.tolerantDateTimeFormat))
   ) with ReliefsMongoRepository with Logging {
 
   def updateTimeStamp(relief: ReliefsTaxAvoidance, date: ZonedDateTime): Future[ReliefCached] = {

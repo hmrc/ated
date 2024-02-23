@@ -16,10 +16,8 @@
 
 package models
 
-import java.time.format.DateTimeFormatter
 import java.time.ZonedDateTime
-import play.api.libs.json.{Format, Json, Reads, Writes, __}
-
+import play.api.libs.json.Json
 
 case class EditLiabilityReturnsResponse(mode: String,
                                         oldFormBundleNumber: String,
@@ -50,10 +48,5 @@ case class EditLiabilityReturnsResponseModel(processingDate: ZonedDateTime,
                                              accountBalance: BigDecimal)
 
 object EditLiabilityReturnsResponseModel {
-  val reads: Reads[ZonedDateTime] = Reads.at[String](__).map(dateTime => ZonedDateTime.parse(dateTime, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")))
-  val writes: Writes[ZonedDateTime] = Writes.at[String](__).contramap(_.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")))
-
-  implicit val datetimeFormat: Format[ZonedDateTime] = Format(reads, writes)
-
   implicit val formats = Json.format[EditLiabilityReturnsResponseModel]
 }

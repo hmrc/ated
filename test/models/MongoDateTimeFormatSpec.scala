@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package models
+package models.mongo
 
 import java.time.{ZonedDateTime, ZoneId, Instant}
 import org.scalatestplus.play.PlaySpec
@@ -26,7 +26,7 @@ class MongoDateTimeFormatSpec extends PlaySpec with GuiceOneServerPerSuite {
     "correctly parse an old string timestamp" in {
       val reads: JsResult[ZonedDateTime] = MongoDateTimeFormats.Implicits.mdDateTimeFormat.reads(JsString("1970-01-20T00:59:41.376Z"))
 
-      reads mustBe JsSuccess(ZonedDateTime.ofInstant(Instant.ofEpochMilli(1645181376L), ZoneId.of("UTC")))
+      reads mustBe JsSuccess(ZonedDateTime.ofInstant(Instant.ofEpochMilli(1645181376L), ZoneId.of("Z")))
     }
 
     "correctly parse an old int timestamp" in {

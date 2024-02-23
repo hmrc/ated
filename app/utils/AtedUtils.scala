@@ -54,7 +54,7 @@ object AtedUtils {
       lowestBound + (5 * ((taxYear - lowestBound - 1) / 5.0).floor.toInt)
     }
 
-    LocalDate.parse(s"$year-4-1")
+    LocalDate.of(year, 4, 1)
   }
 
   def extractName(authName: Option[Name]): String = authName.flatMap(_.name).getOrElse("No first name present")

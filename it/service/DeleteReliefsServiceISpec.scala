@@ -17,7 +17,7 @@ import scala.concurrent.Future
 class DeleteReliefsServiceISpec extends IntegrationSpec with AssertionHelpers with FutureAwaits {
   val deleteReliefsService: DeleteReliefsService = app.injector.instanceOf[DeleteReliefsService]
   val dateOneMinAgo: ZonedDateTime =  ZonedDateTime.now(ZoneId.of("UTC")).minusMinutes(1)
-  val date59DaysAgo: ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC")).withHourOfDay(0).minusDays(59)
+  val date59DaysAgo: ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC")).withHour(0).minusDays(59)
   val date60DaysAgo: ZonedDateTime = date59DaysAgo.minusDays(1)
   val date60DaysHrsMinsAgo: ZonedDateTime = date59DaysAgo.minusDays(1).minusHours(22).minusMinutes(59)
   val date61DaysAgo: ZonedDateTime = date59DaysAgo.minusDays(2)

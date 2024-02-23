@@ -121,7 +121,7 @@ object ReliefsTaxAvoidance {
   implicit val formats: OFormat[ReliefsTaxAvoidance] = OFormat(reliefTaxAvoidanceReads, reliefTaxAvoidanceWrites)
 
   val (mongoReads, mongoWrites) = {
-    import MongoDateTimeFormats.Implicits._
+    import mongo.MongoDateTimeFormats.Implicits._
 
     val mongoReliefReads: Reads[ReliefsTaxAvoidance] = (
       (JsPath \ "atedRefNo").read[String] and

@@ -21,7 +21,7 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
 
   val deleteLiabilityReturnsService: DeleteLiabilityReturnsService = app.injector.instanceOf[DeleteLiabilityReturnsService]
   val justAdded: ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC")).minusMinutes(1)
-  val date59DaysAgo: ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC")).withHourOfDay(0).minusDays(59)
+  val date59DaysAgo: ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC")).withHour(0).minusDays(59)
   val date60DaysAgo: ZonedDateTime = date59DaysAgo.minusDays(1)
   val date60DaysHrsMinsAgo: ZonedDateTime = date59DaysAgo.minusDays(1).minusHours(23).minusMinutes(59)
   val date61DaysAgo: ZonedDateTime = date59DaysAgo.minusDays(2)
@@ -38,7 +38,7 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
     val formBundleAddress = FormBundleAddress("line1", "line2", None, None, None, "GB")
     val x = FormBundlePropertyDetails(Some("12345678"), formBundleAddress, additionalDetails = Some("supportingInfo"))
     val lineItem1 = FormBundleProperty(BigDecimal(5000000), LocalDate.of(periodKey, 4, 1), LocalDate.of(periodKey, 8, 31), "Liability", None)
-    val lineItem2 = FormBundleProperty(BigDecimal(5000000), LocalDate.of(periodKey, 9, 1), new LocalDate(s"${periodKey + 1}-03-31"), "Relief", Some("Relief"))
+    val lineItem2 = FormBundleProperty(BigDecimal(5000000), LocalDate.of(periodKey, 9, 1), LocalDate.of(periodKey + 1, 3, 31), "Relief", Some("Relief"))
 
     FormBundleReturn(periodKey = periodKey.toString,
       propertyDetails = x,

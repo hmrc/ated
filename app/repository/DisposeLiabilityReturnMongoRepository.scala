@@ -29,7 +29,7 @@ import uk.gov.hmrc.crypto.{ApplicationCrypto, Encrypter, Decrypter}
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.play.http.logging.Mdc.preservingMdc
-import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
+import models.mongo.MongoDateTimeFormats
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -80,7 +80,7 @@ class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: Servi
       IndexModel(ascending("atedRefNo"), IndexOptions().name("atedRefIndex")),
       IndexModel(ascending("timestamp"), IndexOptions().name("dispLiabilityDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
     ),
-    extraCodecs = Seq(Codecs.playFormatCodec(MongoJodaFormats.dateTimeFormat))
+    extraCodecs = Seq(Codecs.playFormatCodec(MongoDateTimeFormats.tolerantDateTimeFormat))
   ) with DisposeLiabilityReturnMongoRepository with Logging {
 
   override def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: ZonedDateTime): Future[DisposeLiabilityReturnDelete] = {

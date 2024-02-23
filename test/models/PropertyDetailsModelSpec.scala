@@ -77,7 +77,7 @@ class PropertyDetailsModelSpec extends PlaySpec with MockitoSugar {
           |  "isPropertyRevalued": true,
           |  "revaluedValue": "32432423",
           |  "revaluedDate": "2014-05-25",
-          |  "partAcqDispDate": "12345678",
+          |  "partAcqDispDate": "2014-10-25",
           |  "isOwnedBeforePolicyYear": true,
           |  "ownedBeforePolicyYearValue": "1599999",
           |  "isNewBuild": true,
@@ -85,7 +85,7 @@ class PropertyDetailsModelSpec extends PlaySpec with MockitoSugar {
           |  "newBuildDate": "2014-05-25",
           |  "localAuthRegDate": "2014-10-25",
           |  "notNewBuildValue": "4646465",
-          |  "notNewBuildDate": "12345678",
+          |  "notNewBuildDate": "2014-10-25",
           |  "isValuedByAgent": true,
           |  "hasValueChanged": true
           |}""".stripMargin
@@ -103,7 +103,7 @@ class PropertyDetailsModelSpec extends PlaySpec with MockitoSugar {
           |  "isPropertyRevalued": true,
           |  "revaluedValue": "32432423",
           |  "revaluedDate": "2014-05-25",
-          |  "partAcqDispDate": "12345678",
+          |  "partAcqDispDate": "2014-05-25",
           |  "isOwnedBefore2012": true,
           |  "ownedBefore2012Value": "1599999",
           |  "isNewBuild": true,
@@ -111,7 +111,7 @@ class PropertyDetailsModelSpec extends PlaySpec with MockitoSugar {
           |  "newBuildDate": "2014-05-25",
           |  "localAuthRegDate": "2014-10-25",
           |  "notNewBuildValue": "4646465",
-          |  "notNewBuildDate": "12345678",
+          |  "notNewBuildDate": "2014-05-25",
           |  "isValuedByAgent": true,
           |  "hasValueChanged": true
           |}""".stripMargin
@@ -129,7 +129,7 @@ class PropertyDetailsModelSpec extends PlaySpec with MockitoSugar {
           |  "isPropertyRevalued": true,
           |  "revaluedValue": "32432423",
           |  "revaluedDate": "2014-05-25",
-          |  "partAcqDispDate": "12345678",
+          |  "partAcqDispDate": "2014-05-25",
           |  "isOwnedBeforePolicyYear": true,
           |  "ownedBefore2012Value": "1599999",
           |  "isNewBuild": true,
@@ -137,7 +137,7 @@ class PropertyDetailsModelSpec extends PlaySpec with MockitoSugar {
           |  "newBuildDate": "2014-05-25",
           |  "localAuthRegDate": "2014-10-25",
           |  "notNewBuildValue": "4646465",
-          |  "notNewBuildDate": "12345678",
+          |  "notNewBuildDate": "2014-05-25",
           |  "isValuedByAgent": true,
           |  "hasValueChanged": true
           |}""".stripMargin
@@ -155,13 +155,13 @@ class PropertyDetailsModelSpec extends PlaySpec with MockitoSugar {
           |  "isPropertyRevalued": true,
           |  "revaluedValue": "32432423",
           |  "revaluedDate": "2014-05-25",
-          |  "partAcqDispDate": "12345678",
+          |  "partAcqDispDate": "2014-05-25",
           |  "isNewBuild": true,
           |  "newBuildValue": "12345678",
           |  "newBuildDate": "2014-05-25",
           |  "localAuthRegDate": "2014-10-25",
           |  "notNewBuildValue": "4646465",
-          |  "notNewBuildDate": "12345678",
+          |  "notNewBuildDate": "2014-05-25",
           |  "isValuedByAgent": true,
           |  "hasValueChanged": true
           |}""".stripMargin
@@ -179,7 +179,7 @@ class PropertyDetailsModelSpec extends PlaySpec with MockitoSugar {
           |  "isPropertyRevalued": true,
           |  "revaluedValue": "32432423",
           |  "revaluedDate": "2014-05-25",
-          |  "partAcqDispDate": "12345678",
+          |  "partAcqDispDate": "2014-05-25",
           |  "isOwnedBeforePolicyYear": true,
           |  "ownedBeforePolicyYearValue": "1599999",
           |  "isOwnedBefore2012": false,
@@ -189,7 +189,7 @@ class PropertyDetailsModelSpec extends PlaySpec with MockitoSugar {
           |  "newBuildDate": "2014-05-25",
           |  "localAuthRegDate": "2014-10-25",
           |  "notNewBuildValue": "4646465",
-          |  "notNewBuildDate": "12345678",
+          |  "notNewBuildDate": "2014-05-25",
           |  "isValuedByAgent": true,
           |  "hasValueChanged": true
           |}""".stripMargin

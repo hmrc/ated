@@ -30,7 +30,7 @@ import org.mongodb.scala._
 import uk.gov.hmrc.mongo._
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.play.http.logging.Mdc.preservingMdc
-import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
+import models.mongo.MongoDateTimeFormats
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
@@ -82,7 +82,7 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
       IndexModel(ascending("atedRefNo"), IndexOptions().name("atedRefIndex")),
       IndexModel(ascending("timestamp"), IndexOptions().name("propDetailsDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
     ),
-    extraCodecs = Seq(Codecs.playFormatCodec(MongoJodaFormats.dateTimeFormat))
+    extraCodecs = Seq(Codecs.playFormatCodec(MongoDateTimeFormats.tolerantDateTimeFormat))
   ) with PropertyDetailsMongoRepository with Logging {
 
   def updateTimeStamp(propertyDetails: PropertyDetails, date: ZonedDateTime): Future[PropertyDetailsCache] = {
@@ -106,9 +106,9 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
 
   def deleteExpired60PropertyDetails(batchSize: Int): Future[Int] = {
     val dayThreshold = 61
-    val jodaDateTimeThreshold = ZonedDateTime.now(ZoneId.of("UTC")).withHour(0).minusDays(dayThreshold)
+    val dateTimeThreshold = ZonedDateTime.now(ZoneId.of("UTC")).withHour(0).minusDays(dayThreshold)
 
-    val query2 = lte("timeStamp", jodaDateTimeThreshold)
+    val query2 = lte("timeStamp", dateTimeThreshold)
 
     val foundPropertyDetails: Future[Option[Seq[PropertyDetails]]] = collection.find(query2).batchSize(batchSize).collect().toFutureOption()
 
