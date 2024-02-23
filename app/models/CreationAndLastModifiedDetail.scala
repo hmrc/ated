@@ -18,6 +18,7 @@ package models
 
 import java.time.{ZonedDateTime, ZoneId}
 import play.api.libs.json.Json
+import models.mongo.MongoDateTimeFormats.Implicits._
 
 case class CreationAndLastModifiedDetail(
                                           createdAt: ZonedDateTime   = ZonedDateTime.now(ZoneId.of("UTC")),

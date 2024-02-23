@@ -46,7 +46,7 @@ trait NotificationService extends AuthFunctionality with Retrievals {
               "first_name" -> recipientFirstName,
               "last_name" -> recipientLastName,
               "company_name" -> companyName,
-              "date" -> LocalDate.now().format(DateTimeFormatter.ofPattern("d MMMM yyyy")))
+              "date" -> LocalDate.now().format(DateTimeFormatter.ofPattern("d LLLL yyyy")))
             emailConnector.sendTemplatedEmail(emailAddress, template, params = params ++ reference)
           case _ => {
             Future.successful(EmailNotSent)

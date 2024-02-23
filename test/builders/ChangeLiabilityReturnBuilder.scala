@@ -232,8 +232,7 @@ object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite
 
   def generateEditLiabilityReturnResponse(oldFormBundleNo: String) = {
     val liability = EditLiabilityReturnsResponse("Post", oldFormBundleNo, Some("1234567890123"), liabilityAmount = BigDecimal(2000.00), amountDueOrRefund = BigDecimal(-500.00), paymentReference = Some("payment-ref-123"))
-    //EditLiabilityReturnsResponseModel(processingDate = ZonedDateTime.of(2016, 4, 20, 12, 41, 41, 839, ZoneId.ofOffset("GMT", ZoneOffset.ofHours(1))), liabilityReturnResponse = Seq(liability), accountBalance = BigDecimal(1200.00))
-    EditLiabilityReturnsResponseModel(processingDate = ZonedDateTime.of(2016, 4, 20, 12, 41, 41, 839, ZoneId.ofOffset("GMT", ZoneOffset.ofHours(0))), liabilityReturnResponse = Seq(liability), accountBalance = BigDecimal(1200.00))
+    EditLiabilityReturnsResponseModel(processingDate = ZonedDateTime.of(2016, 4, 20, 12, 41, 41, 839, ZoneId.ofOffset("UTC", ZoneOffset.ofHours(0))), liabilityReturnResponse = Seq(liability), accountBalance = BigDecimal(1200.00))
   }
 
 }
