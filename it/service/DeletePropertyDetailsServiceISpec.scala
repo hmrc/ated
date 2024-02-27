@@ -2,10 +2,10 @@ package service
 
 import helpers.{AssertionHelpers, IntegrationSpec}
 import models.{BankDetailsModel, PropertyDetails, PropertyDetailsAddress}
-import org.joda.time.{DateTime, DateTimeZone}
+import java.time.{ZonedDateTime, ZoneId}
 import play.api.http.Status._
-import play.api.libs.json.JodaWrites._
-import play.api.libs.json.JodaReads._
+import play.api.libs.json.Writes._
+import play.api.libs.json.Reads._
 import play.api.libs.json.{Format, JsValue, Json, OFormat}
 import play.api.libs.ws.WSResponse
 import play.api.test.FutureAwaits
@@ -22,12 +22,12 @@ class DeletePropertyDetailsServiceISpec extends IntegrationSpec with AssertionHe
   implicit val formats: OFormat[PropertyDetails] = Json.format[PropertyDetails]
 
   val documentUpdateService: DeletePropertyDetailsService = app.injector.instanceOf[DeletePropertyDetailsService]
-  val dateOneMinAgo: DateTime = DateTime.now(DateTimeZone.UTC).minusMinutes(1)
-  val date59DaysAgo: DateTime = DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(59)
-  val date60DaysAgo: DateTime = date59DaysAgo.minusDays(1)
-  val date60DaysHrsMinsAgo: DateTime = date59DaysAgo.minusDays(1).minusHours(23).minusMinutes(59)
-  val date61DaysAgo: DateTime = date59DaysAgo.minusDays(2)
-  val date61DaysMinsAgo: DateTime = date59DaysAgo.minusDays(2).minusMinutes(1)
+  val dateOneMinAgo: ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC")).minusMinutes(1)
+  val date59DaysAgo: ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC")).withHour(0).minusDays(59)
+  val date60DaysAgo: ZonedDateTime = date59DaysAgo.minusDays(1)
+  val date60DaysHrsMinsAgo: ZonedDateTime = date59DaysAgo.minusDays(1).minusHours(23).minusMinutes(59)
+  val date61DaysAgo: ZonedDateTime = date59DaysAgo.minusDays(2)
+  val date61DaysMinsAgo: ZonedDateTime = date59DaysAgo.minusDays(2).minusMinutes(1)
 
   override def additionalConfig(a: Map[String, Any]): Map[String, Any] = Map(
     "schedules.delete-property-details-job.cleardown.batchSize" -> 2

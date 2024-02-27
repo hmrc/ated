@@ -18,7 +18,7 @@ package utils
 
 import builders.ReliefBuilder
 import models.{Reliefs, TaxAvoidance}
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import org.scalatestplus.play.PlaySpec
 
 import scala.collection.Seq
@@ -42,7 +42,7 @@ class ReliefUtilsSpec extends PlaySpec with ReliefConstants {
     }
 
     "Return SubmitReliefsRequest if we have rental Business selected" in {
-      val startDate = new LocalDate("2015-10-21")
+      val startDate = LocalDate.of(2015, 10, 21)
       val reliefs = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey,
         new Reliefs(periodKey = periodKey, rentalBusiness = true, rentalBusinessDate = Some(startDate))
       )

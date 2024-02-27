@@ -19,7 +19,7 @@ package services
 import builders.PropertyDetailsBuilder
 import connectors.EtmpReturnsConnector
 import models._
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
@@ -102,7 +102,7 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuit
        when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val testPropertyDetailsDatesLiable = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
+      val testPropertyDetailsDatesLiable = PropertyDetailsDatesLiable(LocalDate.of(1970, 1, 1), LocalDate.of(1970, 1, 1))
       val testPropertyDetailsPeriod = IsFullTaxPeriod(updatedpropertyDetails4.period.flatMap(_.isFullPeriod).getOrElse(false), Some(testPropertyDetailsDatesLiable))
 
       val result = testPropertyDetailsService.cacheDraftFullTaxPeriod(accountRef,
@@ -120,7 +120,7 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuit
        when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val testPropertyDetailsDatesLiable = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
+      val testPropertyDetailsDatesLiable = PropertyDetailsDatesLiable(LocalDate.of(1970, 1, 1), LocalDate.of(1970, 1, 1))
       val isFullPeriod = IsFullTaxPeriod(propertyDetails3.period.flatMap(_.isFullPeriod.map(x => !x)).getOrElse(false), Some(testPropertyDetailsDatesLiable))
 
       val result = testPropertyDetailsService.cacheDraftFullTaxPeriod(accountRef,
@@ -173,7 +173,7 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuit
        when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val testPropertyDetailsDatesLiable = PropertyDetailsDatesLiable(new LocalDate("1970-01-01"), new LocalDate("1970-01-01"))
+      val testPropertyDetailsDatesLiable = PropertyDetailsDatesLiable(LocalDate.of(1970, 1, 1), LocalDate.of(1970, 1, 1))
       val isFullPeriod = IsFullTaxPeriod(propertyDetails3.period.flatMap(_.isFullPeriod).getOrElse(false), Some(testPropertyDetailsDatesLiable))
 
       val result = testPropertyDetailsService.cacheDraftFullTaxPeriod(accountRef,
@@ -251,8 +251,8 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuit
 
       val liabilityPeriod = propertyDetails3.period.flatMap(_.liabilityPeriods.headOption)
       val updatedValue = PropertyDetailsDatesLiable(
-        liabilityPeriod.map(_.startDate).getOrElse(new LocalDate("1970-01-01")),
-        liabilityPeriod.map(_.endDate).getOrElse(new LocalDate("1970-01-01"))
+        liabilityPeriod.map(_.startDate).getOrElse(LocalDate.of(1970, 1, 1)),
+        liabilityPeriod.map(_.endDate).getOrElse(LocalDate.of(1970, 1, 1))
       )
       val result = testPropertyDetailsService.cacheDraftDatesLiable(accountRef,
         updatedpropertyDetails4.id, updatedValue)
@@ -269,7 +269,7 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuit
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedValue = PropertyDetailsDatesLiable(
-        new LocalDate("2999-02-03"),new LocalDate("2999-03-04")
+        LocalDate.of(2999, 2, 3),LocalDate.of(2999, 3, 4)
       )
       val result = testPropertyDetailsService.cacheDraftDatesLiable(accountRef,
         propertyDetails3.id, updatedValue)
@@ -300,7 +300,7 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuit
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedValue = PropertyDetailsDatesLiable(
-        new LocalDate("2999-02-03"),new LocalDate("2999-03-04")
+        LocalDate.of(2999, 2, 3),LocalDate.of(2999, 3, 4)
       )
       val result = testPropertyDetailsService.cacheDraftDatesLiable(accountRef,
         propertyDetails3.id, updatedValue)
@@ -323,8 +323,8 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuit
 
       val liabilityPeriod = propertyDetails3.period.flatMap(_.liabilityPeriods.headOption)
       val updatedValue = PropertyDetailsDatesLiable(
-        liabilityPeriod.map(_.startDate).getOrElse(new LocalDate("1970-01-01")),
-        liabilityPeriod.map(_.endDate).getOrElse(new LocalDate("1970-01-01"))
+        liabilityPeriod.map(_.startDate).getOrElse(LocalDate.of(1970, 1, 1)),
+        liabilityPeriod.map(_.endDate).getOrElse(LocalDate.of(1970, 1, 1))
       )
       val result = testPropertyDetailsService.cacheDraftDatesLiable(accountRef,
         propertyDetails3.id, updatedValue)
@@ -358,7 +358,7 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuit
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedPeriod = PropertyDetailsDatesLiable(
-        new LocalDate("2999-02-03"),new LocalDate("2999-03-04")
+        LocalDate.of(2999, 2, 3),LocalDate.of(2999, 3, 4)
       )
       val result = testPropertyDetailsService.addDraftDatesLiable(accountRef,
         propertyDetails3.id, updatedPeriod)
@@ -380,7 +380,7 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuit
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedPeriod = PropertyDetailsDatesLiable(
-        new LocalDate("2999-02-03"),new LocalDate("2999-03-04")
+        LocalDate.of(2999, 2, 3),LocalDate.of(2999, 3, 4)
       )
       val result = testPropertyDetailsService.addDraftDatesLiable(accountRef,
         propertyDetails3.id, updatedPeriod)
@@ -432,7 +432,7 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuit
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedPeriod = PropertyDetailsDatesInRelief(
-        new LocalDate("2999-02-03"),new LocalDate("2999-03-04")
+        LocalDate.of(2999, 2, 3),LocalDate.of(2999, 3, 4)
       )
       val result = testPropertyDetailsService.addDraftDatesInRelief(accountRef,
         propertyDetails3.id, updatedPeriod)
@@ -453,7 +453,7 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuit
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedPeriod = PropertyDetailsDatesInRelief(
-        new LocalDate("2999-02-03"),new LocalDate("2999-03-04")
+        LocalDate.of(2999, 2, 3),LocalDate.of(2999, 3, 4)
       )
       val result = testPropertyDetailsService.addDraftDatesInRelief(accountRef,
         propertyDetails3.id, updatedPeriod)

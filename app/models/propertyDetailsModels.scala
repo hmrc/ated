@@ -16,11 +16,11 @@
 
 package models
 
-import org.joda.time.{DateTime, DateTimeZone, LocalDate}
+import java.time.{ZonedDateTime, ZoneId, LocalDate}
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
-import play.api.libs.json.JodaWrites._
-import play.api.libs.json.JodaReads._
+import play.api.libs.json.Writes._
+import play.api.libs.json.Reads._
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 case class PropertyDetailsAddress(line_1: String, line_2: String, line_3: Option[String], line_4: Option[String],
@@ -289,7 +289,7 @@ case class PropertyDetailsCalculated(valuationDateToUse: Option[LocalDate] = Non
                                      reliefPeriods: Seq[CalculatedPeriod] = Nil,
                                      liabilityAmount: Option[BigDecimal] = None,
                                      amountDueOrRefund: Option[BigDecimal] = None,
-                                     timeStamp: DateTime = DateTime.now(DateTimeZone.UTC))
+                                     timeStamp: ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC")))
 
 object PropertyDetailsCalculated {
   implicit val formats = Json.format[PropertyDetailsCalculated]

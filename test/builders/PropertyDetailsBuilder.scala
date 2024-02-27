@@ -17,7 +17,7 @@
 package builders
 
 import models._
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 
@@ -27,7 +27,7 @@ object PropertyDetailsBuilder  extends PlaySpec with GuiceOneServerPerSuite {
     Some(new PropertyDetailsValue(anAcquisition = Some(true),
       isPropertyRevalued = Some(true),
       revaluedValue = Some(BigDecimal(1111.11)),
-      revaluedDate = Some(new LocalDate("1970-01-01"))
+      revaluedDate = Some(LocalDate.of(1970,1,1))
     ))
   }
 
@@ -37,14 +37,14 @@ object PropertyDetailsBuilder  extends PlaySpec with GuiceOneServerPerSuite {
       anAcquisition = Some(true),
       isPropertyRevalued = Some(true),
       revaluedValue = Some(BigDecimal(1111.11)),
-      revaluedDate = Some(new LocalDate("1970-01-01")),
+      revaluedDate = Some(LocalDate.of(1970,1,1)),
       isOwnedBeforePolicyYear = Some(true),
       ownedBeforePolicyYearValue = Some(BigDecimal(1111.11)),
       isNewBuild =  Some(true),
       newBuildValue = Some(BigDecimal(1111.11)),
-      newBuildDate = Some(new LocalDate("1970-01-01")),
+      newBuildDate = Some(LocalDate.of(1970,1,1)),
       notNewBuildValue = Some(BigDecimal(1111.11)),
-      notNewBuildDate = Some(new LocalDate("1970-01-01")),
+      notNewBuildDate = Some(LocalDate.of(1970,1,1)),
       isValuedByAgent =  Some(true)
     ))
   }
@@ -54,8 +54,8 @@ object PropertyDetailsBuilder  extends PlaySpec with GuiceOneServerPerSuite {
   }
 
   def getPropertyDetailsPeriodFull(periodKey : Int = 2015): Option[PropertyDetailsPeriod] = {
-    val liabilityPeriods = List(LineItem("Liability",new LocalDate(s"$periodKey-4-1"), new LocalDate(s"$periodKey-8-31")))
-    val reliefPeriods = List(LineItem("Relief",new LocalDate(s"$periodKey-9-1"), new LocalDate(s"${periodKey+1}-3-31"), Some("Relief")))
+    val liabilityPeriods = List(LineItem("Liability",LocalDate.of(periodKey, 4, 1), LocalDate.of(periodKey, 8, 31)))
+    val reliefPeriods = List(LineItem("Relief",LocalDate.of(periodKey, 9, 1), LocalDate.of(periodKey+1, 3, 31), Some("Relief")))
     Some(new PropertyDetailsPeriod(
       isFullPeriod = Some(false),
       liabilityPeriods = liabilityPeriods,
@@ -77,24 +77,24 @@ object PropertyDetailsBuilder  extends PlaySpec with GuiceOneServerPerSuite {
   }
 
   def getPropertyDetailsCalculated(liabilityAmount: Option[BigDecimal] = None): Option[PropertyDetailsCalculated] = {
-    val liabilityPeriods = List(CalculatedPeriod(BigDecimal(1111.11), new LocalDate("2015-4-1"), new LocalDate("2015-8-31"), "Liability"))
-    val reliefPeriods = List(CalculatedPeriod(BigDecimal(1111.11),new LocalDate("2015-9-1"), new LocalDate("2016-3-31"), "Relief", Some("Relief")))
+    val liabilityPeriods = List(CalculatedPeriod(BigDecimal(1111.11), LocalDate.of(2015,4,1), LocalDate.of(2015,8,31), "Liability"))
+    val reliefPeriods = List(CalculatedPeriod(BigDecimal(1111.11),LocalDate.of(2015,9,1), LocalDate.of(2016,3,31), "Relief", Some("Relief")))
     Some(new PropertyDetailsCalculated(liabilityAmount = liabilityAmount,
       liabilityPeriods = liabilityPeriods,
       reliefPeriods = reliefPeriods,
       professionalValuation = Some(true),
-      valuationDateToUse = Some(new LocalDate("1970-01-01"))
+      valuationDateToUse = Some(LocalDate.of(1970,1,1))
     ))
   }
 
   def getPropertyDetailsCalculatedNoValuation(liabilityAmount: Option[BigDecimal] = None): Option[PropertyDetailsCalculated] = {
-    val liabilityPeriods = List(CalculatedPeriod(BigDecimal(1111.11), new LocalDate("2015-4-1"), new LocalDate("2015-8-31"), "Liability"))
+    val liabilityPeriods = List(CalculatedPeriod(BigDecimal(1111.11), LocalDate.of(2015,4,1), LocalDate.of(2015,8,31), "Liability"))
     val reliefPeriods = Nil
     Some(new PropertyDetailsCalculated(liabilityAmount = liabilityAmount,
       liabilityPeriods = liabilityPeriods,
       reliefPeriods = reliefPeriods,
       professionalValuation = Some(false),
-      acquistionDateToUse = Some(new LocalDate("2015-4-1"))
+      acquistionDateToUse = Some(LocalDate.of(2015,4,1))
     ))
   }
 

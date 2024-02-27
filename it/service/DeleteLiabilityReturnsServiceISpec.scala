@@ -2,7 +2,7 @@ package service
 
 import helpers.{AssertionHelpers, IntegrationSpec}
 import models._
-import org.joda.time.{DateTime, DateTimeZone, LocalDate}
+import java.time.{ZonedDateTime, ZoneId, LocalDate}
 import play.api.http.Status._
 import play.api.libs.json.{Format, Json, OFormat}
 import play.api.libs.ws.WSResponse
@@ -20,12 +20,12 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
   implicit val formats: OFormat[DisposeLiability] = DisposeLiability.formats
 
   val deleteLiabilityReturnsService: DeleteLiabilityReturnsService = app.injector.instanceOf[DeleteLiabilityReturnsService]
-  val justAdded: DateTime = DateTime.now(DateTimeZone.UTC).minusMinutes(1)
-  val date59DaysAgo: DateTime = DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(59)
-  val date60DaysAgo: DateTime = date59DaysAgo.minusDays(1)
-  val date60DaysHrsMinsAgo: DateTime = date59DaysAgo.minusDays(1).minusHours(23).minusMinutes(59)
-  val date61DaysAgo: DateTime = date59DaysAgo.minusDays(2)
-  val date61DaysMinsAgo: DateTime = date59DaysAgo.minusDays(2).minusMinutes(1)
+  val justAdded: ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC")).minusMinutes(1)
+  val date59DaysAgo: ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC")).withHour(0).minusDays(59)
+  val date60DaysAgo: ZonedDateTime = date59DaysAgo.minusDays(1)
+  val date60DaysHrsMinsAgo: ZonedDateTime = date59DaysAgo.minusDays(1).minusHours(23).minusMinutes(59)
+  val date61DaysAgo: ZonedDateTime = date59DaysAgo.minusDays(2)
+  val date61DaysMinsAgo: ZonedDateTime = date59DaysAgo.minusDays(2).minusMinutes(1)
   val periodKey = 2019
 
   override def additionalConfig(a: Map[String, Any]): Map[String, Any] = Map(
@@ -37,19 +37,19 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
   def generateFormBundleResponse(periodKey: Int): FormBundleReturn = {
     val formBundleAddress = FormBundleAddress("line1", "line2", None, None, None, "GB")
     val x = FormBundlePropertyDetails(Some("12345678"), formBundleAddress, additionalDetails = Some("supportingInfo"))
-    val lineItem1 = FormBundleProperty(BigDecimal(5000000), new LocalDate(s"$periodKey-04-01"), new LocalDate(s"$periodKey-08-31"), "Liability", None)
-    val lineItem2 = FormBundleProperty(BigDecimal(5000000), new LocalDate(s"$periodKey-09-01"), new LocalDate(s"${periodKey + 1}-03-31"), "Relief", Some("Relief"))
+    val lineItem1 = FormBundleProperty(BigDecimal(5000000), LocalDate.of(periodKey, 4, 1), LocalDate.of(periodKey, 8, 31), "Liability", None)
+    val lineItem2 = FormBundleProperty(BigDecimal(5000000), LocalDate.of(periodKey, 9, 1), LocalDate.of(periodKey + 1, 3, 31), "Relief", Some("Relief"))
 
     FormBundleReturn(periodKey = periodKey.toString,
       propertyDetails = x,
       dateOfAcquisition = None,
       valueAtAcquisition = None,
-      dateOfValuation = new LocalDate(s"$periodKey-05-05"),
+      dateOfValuation = LocalDate.of(periodKey, 5, 5),
       localAuthorityCode = None,
       professionalValuation = true,
       taxAvoidanceScheme = Some("taxAvoidanceScheme"),
       ninetyDayRuleApplies = true,
-      dateOfSubmission = new LocalDate(s"$periodKey-05-05"),
+      dateOfSubmission = LocalDate.of(periodKey, 5, 5),
       liabilityAmount = BigDecimal(123.23),
       paymentReference = "payment-ref-123",
       lineItem = Seq(lineItem1, lineItem2))

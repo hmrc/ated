@@ -19,7 +19,7 @@ package connectors
 import builders.TestAudit
 import metrics.ServiceMetrics
 import models._
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
@@ -177,7 +177,7 @@ class EtmpReturnsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
 
         val address = EtmpAddress("address-line-1", "address-line-2", None, None, "GB")
         val p = EtmpPropertyDetails(address = address)
-        val lineItem1 = EtmpLineItems(123456, new LocalDate("2015-02-03"), new LocalDate("2015-02-03"), "Liability")
+        val lineItem1 = EtmpLineItems(123456, LocalDate.of(2015, 2, 3), LocalDate.of(2015, 2, 3), "Liability")
         val editLiabReturnReq = EditLiabilityReturnsRequest(oldFormBundleNumber = "form-123",
           mode = "Pre-Calculation",
           periodKey = "2015",
@@ -203,7 +203,7 @@ class EtmpReturnsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
 
         val address = EtmpAddress("address-line-1", "address-line-2", None, None, "GB")
         val p = EtmpPropertyDetails(address = address)
-        val lineItem1 = EtmpLineItems(123456, new LocalDate("2015-02-03"), new LocalDate("2015-02-03"), "Liability")
+        val lineItem1 = EtmpLineItems(123456, LocalDate.of(2015, 2, 3), LocalDate.of(2015, 2, 3), "Liability")
         val editLiabReturnReq = EditLiabilityReturnsRequest(oldFormBundleNumber = "form-123", mode = "Pre-Calculation", periodKey = "2015", propertyDetails = p, dateOfValuation = LocalDate.now, professionalValuation = true, ninetyDayRuleApplies = true, lineItem = Seq(lineItem1))
         val editLiablityReturns = EditLiabilityReturnsRequestModel(acknowledgmentReference = SessionUtils.getUniqueAckNo, liabilityReturn = Seq(editLiabReturnReq))
 
@@ -221,7 +221,7 @@ class EtmpReturnsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
 
         val address = EtmpAddress("address-line-1", "address-line-2", None, None, "GB")
         val p = EtmpPropertyDetails(address = address)
-        val lineItem1 = EtmpLineItems(123456, new LocalDate("2015-02-03"), new LocalDate("2015-02-03"), "Liability")
+        val lineItem1 = EtmpLineItems(123456, LocalDate.of(2015, 2, 3), LocalDate.of(2015, 2, 3), "Liability")
         val editLiabReturnReq = EditLiabilityReturnsRequest(oldFormBundleNumber = "form-123", mode = "Pre-Calculation", periodKey = "2015", propertyDetails = p, dateOfValuation = LocalDate.now, professionalValuation = true, ninetyDayRuleApplies = true, lineItem = Seq(lineItem1))
         val editLiablityReturns = EditLiabilityReturnsRequestModel(acknowledgmentReference = SessionUtils.getUniqueAckNo, liabilityReturn = Seq(editLiabReturnReq))
 
@@ -239,7 +239,7 @@ class EtmpReturnsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
 
         val address = EtmpAddress("address-line-1", "address-line-2", None, None, "GB")
         val p = EtmpPropertyDetails(address = address)
-        val lineItem1 = EtmpLineItems(123456, new LocalDate("2015-02-03"), new LocalDate("2015-02-03"), "Liability")
+        val lineItem1 = EtmpLineItems(123456, LocalDate.of(2015, 2, 3), LocalDate.of(2015, 2, 3), "Liability")
         val editLiabReturnReq = EditLiabilityReturnsRequest(oldFormBundleNumber = "form-123", mode = "Pre-Calculation", periodKey = "2015", propertyDetails = p, dateOfValuation = LocalDate.now, professionalValuation = true, ninetyDayRuleApplies = true, lineItem = Seq(lineItem1))
         val editLiablityReturns = EditLiabilityReturnsRequestModel(acknowledgmentReference = SessionUtils.getUniqueAckNo, liabilityReturn = Seq(editLiabReturnReq))
 
@@ -260,7 +260,7 @@ class EtmpReturnsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
 
         val address = EtmpAddress("address-line-1", "address-line-2", None, None, "GB")
         val p = EtmpPropertyDetails(address = address)
-        val lineItem1 = EtmpLineItems(123456, new LocalDate("2015-02-03"), new LocalDate("2015-02-03"), "Liability")
+        val lineItem1 = EtmpLineItems(123456, LocalDate.of(2015, 2, 3), LocalDate.of(2015, 2, 3), "Liability")
         val editLiabReturnReq = EditLiabilityReturnsRequest(oldFormBundleNumber = "form-123", mode = "Pre-Calculation", periodKey = "2015", propertyDetails = p, dateOfValuation = LocalDate.now, professionalValuation = true, ninetyDayRuleApplies = true, lineItem = Seq(lineItem1))
         val editLiablityReturns = EditLiabilityReturnsRequestModel(acknowledgmentReference = SessionUtils.getUniqueAckNo, liabilityReturn = Seq(editLiabReturnReq))
 

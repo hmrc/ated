@@ -3,7 +3,7 @@ package service
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import helpers.{AssertionHelpers, IntegrationSpec}
 import models.{Reliefs, ReliefsTaxAvoidance, TaxAvoidance}
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import play.api.http.Status._
 import play.api.test.FutureAwaits
 import repository.{ReliefsMongoRepository, ReliefsMongoWrapper}
@@ -22,7 +22,7 @@ class ReliefsServiceISpec extends IntegrationSpec with AssertionHelpers with Fut
 
   def reliefTaxAvoidance(atedRefNo: String, periodKey: Int) = {
 
-    val startDate: LocalDate = new LocalDate(s"$periodKey-04-01")
+    val startDate: LocalDate = LocalDate.of(periodKey, 4, 1)
 
     ReliefsTaxAvoidance(
       atedRefNo = atedRefNo,

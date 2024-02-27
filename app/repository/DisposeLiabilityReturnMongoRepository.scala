@@ -18,7 +18,7 @@ package repository
 
 import metrics.{MetricsEnum, ServiceMetrics}
 import models.DisposeLiabilityReturn
-import org.joda.time.{DateTime, DateTimeZone}
+import java.time.{ZonedDateTime, ZoneId}
 import org.mongodb.scala._
 import org.mongodb.scala.model.Filters.{equal, _}
 import org.mongodb.scala.model.Indexes.ascending
@@ -29,7 +29,7 @@ import uk.gov.hmrc.crypto.{ApplicationCrypto, Encrypter, Decrypter}
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.play.http.logging.Mdc.preservingMdc
-import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
+import models.mongo.MongoDateTimeFormats
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -45,7 +45,7 @@ case object DisposeLiabilityReturnDeleteError extends DisposeLiabilityReturnDele
 trait DisposeLiabilityReturnMongoRepository extends PlayMongoRepository[DisposeLiabilityReturn] {
   def cacheDisposeLiabilityReturns(disposeLiabilityReturn: DisposeLiabilityReturn): Future[DisposeLiabilityReturnCache]
   def fetchDisposeLiabilityReturns(atedRefNo: String): Future[Seq[DisposeLiabilityReturn]]
-  def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: DateTime): Future[DisposeLiabilityReturnDelete]
+  def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: ZonedDateTime): Future[DisposeLiabilityReturnDelete]
   def deleteExpired60DayLiabilityReturns(batchSize: Int): Future[Int]
   def metrics: ServiceMetrics
 }
@@ -80,10 +80,10 @@ class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: Servi
       IndexModel(ascending("atedRefNo"), IndexOptions().name("atedRefIndex")),
       IndexModel(ascending("timestamp"), IndexOptions().name("dispLiabilityDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
     ),
-    extraCodecs = Seq(Codecs.playFormatCodec(MongoJodaFormats.dateTimeFormat))
+    extraCodecs = Seq(Codecs.playFormatCodec(MongoDateTimeFormats.tolerantDateTimeFormat))
   ) with DisposeLiabilityReturnMongoRepository with Logging {
 
-  override def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: DateTime): Future[DisposeLiabilityReturnDelete] = {
+  override def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: ZonedDateTime): Future[DisposeLiabilityReturnDelete] = {
     val query = and(equal("atedRefNo", liabilityReturn.atedRefNo), equal("id", liabilityReturn.id))
     val updateQuery = set("timeStamp", date)
 
@@ -104,9 +104,9 @@ class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: Servi
 
   def deleteExpired60DayLiabilityReturns(batchSize: Int): Future[Int] = {
     val dayThreshold = 61
-    val jodaDateTimeThreshold = DateTime.now(DateTimeZone.UTC).withHourOfDay(0).minusDays(dayThreshold)
+    val dateTimeThreshold = ZonedDateTime.now(ZoneId.of("UTC")).withHour(0).minusDays(dayThreshold)
 
-    val query2 = lte("timeStamp", jodaDateTimeThreshold)
+    val query2 = lte("timeStamp", dateTimeThreshold)
 
     val foundLiabilityReturns: Future[Option[Seq[DisposeLiabilityReturn]]] = collection.find(query2).batchSize(batchSize).collect().toFutureOption()
 
@@ -139,7 +139,7 @@ class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: Servi
   def cacheDisposeLiabilityReturns(disposeLiabilityReturn: DisposeLiabilityReturn): Future[DisposeLiabilityReturnCache] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryInsertDispLiability)
     val query = and(equal("atedRefNo", disposeLiabilityReturn.atedRefNo), equal("id", disposeLiabilityReturn.id))
-    val disposeLiabilityReturnTimestampUpdate = disposeLiabilityReturn.copy(timeStamp = DateTime.now(DateTimeZone.UTC))
+    val disposeLiabilityReturnTimestampUpdate = disposeLiabilityReturn.copy(timeStamp = ZonedDateTime.now(ZoneId.of("UTC")))
     val replaceOptions = ReplaceOptions().upsert(true)
 
     preservingMdc(

@@ -17,7 +17,7 @@
 package builders
 
 import models._
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 
@@ -28,15 +28,15 @@ object EtmpReturnsResponseModelBuilder extends PlaySpec with GuiceOneServerPerSu
     val safeId = "123Safe"
     val org = "OrganisationName"
 
-    val etmpReturn = EtmpReturn("12345", new LocalDate(s"$periodKey-05-05"),
-      new LocalDate(s"$periodKey-09-05"), new LocalDate(s"$periodKey-10-05"), 1000, "pay-123", true)
+    val etmpReturn = EtmpReturn("12345", LocalDate.of(periodKey.toInt, 5, 5),
+      LocalDate.of(periodKey.toInt, 9, 5), LocalDate.of(periodKey.toInt, 10, 5), 1000, "pay-123", true)
 
     val etmpPropertySummary = EtmpPropertySummary("abc", None, "line1", "line2", Seq(etmpReturn))
 
     val etmpLiabilityReturnSummary = EtmpLiabilityReturnSummary(Some(Seq(etmpPropertySummary)))
 
-    val etmpReliefReturnsSummary = EtmpReliefReturnsSummary("12345", new LocalDate(s"$periodKey-05-05"), "Farmhouses",
-      new LocalDate(s"$periodKey-09-05"), new LocalDate(s"$periodKey-10-05"), None, None)
+    val etmpReliefReturnsSummary = EtmpReliefReturnsSummary("12345", LocalDate.of(periodKey.toInt, 5, 5), "Farmhouses",
+      LocalDate.of(periodKey.toInt, 9, 5), LocalDate.of(periodKey.toInt, 10, 5), None, None)
 
     val etmpReturnData = EtmpReturnData(Some(Seq(etmpReliefReturnsSummary)), Some(Seq(etmpLiabilityReturnSummary)))
 
@@ -49,8 +49,8 @@ object EtmpReturnsResponseModelBuilder extends PlaySpec with GuiceOneServerPerSu
     val safeId = "123Safe"
     val org = "OrganisationName"
 
-    val etmpReturn = EtmpReturn("12345", new LocalDate(s"$periodKey-05-05"),
-      new LocalDate(s"$periodKey-09-05"), new LocalDate(s"$periodKey-10-05"), 1000, "pay-123", true)
+    val etmpReturn = EtmpReturn("12345", LocalDate.of(periodKey.toInt, 5, 5),
+      LocalDate.of(periodKey.toInt, 9, 5), LocalDate.of(periodKey.toInt, 10, 5), 1000, "pay-123", true)
 
     val etmpPropertySummary = EtmpPropertySummary("abc", None, "line1", "line2", Seq(etmpReturn))
 
@@ -69,8 +69,8 @@ object EtmpReturnsResponseModelBuilder extends PlaySpec with GuiceOneServerPerSu
 
     val etmpLiabilityReturnSummary = EtmpLiabilityReturnSummary(propertySummary = None)
 
-    val etmpReliefReturnsSummary = EtmpReliefReturnsSummary("12345", new LocalDate(s"$periodKey-05-05"), "Farmhouses",
-      new LocalDate(s"$periodKey-09-05"), new LocalDate(s"$periodKey-10-05"), None, None)
+    val etmpReliefReturnsSummary = EtmpReliefReturnsSummary("12345", LocalDate.of(periodKey.toInt, 5, 5), "Farmhouses",
+      LocalDate.of(periodKey.toInt, 9, 5), LocalDate.of(periodKey.toInt, 10, 5), None, None)
 
     val etmpReturnData = EtmpReturnData(Some(Seq(etmpReliefReturnsSummary)), Some(Seq(etmpLiabilityReturnSummary)))
 

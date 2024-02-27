@@ -18,8 +18,8 @@ package controllers
 
 import javax.inject.{Inject, Singleton}
 import models._
-import org.joda.time.LocalDate
-import play.api.libs.json.JodaReads._
+import java.time.LocalDate
+import play.api.libs.json.Reads._
 import play.api.libs.json.{Json, OFormat}
 import play.api.mvc.ControllerComponents
 import services.PropertyDetailsPeriodService

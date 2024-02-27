@@ -18,7 +18,7 @@ package controllers
 
 import builders.PropertyDetailsBuilder
 import models.{EditLiabilityReturnsResponseModel, PropertyDetails}
-import org.joda.time.DateTime
+import java.time.ZonedDateTime
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
@@ -144,7 +144,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
 
     "submitChangeLiabilityReturn" must {
       "for successful submit, return OK as response status" in new Setup {
-        val successResponse = EditLiabilityReturnsResponseModel(DateTime.now(), liabilityReturnResponse = Seq(), accountBalance = BigDecimal(0.00))
+        val successResponse = EditLiabilityReturnsResponseModel(ZonedDateTime.now(), liabilityReturnResponse = Seq(), accountBalance = BigDecimal(0.00))
         when(mockChangeLiabilityReturnService.submitChangeLiability(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, Json.toJson(successResponse), Map.empty[String, Seq[String]])))
         val result = controller.submitChangeLiabilityReturn(atedRefNo, formBundle1).apply(FakeRequest())
         status(result) must be(OK)
