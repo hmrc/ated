@@ -127,8 +127,8 @@ object ReliefsTaxAvoidance {
         (JsPath \ "periodKey").read[Int] and
         (JsPath \ "reliefs").read[Reliefs](Reliefs.mongoFormats) and
         (JsPath \ "taxAvoidance").read[TaxAvoidance] and
-        (JsPath \ "periodStartDate").read[LocalDate] and
-        (JsPath \ "periodEndDate").read[LocalDate]
+        (JsPath \ "periodStartDate").read[LocalDate](mongo.MongoDateTimeFormats.Implicits.mdLocalDateFormat) and
+        (JsPath \ "periodEndDate").read[LocalDate](mongo.MongoDateTimeFormats.Implicits.mdLocalDateFormat)
       )((atedRefNo, periodKey, reliefs, taxAvoidance, periodStartDate, periodEndDate) =>
       ReliefsTaxAvoidance(atedRefNo = atedRefNo, periodKey = periodKey, reliefs = reliefs, taxAvoidance = taxAvoidance,
         periodStartDate = periodStartDate, periodEndDate = periodEndDate))

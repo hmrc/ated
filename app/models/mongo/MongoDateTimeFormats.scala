@@ -40,11 +40,28 @@ trait MongoDateTimeFormats {
     Writes.at[String](__ \ "$date" \ "$numberLong")
       .contramap(_.toInstant.toEpochMilli.toString)
 
-  final val tolerantDateTimeFormat: Format[ZonedDateTime] =
-    Format(tolerantZonedDateTimeReads, zonedDateTimeWrites)
+  final val tolerantDateTimeFormat: Format[ZonedDateTime] = Format(tolerantZonedDateTimeReads, zonedDateTimeWrites)
+
+  final val tolerantLocalDateReads: Reads[LocalDate] = (js: JsValue) =>
+    (js \ "$date" \ "$numberLong").validate[String] match {
+      case _ @ JsError(_) =>
+        // Fall back to try and read date as string
+        js.validate[Long] match {
+          case _ @ JsError(_) =>
+            js.validate[String] match {
+              case _ @ JsSuccess(dt, pth) => JsSuccess(LocalDate.parse(dt), pth)
+              case err3 @ JsError(_) => err3
+            }
+          case _ @ JsSuccess(dt, pth) => JsSuccess(LocalDate.ofInstant(Instant.ofEpochMilli(dt), ZoneId.of("UTC")), pth)
+        }
+      case JsSuccess(dt, pth) => JsSuccess(LocalDate.ofInstant(Instant.ofEpochMilli(dt.toLong), ZoneId.of("UTC")), pth)
+    }
+
+  final val tolerantLocalDateFormat: Format[LocalDate] = Format(tolerantLocalDateReads, Writes.DefaultLocalDateWrites)
 
   trait Implicits extends MongoJavatimeFormats.Implicits {
     implicit val mdDateTimeFormat: Format[ZonedDateTime] = tolerantDateTimeFormat
+    implicit val mdLocalDateFormat: Format[LocalDate] = tolerantLocalDateFormat
   }
 
   object Implicits extends Implicits
