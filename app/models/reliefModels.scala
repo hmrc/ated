@@ -121,15 +121,14 @@ object ReliefsTaxAvoidance {
   implicit val formats: OFormat[ReliefsTaxAvoidance] = OFormat(reliefTaxAvoidanceReads, reliefTaxAvoidanceWrites)
 
   val (mongoReads, mongoWrites) = {
-    import mongo.MongoDateTimeFormats.Implicits._
 
     val mongoReliefReads: Reads[ReliefsTaxAvoidance] = (
       (JsPath \ "atedRefNo").read[String] and
         (JsPath \ "periodKey").read[Int] and
         (JsPath \ "reliefs").read[Reliefs](Reliefs.mongoFormats) and
         (JsPath \ "taxAvoidance").read[TaxAvoidance] and
-        (JsPath \ "periodStartDate").read[LocalDate] and
-        (JsPath \ "periodEndDate").read[LocalDate]
+        (JsPath \ "periodStartDate").read[LocalDate](mongo.MongoDateTimeFormats.Implicits.mdLocalDateFormat) and
+        (JsPath \ "periodEndDate").read[LocalDate](mongo.MongoDateTimeFormats.Implicits.mdLocalDateFormat)
       )((atedRefNo, periodKey, reliefs, taxAvoidance, periodStartDate, periodEndDate) =>
       ReliefsTaxAvoidance(atedRefNo = atedRefNo, periodKey = periodKey, reliefs = reliefs, taxAvoidance = taxAvoidance,
         periodStartDate = periodStartDate, periodEndDate = periodEndDate))
@@ -141,7 +140,7 @@ object ReliefsTaxAvoidance {
         (JsPath \ "taxAvoidance").write[TaxAvoidance] and
         (JsPath \ "periodStartDate").write[LocalDate] and
         (JsPath \ "periodEndDate").write[LocalDate] and
-        (JsPath \ "timeStamp").write[ZonedDateTime]
+        (JsPath \ "timeStamp").write[ZonedDateTime](mongo.MongoDateTimeFormats.Implicits.mdDateTimeFormat)
       )(reliefsTaxAvoidance => (reliefsTaxAvoidance.atedRefNo,reliefsTaxAvoidance.periodKey, reliefsTaxAvoidance.reliefs,
       reliefsTaxAvoidance.taxAvoidance, reliefsTaxAvoidance.periodStartDate, reliefsTaxAvoidance.periodEndDate, reliefsTaxAvoidance.timeStamp))
 

@@ -16,7 +16,7 @@
 
 package models.mongo
 
-import java.time.{ZonedDateTime, ZoneId, Instant}
+import java.time.{LocalDate, ZonedDateTime, ZoneId, Instant}
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsNumber, JsObject, JsResult, JsString, JsSuccess, Json}
@@ -45,6 +45,24 @@ class MongoDateTimeFormatSpec extends PlaySpec with GuiceOneServerPerSuite {
       val reads: JsResult[ZonedDateTime] = MongoDateTimeFormats.Implicits.mdDateTimeFormat.reads(jsObject)
 
       reads mustBe JsSuccess(ZonedDateTime.ofInstant(Instant.ofEpochMilli(1645181376L), ZoneId.of("UTC")))
+    }
+
+    "correctly Read LocalDate in either format" in {
+      val jsObject: JsObject = Json.obj(
+        "$date" -> Json.obj(
+          "$numberLong" -> "1645181376"
+        )
+      )
+
+      val altJsObject: JsString = JsString("1970-01-20")
+
+      val reads: JsResult[LocalDate] = MongoDateTimeFormats.Implicits.mdLocalDateFormat.reads(jsObject)
+
+      val altReads: JsResult[LocalDate] = MongoDateTimeFormats.Implicits.mdLocalDateFormat.reads(altJsObject)
+
+      reads mustBe JsSuccess(LocalDate.ofInstant(Instant.ofEpochMilli(1645181376L), ZoneId.of("UTC")))
+
+      altReads mustBe JsSuccess(LocalDate.ofInstant(Instant.ofEpochMilli(1645181376L), ZoneId.of("UTC")))
     }
   }
 }
