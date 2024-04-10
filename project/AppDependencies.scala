@@ -1,19 +1,19 @@
-import sbt._
+import sbt.*
 
 object AppDependencies {
 
   import play.sbt.PlayImport._
   import play.core.PlayVersion
 
-  private val bootstrapVersion = "7.23.0"
+  private val bootstrapVersion = "8.5.0"
 
   val compile: Seq[ModuleID] = Seq(
     ws,
-		"com.enragedginger" %% "akka-quartz-scheduler"      % "1.9.3-akka-2.6.x",
-    "uk.gov.hmrc"       %% "bootstrap-backend-play-28"  % bootstrapVersion,
-    "uk.gov.hmrc"       %% "domain"                     % "8.3.0-play-28",
-    "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-28"         % "1.7.0",
-    "uk.gov.hmrc"       %% "json-encryption"            % "5.3.0-play-28"
+    "uk.gov.hmrc" %% "bootstrap-backend-play-30" % "8.5.0",
+    "io.github.samueleresca" %% "pekko-quartz-scheduler" % "1.0.0-pekko-1.0.x",
+    "uk.gov.hmrc" %% "domain-play-30" % "9.0.0",
+    "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-30" % "1.8.0",
+    "uk.gov.hmrc" %% "json-encryption" % "5.3.0-play-28"
   )
 
   trait TestDependencies {
@@ -21,29 +21,27 @@ object AppDependencies {
     lazy val test: Seq[ModuleID] = ???
   }
 
-  object Test {
-    def apply(): Seq[ModuleID] = new TestDependencies {
-      override lazy val test: Seq[ModuleID] = Seq(
-        "uk.gov.hmrc"                  %% "bootstrap-test-play-28"  % bootstrapVersion    % scope,
-        "org.scalatestplus.play"       %% "scalatestplus-play"      % "5.1.0"             % scope,
-        "org.mockito"                  %  "mockito-core"            % "5.10.0"             % scope,
-        "com.typesafe.play"            %% "play-test"               % PlayVersion.current % scope,
-        "com.fasterxml.jackson.module" %% "jackson-module-scala"    % "2.16.1"            % scope
-      )
-    }.test
-  }
 
-	object IntegrationTest {
+  val test: Seq[ModuleID] = Seq(
+    "uk.gov.hmrc" %% "bootstrap-test-play-30" % "8.5.0",
+    "org.scalatestplus.play" %% "scalatestplus-play" % "7.0.1",
+    "org.mockito" % "mockito-core" % "5.11.0",
+    "org.scalatestplus" %% "mockito-4-11" % "3.2.18.0",
+    "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.17.0"
+  ).map(_ % Test)
+
+
+  object IntegrationTest {
 		def apply(): Seq[ModuleID] = new TestDependencies {
 			override lazy val test = Seq(
-        "uk.gov.hmrc"            %% "bootstrap-test-play-28" % bootstrapVersion    % scope,
-				"com.typesafe.play"			 %% "play-test" 				     % PlayVersion.current % scope,
-				"org.scalatestplus.play" %% "scalatestplus-play"     % "5.1.0"             % scope,
-        "org.scalatestplus"      %% "mockito-4-6"            % "3.2.15.0"          % scope,
-				"com.github.tomakehurst" %  "wiremock-jre8"			     % "2.35.2"            % scope
+        "org.scalatestplus.play" %% "scalatestplus-play"     % "7.0.1"             % scope,
+        "org.scalatestplus"      %% "mockito-4-11"           % "3.2.18.0"          % scope
 			)
 		}.test
 	}
 
-  def apply(): Seq[ModuleID] = compile ++ Test() ++ IntegrationTest()
+  val itDependencies: Seq[ModuleID] = Seq()
+
+
+  def apply(): Seq[ModuleID] = compile ++ test
 }

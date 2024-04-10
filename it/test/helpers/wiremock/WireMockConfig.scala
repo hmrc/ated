@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-package scheduler
+package helpers.wiremock
 
-import org.apache.pekko.actor.ActorSystem
-import javax.inject.{Inject, Singleton}
-import play.api.Configuration
-import scheduler.SchedulingActor.deleteReliefDrafts
-
-@Singleton
-class DeleteOldReliefsJob @Inject()(val config: Configuration,
-																		documentUpdateService: DeleteReliefsService
-																	 ) extends ScheduledJobs {
-	val jobName = "delete-reliefs-job"
-	val actorSystem = ActorSystem(jobName)
-	val scheduledMessage = deleteReliefDrafts(documentUpdateService)
-	schedule
+trait WireMockConfig {
+  val wireMockPort: Int    = 11111
+  val wireMockHost: String = "localhost"
+  val wireMockUrl: String  = s"http://$wireMockPort:$wireMockPort"
 }

@@ -18,19 +18,18 @@ package metrics
 
 import com.codahale.metrics.MetricRegistry
 import com.codahale.metrics.Timer.Context
-import com.kenshoo.play.metrics.Metrics
 import javax.inject.Inject
 import metrics.MetricsEnum.MetricsEnum
 
-class ServiceMetricsImpl @Inject()(val metrics: Metrics) extends ServiceMetrics
+class ServiceMetricsImpl @Inject()(val registry: MetricRegistry) extends ServiceMetrics
 trait ServiceMetrics {
-  val metrics: Metrics
+  val registry: MetricRegistry
 
   def startTimer(api: MetricsEnum): Context = timers(api).time()
   def incrementSuccessCounter(api: MetricsEnum): Unit = successCounters(api).inc()
   def incrementFailedCounter(api: MetricsEnum): Unit = failedCounters(api).inc()
 
-  val registry: MetricRegistry = metrics.defaultRegistry
+  //val registry: MetricRegistry = metrics
   val timers = Map(
     MetricsEnum.GgAdminAllocateAgent -> registry.timer("gga-allocate-agent-response-timer"),
     MetricsEnum.EtmpSubmitReturns -> registry.timer("etmp-submit-returns-response-timer"),

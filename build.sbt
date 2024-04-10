@@ -1,51 +1,56 @@
-
+import play.routes.compiler.InjectedRoutesGenerator
 import play.sbt.routes.RoutesKeys.routesGenerator
-import uk.gov.hmrc.DefaultBuildSettings._
-import uk.gov.hmrc._
-import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
+import sbt.Keys.{parallelExecution, *}
+import sbt.{Def, *}
+import uk.gov.hmrc.DefaultBuildSettings
+import uk.gov.hmrc.DefaultBuildSettings.{defaultSettings, scalaSettings}
+import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin
+import uk.gov.hmrc.versioning.SbtGitVersioning.autoImport.majorVersion
 
 val appName: String = "ated"
 
-val appDependencies: Seq[ModuleID] = AppDependencies()
+ThisBuild / majorVersion := 3
+ThisBuild / scalaVersion := "2.13.12"
 
-lazy val plugins: Seq[Plugins] = Seq(play.sbt.PlayScala, SbtDistributablesPlugin)
+lazy val appDependencies : Seq[ModuleID] = AppDependencies()
+lazy val plugins : Seq[Plugins] = Seq(play.sbt.PlayScala, SbtDistributablesPlugin)
+
 lazy val playSettings: Seq[Setting[_]] = Seq.empty
 
 lazy val scoverageSettings: Seq[Def.Setting[_ >: String with Double with Boolean]] = {
   import scoverage.ScoverageKeys
   Seq(
-    ScoverageKeys.coverageExcludedPackages := "<empty>;Reverse.*;app.Routes.*;prod.*;uk.gov.hmrc.*;testOnlyDoNotUseInAppConf.*;forms.*;models.*;config.*;",
-    ScoverageKeys.coverageMinimumStmtTotal := 94.9,
+    ScoverageKeys.coverageExcludedPackages := "<empty>;Reverse.*;app.Routes.*;prod.*;uk.gov.hmrc.*;testOnlyDoNotUseInAppConf.*;forms.*;config.*;",
+    ScoverageKeys.coverageMinimumStmtTotal := 95,
     ScoverageKeys.coverageFailOnMinimum := true,
-    ScoverageKeys.coverageHighlighting := true,
-    Test / parallelExecution := false
+    ScoverageKeys.coverageHighlighting := true
   )
 }
 
 lazy val microservice = Project(appName, file("."))
-  .enablePlugins(Seq(play.sbt.PlayScala) ++ plugins: _*)
-  .settings(playSettings ++ scoverageSettings: _*)
-  .settings( majorVersion := 3 )
-  .settings(scalaSettings: _*)
-  .settings(defaultSettings(): _*)
-  .configs(IntegrationTest)
+  .enablePlugins(plugins: _*)
   .settings(
-    addTestReportOption(IntegrationTest, "int-test-reports"),
-    inConfig(IntegrationTest)(Defaults.itSettings),
-    scalaVersion := "2.13.8",
     libraryDependencies ++= appDependencies,
     Test / parallelExecution := false,
-    Test / fork := true,
+    Test / fork := false,
     retrieveManaged := true,
     routesGenerator := InjectedRoutesGenerator,
-    IntegrationTest / Keys.fork :=  false,
-    IntegrationTest / unmanagedSourceDirectories :=  (IntegrationTest / baseDirectory)(base => Seq(base / "it")).value,
-    IntegrationTest / parallelExecution := false,
     scalacOptions += "-Wconf:src=routes/.*:s",
-    scalacOptions += "-Wconf:cat=unused-imports&src=html/.*:s"
+    scoverageSettings,
+    scalaSettings,
+    playSettings,
+    defaultSettings(),
   )
   .settings(
     resolvers += Resolver.typesafeRepo("releases"),
     resolvers += Resolver.jcenterRepo
   )
+  .enablePlugins((Seq(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin) ++ plugins) *)
   .disablePlugins(JUnitXmlReportPlugin)
+
+lazy val it = project
+  .enablePlugins(PlayScala)
+  .dependsOn(microservice % "test->test") // the "test->test" allows reusing test code and test dependencies
+  .settings(DefaultBuildSettings.itSettings())
+  .settings(libraryDependencies ++= AppDependencies.itDependencies)
+

@@ -54,7 +54,7 @@ trait ReliefsController extends BackendController with Auditable with AuthFuncti
     retrieveAgentRefNumberFor { refNo =>
       withJsonBody[ReliefsTaxAvoidance] { draftRelief =>
         reliefsService.saveDraftReliefs(atedRefNo, draftRelief) map { reliefs =>
-					auditSaveDraftReliefs(atedRefNo, draftRelief, refNo)
+					//auditSaveDraftReliefs(atedRefNo, draftRelief, refNo)
           Ok(Json.toJson(reliefs))
         }
       }

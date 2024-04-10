@@ -46,6 +46,7 @@ trait DeleteReliefsService extends ScheduledService[Int] with Logging {
   val documentBatchSize: Int
 
   private def deleteOldReliefs(): Future[Int] = {
+    println("MOHAN START Entered deleteOldReliefs()")
     repo.deleteExpired60Reliefs(documentBatchSize)
   }
 
@@ -53,9 +54,11 @@ trait DeleteReliefsService extends ScheduledService[Int] with Logging {
     lockService.withLock(deleteOldReliefs()) map {
       case Some(result) =>
         logger.info(s"[DeleteReliefsService] Deleted $result draft documents past the given day limit")
+        println("MOHAN START Got into Some Case")
         result
       case None =>
         logger.warn(s"[DeleteReliefsService] Failed to acquire lock")
+        println("MOHAN START Got into None Case")
         0
     }
   }
