@@ -140,7 +140,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
         disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
           case Some(x) =>
             val oldBankDetails = x.bankDetails.getOrElse(BankDetailsModel(hasBankDetails = true))
-            val updatedBankDetails = oldBankDetails.copy(protectedBankDetails = Some(updatedValue))
+            val updatedBankDetails: BankDetailsModel = oldBankDetails.copy(protectedBankDetails = Some(updatedValue))
             val updatedReturn = x.copy(bankDetails = Some(updatedBankDetails), calculated = None)
             val result = disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(updatedReturn).flatMap(x => Future.successful(Some(updatedReturn)))
             result

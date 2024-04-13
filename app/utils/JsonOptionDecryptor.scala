@@ -17,19 +17,19 @@
 package utils
 
 import play.api.libs.json._
-import uk.gov.hmrc.crypto.{Crypted, Protected}
+import uk.gov.hmrc.crypto.{Crypted}
 import uk.gov.hmrc.crypto.{Encrypter, Decrypter}
 
-class JsonOptionDecryptor[T](implicit crypto: Encrypter with Decrypter, rds: Reads[T]) extends Reads[Protected[Option[T]]] {
-  override def reads(json: JsValue): JsResult[Protected[Option[T]]] = {
+class JsonOptionDecryptor[T](implicit crypto: Encrypter with Decrypter, rds: Reads[T]) extends Reads[Option[T]] {
+  override def reads(json: JsValue): JsResult[Option[T]] = {
       val crypted = Crypted(json.as[String])
       JsSuccess(readFromJson(crypted))
   }
 
-  private def readFromJson(encrypted: Crypted): Protected[Option[T]] = {
+  private def readFromJson(encrypted: Crypted): Option[T] = {
     val plainText = crypto.decrypt(encrypted)
     val obj = Json.parse(plainText.value).asOpt[T]
-    Protected(obj)
+    obj
   }
 
 }

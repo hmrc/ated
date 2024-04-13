@@ -13,7 +13,7 @@ object AppDependencies {
     "io.github.samueleresca" %% "pekko-quartz-scheduler" % "1.0.0-pekko-1.0.x",
     "uk.gov.hmrc" %% "domain-play-30" % "9.0.0",
     "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-30" % "1.8.0",
-    "uk.gov.hmrc" %% "json-encryption" % "5.3.0-play-28"
+    "uk.gov.hmrc" %% "crypto-json-play-30" % "7.6.0"
   )
 
   trait TestDependencies {

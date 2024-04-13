@@ -21,7 +21,7 @@ import connectors.{EmailConnector, EtmpReturnsConnector}
 import javax.inject.Inject
 import models.{ReliefsTaxAvoidance, SubmitEtmpReturnsRequest}
 import play.api.http.Status._
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 import repository.{ReliefsMongoRepository, ReliefsMongoWrapper}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}

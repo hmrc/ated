@@ -20,7 +20,6 @@ import models._
 import java.time.{ZonedDateTime, LocalDate, ZoneId, ZoneOffset}
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
-import uk.gov.hmrc.crypto.Protected
 
 object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite {
 
@@ -148,12 +147,12 @@ object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite
     val pd = bankDetailsModel.bankDetails.map{
       bd =>
         ProtectedBankDetails(
-          Protected(bd.hasUKBankAccount),
-          Protected(bd.accountName),
-          Protected(bd.accountNumber),
-          Protected(bd.sortCode),
-          Protected(bd.bicSwiftCode),
-          Protected(bd.iban)
+          bd.hasUKBankAccount,
+          (bd.accountName),
+          (bd.accountNumber),
+          (bd.sortCode),
+          (bd.bicSwiftCode),
+          (bd.iban)
         )
     }
     bankDetailsModel.copy(bankDetails = None, protectedBankDetails = pd)

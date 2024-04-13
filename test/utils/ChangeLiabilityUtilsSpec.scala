@@ -24,7 +24,6 @@ import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
-import uk.gov.hmrc.crypto.Protected
 import uk.gov.hmrc.http.InternalServerException
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
@@ -130,21 +129,21 @@ class ChangeLiabilityUtilsSpec extends PlaySpec with GuiceOneServerPerSuite with
         }
 
         "return None, for bank details - with no SwiftBicCode" in {
-          val noSwiftBic = bankDetails.protectedBankDetails.map(_.copy(bicSwiftCode = Protected(None)))
+          val noSwiftBic = bankDetails.protectedBankDetails.map(_.copy(bicSwiftCode = None))
           val bankDetailsWithNoSwiftBic = bankDetails.copy(protectedBankDetails = noSwiftBic)
           val result1 = ChangeLiabilityUtils.getEtmpBankDetails(Some(bankDetailsWithNoSwiftBic))
           result1 must be(None)
         }
 
         "return None, for bank details - with no Iban" in {
-          val noIban = bankDetails.protectedBankDetails.map(_.copy(iban = Protected(None)))
+          val noIban = bankDetails.protectedBankDetails.map(_.copy(iban = None))
           val bankDetailsWithNoIban = bankDetails.copy(protectedBankDetails = noIban)
           val result1 = ChangeLiabilityUtils.getEtmpBankDetails(Some(bankDetailsWithNoIban))
           result1 must be(None)
         }
 
         "return None, for bank details - with account Name" in {
-          val noAccountName = bankDetails.protectedBankDetails.map(_.copy(accountName = Protected(None)))
+          val noAccountName = bankDetails.protectedBankDetails.map(_.copy(accountName = None))
           val bankDetailsWithNoAccount = bankDetails.copy(protectedBankDetails = noAccountName)
           val result1 = ChangeLiabilityUtils.getEtmpBankDetails(Some(bankDetailsWithNoAccount))
           result1 must be(None)

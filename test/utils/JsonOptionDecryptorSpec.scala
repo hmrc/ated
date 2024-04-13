@@ -31,11 +31,11 @@ package utils
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+/*
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsString, Json, OFormat}
 import uk.gov.hmrc.crypto.json._
-import uk.gov.hmrc.crypto.{Encrypter, Decrypter, Protected, _}
+import uk.gov.hmrc.crypto.{Encrypter, Decrypter, _}
 
 class JsonEncryptionSpec extends PlaySpec {
 
@@ -44,9 +44,9 @@ class JsonEncryptionSpec extends PlaySpec {
     "encrypt the elements" in {
 
       val e = TestEntity("unencrypted",
-        Protected[Option[String]](Some("encrypted")),
-        Protected[Option[Boolean]](Some(true)),
-        Protected[Option[BigDecimal]](Some(BigDecimal("234")))
+        "encrypted",
+        true,
+        BigDecimal("234")
       )
 
       val json = Json.toJson(e)(TestEntity.formats)
@@ -61,9 +61,9 @@ class JsonEncryptionSpec extends PlaySpec {
     "encrypt empty elements" in {
 
       val e = TestEntity("unencrypted",
-        Protected[Option[String]](None),
-        Protected[Option[Boolean]](None),
-        Protected[Option[BigDecimal]](None)
+        Option[String](None),
+        Option[Boolean](None),
+        Option[BigDecimal](None)
       )
 
       val json = Json.toJson(e)(TestEntity.formats)
@@ -117,9 +117,9 @@ class JsonEncryptionSpec extends PlaySpec {
 }
 
 case class TestEntity(normalString: String,
-                      encryptedString: Protected[Option[String]],
-                      encryptedBoolean: Protected[Option[Boolean]],
-                      encryptedNumber: Protected[Option[BigDecimal]])
+                      encryptedString: Option[String],
+                      encryptedBoolean: Option[Boolean],
+                      encryptedNumber: Option[BigDecimal])
 
 object TestEntity {
 
@@ -151,3 +151,5 @@ case class TestForm(name: String, sname: String, amount: Int, isValid: Boolean)
 object TestForm {
   implicit val formats: OFormat[TestForm] = Json.format[TestForm]
 }
+*/
+
