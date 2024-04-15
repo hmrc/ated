@@ -16,12 +16,14 @@
 
 package models
 
+import models.CryptoFormatsSpec.SensitiveTestEntity
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{Format, JsPath, JsSuccess, JsValue, Json, OFormat}
-import uk.gov.hmrc.crypto.json.JsonEncryption
-import uk.gov.hmrc.crypto.{ApplicationCrypto, Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.Sensitive.{SensitiveBigDecimal, SensitiveBoolean, SensitiveString}
+import uk.gov.hmrc.crypto.json.{JsonEncryption}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, Decrypter, Encrypter, Sensitive, SymmetricCryptoFactory}
 
 class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
 
@@ -76,6 +78,25 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
     }
   }
 
+  "decrypt the elements" in {
+    val jsonString =
+      """{
+      "normalString"    :"unencrypted",
+      "encryptedString" : "3TW3L1raxsKBYuKvtKqPEQ==",
+      "encryptedBoolean": "YhWm43Ad3rW5Votdy855Kg==",
+      "encryptedNumber" : "Z/ipDOvm7C3ck/TBkiteAg=="
+    }"""
+
+    val entity = Json.fromJson(Json.parse(jsonString))(SensitiveTestEntity.formats).asOpt.value
+    println(s"MOHAN MOHAN MOHAN ${entity}")
+    entity shouldBe SensitiveTestEntity(
+      "unencrypted",
+      SensitiveString("encrypted"),
+      SensitiveBoolean(true),
+      SensitiveBigDecimal(BigDecimal("234"))
+    )
+  }
+
   "BankDetailsModel" must {
     "read" when {
       "when there are protected bank details" in {
@@ -101,18 +122,25 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
           s"""
              |{
              |      "hasUKBankAccount" : "N3aBb38antBm3t1jI4zlhg==",
-             |      "accountName" : "AgRrB7hjGHSPCP/tOoC4e1PkDrL+/GWL0fk3OSrFFg0=",
-             |      "accountNumber" : "KB+g5/qReFmvl+V+YJlO4A==",
-             |      "sortCode" : "F0vOiYU8dp8L7M7oHJ2lRaSekYjhPwCa0Dyu8Tw9bh7WiT1SveRojOCco4aPD/d9b7JjylAOv+GPowsmDoaRiQ==",
-             |      "bicSwiftCode" : "+ZKJ7XVtuMrxNikqKNfLyQ==",
-             |      "iban" : "+ZKJ7XVtuMrxNikqKNfLyQ=="
+             |      "accountName" : "+FsJBNzKH38QPY9we5ebyQ==",
+             |      "accountNumber" : "rn8JErJ9wM/7nQwJce9fOw==",
+             |      "sortCode" : "F0vOiYU8dp8L7M7oHJ2lRTN4+H02TzWdW98bsF8tI1gsIwENDROLYtWfpunYaZqYxZVMOavTLAtmAQGCHjsVFA==",
+             |      "bicSwiftCode" : "vrPsPHFTZTzDkAs47XbyLXkoaCflT3w4MM80DzAW3cM=",
+             |      "iban" : "fT98XnPNxN88UtlRy/DiamnNU1JKYdD5nTfOSKSdBlU="
+             |}
+          """.stripMargin
+
+        val json2 =
+          s"""
+             |{
+             |      "decryptedValue" : "3TW3L1raxsKBYuKvtKqPEQ=="
              |}
           """.stripMargin
 
 
 
-        val sensitiveTestFormCrypto: Format[SensitiveProtectedBankDetails] = {
-          implicit val s: OFormat[ProtectedBankDetails] = ProtectedBankDetails.format
+        /*val sensitiveTestFormCrypto: Format[ProtectedBankDetails] = {
+          implicit val s: OFormat[ProtectedBankDetails] = ProtectedBankDetails.bankDetailsFormats
           JsonEncryption.sensitiveEncrypterDecrypter(SensitiveProtectedBankDetails.apply)
         }
 
@@ -122,14 +150,38 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
           Some(BicSwiftCode("12345678901")), Some(Iban("iBanCode")))
         val bankDetailsModel = BankDetailsModel(true, Some(bankDetailsObj), Some(protectedBankDetails))
 
-        //val dumbleBee: JsValue = Json.toJson(protectedBankDetails)
-        //val gregorypeck = ProtectedBankDetails.format.reads(dumbleBee)
+        val dumbleBee: JsValue = Json.toJson(protectedBankDetails)
+        val gregorypeck = ProtectedBankDetails.format.reads(dumbleBee)*/
 
 
 
         //val encryptedValue = sensitiveTestFormCrypto.writes(SensitiveProtectedBankDetails(protectedBankDetails))
         //val decrypted = sensitiveTestFormCrypto.reads(Json.parse(json1))
         //decrypted.asOpt.value.decryptedValue.accountName.get.toString shouldBe "AcountName"
+        //val entity: ProtectedBankDetails  = Json.fromJson(Json.parse(json1))(ProtectedBankDetails.format).asOpt.value
+       // entity.accountName shouldBe Some("ATED Tax Payer")
+       // entity.hasUKBankAccount mustBe Some(true)
+
+       // println(entity.toString)
+
+
+        //val sensitiveTestFormCryptoIban: Format[SensitiveIban] = {
+        //  implicit val s: OFormat[Iban] = Iban.formats
+       //   JsonEncryption.sensitiveEncrypterDecrypter(SensitiveIban.apply)
+       // }
+
+
+        val protectedBankDetails = ProtectedBankDetails(Some(SensitiveBoolean(true)),
+          Some(SensitiveString("AcountName")), Some(SensitiveString("1111111")), Some(SensitiveSortCode(SortCode("00", "01", "02"))),
+          Some(SensitiveBicSwiftCode(BicSwiftCode("12345678901"))), Some(SensitiveIban((Iban("iBanCode")))))
+
+        val jsonsdf = Json.toJson(protectedBankDetails)(ProtectedBankDetails.bankDetailsFormats)
+        println(s"MOHAN MOHAN ENCRYPTED = ${jsonsdf}")
+       // val decrypted = sensitiveTestFormCryptoIban.reads(Json.parse(json2))
+        val entity1 = Json.fromJson(Json.parse(json1))(ProtectedBankDetails.bankDetailsFormats).asOpt.value
+        println(s"MOHAN MOHAN >>>>>>>>> ${entity1}")
+        //entity1  shouldBe ProtectedBankDetails(Some(Sen))
+
 
 
         /*BankDetailsModel.format.reads(Json.parse(json)) match {
@@ -139,7 +191,55 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
             success.protectedBankDetails.get.accountName mustBe "ATED Tax Payer"
           case _ => fail()
         }*/
+
+        val entity = Json.fromJson(Json.parse(json1))(ProtectedBankDetails.bankDetailsFormats).asOpt.value
+
+        println(s"MOHAN MOHAN ${entity}")
+
+
       }
     }
+  }
+}
+
+
+
+object CryptoFormatsSpec {
+  implicit val crypto = SymmetricCryptoFactory.aesCrypto("P5xsJ9Nt+quxGZzB4DeLfw==")
+
+  case class SensitiveTestEntity(
+                                  normalString    : String,
+                                  encryptedString : SensitiveString,
+                                  encryptedBoolean: SensitiveBoolean,
+                                  encryptedNumber : SensitiveBigDecimal
+                                )
+
+  object SensitiveTestEntity {
+    implicit val formats = {
+      implicit val sensitiveStringCrypto    : Format[SensitiveString]     = JsonEncryption.sensitiveEncrypterDecrypter(SensitiveString.apply)
+      implicit val sensitiveBooleanCrypto   : Format[SensitiveBoolean]    = JsonEncryption.sensitiveEncrypterDecrypter(SensitiveBoolean.apply)
+      implicit val sensitiveBigDecimalCrypto: Format[SensitiveBigDecimal] = JsonEncryption.sensitiveEncrypterDecrypter(SensitiveBigDecimal.apply)
+      Json.format[SensitiveTestEntity]
+    }
+  }
+
+  case class TestForm(
+                       name   : String,
+                       sname  : String,
+                       amount : Int,
+                       sortCode : SortCode,
+                       isValid: Boolean
+                     )
+
+  object TestForm {
+    implicit val formats: OFormat[TestForm] = Json.format[TestForm]
+
+  }
+
+  case class SensitiveTestForm(override val decryptedValue: TestForm) extends Sensitive[TestForm]
+
+  object SensitiveTestForm {
+    implicit val formats: OFormat[SensitiveTestForm] = Json.format[SensitiveTestForm]
+
   }
 }
