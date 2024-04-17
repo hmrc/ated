@@ -17,15 +17,6 @@ lazy val plugins : Seq[Plugins] = Seq(play.sbt.PlayScala, SbtDistributablesPlugi
 
 lazy val playSettings: Seq[Setting[_]] = Seq.empty
 
-lazy val scoverageSettings: Seq[Def.Setting[_ >: String with Double with Boolean]] = {
-  import scoverage.ScoverageKeys
-  Seq(
-    ScoverageKeys.coverageExcludedPackages := "<empty>;Reverse.*;app.Routes.*;prod.*;uk.gov.hmrc.*;testOnlyDoNotUseInAppConf.*;forms.*;config.*;",
-    ScoverageKeys.coverageMinimumStmtTotal := 95,
-    ScoverageKeys.coverageFailOnMinimum := true,
-    ScoverageKeys.coverageHighlighting := true
-  )
-}
 
 lazy val microservice = Project(appName, file("."))
   .enablePlugins(plugins: _*)
@@ -36,7 +27,6 @@ lazy val microservice = Project(appName, file("."))
     retrieveManaged := true,
     routesGenerator := InjectedRoutesGenerator,
     scalacOptions += "-Wconf:src=routes/.*:s",
-    scoverageSettings,
     scalaSettings,
     playSettings,
     defaultSettings(),
@@ -45,6 +35,7 @@ lazy val microservice = Project(appName, file("."))
     resolvers += Resolver.typesafeRepo("releases"),
     resolvers += Resolver.jcenterRepo
   )
+  .settings(CodeCoverageSettings.settings: _*)
   .enablePlugins((Seq(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin) ++ plugins) *)
   .disablePlugins(JUnitXmlReportPlugin)
 
