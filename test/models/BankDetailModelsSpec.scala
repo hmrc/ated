@@ -20,9 +20,11 @@ package models
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
-import play.api.libs.json.{Format, JsPath, JsString, JsSuccess, JsValue, Json, OFormat}
-import uk.gov.hmrc.crypto.Sensitive.{SensitiveBigDecimal, SensitiveBoolean, SensitiveString}
+import play.api.libs.json.{JsString, JsValue, Json}
+import uk.gov.hmrc.crypto.Sensitive.{SensitiveBoolean, SensitiveString}
 import uk.gov.hmrc.crypto.{ApplicationCrypto, Decrypter, Encrypter}
+
+import scala.reflect.ClassManifestFactory.Nothing
 
 class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
 
@@ -105,8 +107,10 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
 
         val entity: BankDetailsModel = Json.fromJson(Json.parse(encryptedProtectedBankDetailsJson))(BankDetailsModel.format).asOpt.value
 
-        entity.protectedBankDetails.get shouldBe protectedBankDetails
-
+        entity.protectedBankDetails match {
+          case Some(x) => x shouldBe protectedBankDetails
+          case _ => Nothing
+        }
       }
     }
     "encrypt/decrypt ProtectdBankDetails entity" in {

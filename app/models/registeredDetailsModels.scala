@@ -17,7 +17,7 @@
 package models
 
 import java.time.LocalDate
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 import play.api.libs.json.Writes._
 import play.api.libs.json.Reads._
 
@@ -29,7 +29,7 @@ case class RegisteredAddressDetails(addressLine1: String,
                                     countryCode: String)
 
 object RegisteredAddressDetails {
-  implicit val formats = Json.format[RegisteredAddressDetails]
+  implicit val formats: OFormat[RegisteredAddressDetails] = Json.format[RegisteredAddressDetails]
 }
 
 case class Individual(firstName: String,
@@ -38,20 +38,20 @@ case class Individual(firstName: String,
                       dateOfBirth: LocalDate)
 
 object Individual {
-  implicit val formats = Json.format[Individual]
+  implicit val formats: OFormat[Individual] = Json.format[Individual]
 }
 
 
 case class Organisation(organisationName: String)
 
 object Organisation {
-  implicit val formats = Json.format[Organisation]
+  implicit val formats: OFormat[Organisation] = Json.format[Organisation]
 }
 
 case class Identification(idNumber: String, issuingInstitution: String, issuingCountryCode: String)
 
 object Identification {
-  implicit val formats = Json.format[Identification]
+  implicit val formats: OFormat[Identification] = Json.format[Identification]
 }
 
 case class UpdateRegistrationDetailsRequest(acknowledgementReference: Option[String],
@@ -65,5 +65,5 @@ case class UpdateRegistrationDetailsRequest(acknowledgementReference: Option[Str
                                            identification: Option[Identification] = None)
 
 object UpdateRegistrationDetailsRequest {
-  implicit val formats = Json.format[UpdateRegistrationDetailsRequest]
+  implicit val formats: OFormat[UpdateRegistrationDetailsRequest] = Json.format[UpdateRegistrationDetailsRequest]
 }

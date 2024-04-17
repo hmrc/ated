@@ -16,16 +16,16 @@
 
 package models
 
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 
 case class Identifier(`type`: String, value: String)
 
 object Identifier {
-  implicit val format = Json.format[Identifier]
+  implicit val format: OFormat[Identifier] = Json.format[Identifier]
 }
 
 case class AllocateAgentRequest(identifiers: List[Identifier])
 
 object AllocateAgentRequest {
-  implicit val format = Json.format[AllocateAgentRequest]
+  implicit val format: OFormat[AllocateAgentRequest] = Json.format[AllocateAgentRequest]
 }

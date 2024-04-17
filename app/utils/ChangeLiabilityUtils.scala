@@ -22,8 +22,6 @@ import java.time.LocalDate
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import utils.PropertyDetailsUtils._
 
-import uk.gov.hmrc.crypto.Sensitive.{SensitiveBoolean, SensitiveString}
-
 object ChangeLiabilityUtils extends ReliefConstants {
 
   def generateAddressFromLiabilityReturn(x: FormBundleReturn): PropertyDetailsAddress = {

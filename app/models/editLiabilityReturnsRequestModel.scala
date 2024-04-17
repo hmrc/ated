@@ -17,7 +17,7 @@
 package models
 
 import java.time.LocalDate
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 import play.api.libs.json.Writes._
 import play.api.libs.json.Reads._
 
@@ -37,7 +37,7 @@ case class EditLiabilityReturnsRequest(oldFormBundleNumber: String,
                                        bankDetails: Option[EtmpBankDetails] = None)
 
 object EditLiabilityReturnsRequest {
-  implicit val formats = Json.format[EditLiabilityReturnsRequest]
+  implicit val formats: OFormat[EditLiabilityReturnsRequest] = Json.format[EditLiabilityReturnsRequest]
 }
 
 case class EditLiabilityReturnsRequestModel(acknowledgmentReference: String,
@@ -45,5 +45,5 @@ case class EditLiabilityReturnsRequestModel(acknowledgmentReference: String,
                                             liabilityReturn: Seq[EditLiabilityReturnsRequest])
 
 object EditLiabilityReturnsRequestModel {
-  implicit val formats = Json.format[EditLiabilityReturnsRequestModel]
+  implicit val formats: OFormat[EditLiabilityReturnsRequestModel] = Json.format[EditLiabilityReturnsRequestModel]
 }

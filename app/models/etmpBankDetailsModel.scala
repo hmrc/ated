@@ -16,18 +16,18 @@
 
 package models
 
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 
 case class UKAccount(sortCode: String, accountNumber: String)
 
 object UKAccount {
-  implicit val formats = Json.format[UKAccount]
+  implicit val formats: OFormat[UKAccount] = Json.format[UKAccount]
 }
 
 case class InternationalAccount(bicSwiftCode: String, iban: String)
 
 object InternationalAccount {
-  implicit val formats = Json.format[InternationalAccount]
+  implicit val formats: OFormat[InternationalAccount] = Json.format[InternationalAccount]
 }
 
 case class EtmpBankDetails(accountName: String,
@@ -35,5 +35,5 @@ case class EtmpBankDetails(accountName: String,
                        internationalAccount: Option[InternationalAccount] = None)
 
 object EtmpBankDetails {
-  implicit val formats = Json.format[EtmpBankDetails]
+  implicit val formats: OFormat[EtmpBankDetails] = Json.format[EtmpBankDetails]
 }

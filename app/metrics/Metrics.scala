@@ -29,7 +29,6 @@ trait ServiceMetrics {
   def incrementSuccessCounter(api: MetricsEnum): Unit = successCounters(api).inc()
   def incrementFailedCounter(api: MetricsEnum): Unit = failedCounters(api).inc()
 
-  //val registry: MetricRegistry = metrics
   val timers = Map(
     MetricsEnum.GgAdminAllocateAgent -> registry.timer("gga-allocate-agent-response-timer"),
     MetricsEnum.EtmpSubmitReturns -> registry.timer("etmp-submit-returns-response-timer"),

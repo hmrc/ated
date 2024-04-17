@@ -17,7 +17,7 @@
 package models
 
 import java.time.ZonedDateTime
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 
 case class EditLiabilityReturnsResponse(mode: String,
                                         oldFormBundleNumber: String,
@@ -40,7 +40,7 @@ object EditLiabilityReturnsResponse {
     ) (EditLiabilityReturnsResponse.apply _)
 
   implicit val writes = Json.writes[EditLiabilityReturnsResponse]*/
-    implicit val formats = Json.format[EditLiabilityReturnsResponse]
+    implicit val formats: OFormat[EditLiabilityReturnsResponse] = Json.format[EditLiabilityReturnsResponse]
 }
 
 case class EditLiabilityReturnsResponseModel(processingDate: ZonedDateTime,
@@ -48,5 +48,5 @@ case class EditLiabilityReturnsResponseModel(processingDate: ZonedDateTime,
                                              accountBalance: BigDecimal)
 
 object EditLiabilityReturnsResponseModel {
-  implicit val formats = Json.format[EditLiabilityReturnsResponseModel]
+  implicit val formats: OFormat[EditLiabilityReturnsResponseModel] = Json.format[EditLiabilityReturnsResponseModel]
 }
