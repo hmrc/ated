@@ -103,7 +103,7 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
 
         val protectedBankDetails = ProtectedBankDetails(Some(SensitiveBoolean(true)),
           Some(SensitiveString("AcountName")), Some(SensitiveString("1111111")), Some(SensitiveSortCode(SortCode("00", "01", "02"))),
-          Some(SensitiveBicSwiftCode(BicSwiftCode("12345678901"))), Some(SensitiveIban((Iban("iBanCode")))))
+          Some(SensitiveBicSwiftCode(BicSwiftCode("12345678901"))), Some(SensitiveIban(Iban("iBanCode"))))
 
         val entity: BankDetailsModel = Json.fromJson(Json.parse(encryptedProtectedBankDetailsJson))(BankDetailsModel.format).asOpt.value
 
@@ -119,7 +119,7 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
 
       val protectedBankDetails = ProtectedBankDetails(Some(SensitiveBoolean(true)),
         Some(SensitiveString("AcountName")), Some(SensitiveString("1111111")), Some(SensitiveSortCode(SortCode.fromString("000102"))),
-        Some(SensitiveBicSwiftCode(BicSwiftCode("12345678901"))), Some(SensitiveIban((Iban("iBanCode")))))
+        Some(SensitiveBicSwiftCode(BicSwiftCode("12345678901"))), Some(SensitiveIban(Iban("iBanCode"))))
 
       val json: JsValue = Json.toJson(protectedBankDetails)(ProtectedBankDetails.bankDetailsFormats)
 

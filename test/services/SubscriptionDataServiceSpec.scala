@@ -25,7 +25,7 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
@@ -34,23 +34,23 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
 
-  val mockEtmpConnector = mock[EtmpDetailsConnector]
-  val mockAuthConnector = mock[AuthConnector]
+  val mockEtmpConnector: EtmpDetailsConnector = mock[EtmpDetailsConnector]
+  val mockAuthConnector: AuthConnector = mock[AuthConnector]
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   trait Setup {
     class TestSubscriptionDataService extends SubscriptionDataService {
-      override val etmpConnector = mockEtmpConnector
-      val authConnector = mockAuthConnector
+      override val etmpConnector: EtmpDetailsConnector = mockEtmpConnector
+      val authConnector: AuthConnector = mockAuthConnector
     }
 
     val testSubscriptionDataService = new TestSubscriptionDataService()
   }
 
   val accountRef = "ATED-123123"
-  val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
+  val successResponse: JsValue = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
 
-  override def beforeEach() = {
+  override def beforeEach(): Unit = {
     reset(mockEtmpConnector)
     reset(mockAuthConnector)
   }
@@ -59,9 +59,12 @@ class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite w
 
     "retrieve Subscription Data" in new Setup {
       implicit val hc: HeaderCarrier = HeaderCarrier()
-      when(mockEtmpConnector.getSubscriptionData(ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
-      val result = testSubscriptionDataService.retrieveSubscriptionData(accountRef)
-      val response = await(result)
+      when(mockEtmpConnector.getSubscriptionData(ArgumentMatchers.any())(
+        ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+
+      val result: Future[HttpResponse] = testSubscriptionDataService.retrieveSubscriptionData(accountRef)
+
+      val response: HttpResponse = await(result)
       response.status must be(OK)
       response.json must be(successResponse)
     }
@@ -70,14 +73,18 @@ class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite w
       val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
 
       "work if we have valid data" in new Setup {
-        val addressDetails = AddressDetails("Correspondence", "line1", "line2", None, None, Some("postCode"), "GB")
-        val updatedData = UpdateSubscriptionDataRequest(true, ChangeIndicators(), List(Address(addressDetails = addressDetails)))
+        val addressDetails: AddressDetails = AddressDetails("Correspondence", "line1", "line2", None, None, Some("postCode"), "GB")
+        val updatedData: UpdateSubscriptionDataRequest = UpdateSubscriptionDataRequest(
+          emailConsent = true, ChangeIndicators(), List(Address(addressDetails = addressDetails))
+        )
         implicit val hc:HeaderCarrier = HeaderCarrier()
 
-        when(mockEtmpConnector.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+        when(mockEtmpConnector.updateSubscriptionData(
+          ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
         mockRetrievingNoAuthRef()
-        val result = testSubscriptionDataService.updateSubscriptionData(accountRef, updatedData)
-        val response = await(result)
+        val result: Future[HttpResponse] = testSubscriptionDataService.updateSubscriptionData(accountRef, updatedData)
+        val response: HttpResponse = await(result)
         response.status must be(OK)
         response.json must be(successResponse)
       }
@@ -88,12 +95,17 @@ class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite w
 
       "work if we have valid data" in new Setup {
         implicit val hc: HeaderCarrier = HeaderCarrier()
-        val registeredDetails = RegisteredAddressDetails(addressLine1 = "", addressLine2 = "", countryCode = "GB")
-        val updatedData = new UpdateRegistrationDetailsRequest(None, false, None, Some(Organisation("testName")), registeredDetails, ContactDetails(), false, false)
+        val registeredDetails: RegisteredAddressDetails = RegisteredAddressDetails(addressLine1 = "", addressLine2 = "", countryCode = "GB")
 
-        when(mockEtmpConnector.updateRegistrationDetails(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
-        val result = testSubscriptionDataService.updateRegistrationDetails(accountRef, "safeId", updatedData)
-        val response = await(result)
+        val updatedData = new UpdateRegistrationDetailsRequest(
+          None, false, None, Some(Organisation("testName")), registeredDetails, ContactDetails(), false, false)
+
+        when(mockEtmpConnector.updateRegistrationDetails(
+          ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+
+        val result: Future[HttpResponse] = testSubscriptionDataService.updateRegistrationDetails(accountRef, "safeId", updatedData)
+        val response: HttpResponse = await(result)
         response.status must be(OK)
         response.json must be(successResponse)
       }

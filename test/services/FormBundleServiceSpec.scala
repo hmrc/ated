@@ -23,7 +23,7 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
@@ -31,19 +31,19 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class FormBundleServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
-  val mockEtmpConnector = mock[EtmpReturnsConnector]
+  val mockEtmpConnector: EtmpReturnsConnector = mock[EtmpReturnsConnector]
   val atedRefNo = "ATED-123"
   val formBundle = "form-bundle-01"
-  val successResponseJson = Json.parse( """{"sapNumber":"1234567890", "safeId": "EX0012345678909", "agentReferenceNumber": "AARN1234567"}""")
+  val successResponseJson: JsValue = Json.parse( """{"sapNumber":"1234567890", "safeId": "EX0012345678909", "agentReferenceNumber": "AARN1234567"}""")
 
-  override def beforeEach() = {
+  override def beforeEach(): Unit = {
     reset(mockEtmpConnector)
   }
 
   trait Setup {
     class TestFormBundleService extends FormBundleService {
       implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
-      override val etmpReturnsConnector = mockEtmpConnector
+      override val etmpReturnsConnector: EtmpReturnsConnector = mockEtmpConnector
     }
     implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
     val testFormBundleService = new TestFormBundleService()
@@ -53,9 +53,10 @@ class FormBundleServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
     "getFormBundleReturns" must {
       "return response from connector" in new Setup {
         implicit val hc: HeaderCarrier = HeaderCarrier()
-        when(mockEtmpConnector.getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockEtmpConnector
+          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle))(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
-        val response = testFormBundleService.getFormBundleReturns(atedRefNo, formBundle)
+        val response: Future[HttpResponse] = testFormBundleService.getFormBundleReturns(atedRefNo, formBundle)
         await(response).status must be(OK)
       }
     }

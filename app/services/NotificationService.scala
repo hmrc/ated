@@ -35,7 +35,7 @@ trait NotificationService extends AuthFunctionality with Retrievals {
   def sendMail(subscriptionData: JsValue, template: String, reference: Map[String, String] = Map.empty)(implicit hc: HeaderCarrier): Future[EmailStatus] = {
     val emailAddressJson = (subscriptionData \\ "emailAddress").headOption
     authorised().retrieve(Retrievals.name) {
-      case fullName =>
+      fullName =>
         emailAddressJson match {
           case Some(x) =>
             val emailAddress = x.as[String]
@@ -48,9 +48,8 @@ trait NotificationService extends AuthFunctionality with Retrievals {
               "company_name" -> companyName,
               "date" -> LocalDate.now().format(DateTimeFormatter.ofPattern("d LLLL yyyy")))
             emailConnector.sendTemplatedEmail(emailAddress, template, params = params ++ reference)
-          case _ => {
+          case _ =>
             Future.successful(EmailNotSent)
-          }
         }
     }
   }
