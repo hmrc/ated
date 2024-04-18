@@ -101,7 +101,7 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
     "submit cached Reliefs" must {
 
       "work even if we have no reliefs found" in new Setup {
-        implicit val hc = new HeaderCarrier()
+        implicit val hc: HeaderCarrier = new HeaderCarrier()
 
         when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq()))
         when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
@@ -120,7 +120,7 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
       }
 
       "submit cached Reliefs and delete them if this submit works" in new Setup {
-        implicit val hc = HeaderCarrier()
+        implicit val hc:HeaderCarrier = HeaderCarrier()
 
         type Retrieval = Option[Name]
         val testEnrolments: Set[Enrolment] = Set(Enrolment("HMRC-ATED-ORG", Seq(EnrolmentIdentifier("AgentRefNumber", "XN1200000100001")), "activated"))

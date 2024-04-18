@@ -88,7 +88,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       |}
     """.stripMargin
 
-  implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
+  implicit val hc:HeaderCarrier = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
   lazy val propertyDetails1: PropertyDetails = PropertyDetailsBuilder.getFullPropertyDetails("1", Some("something"))
   lazy val propertyDetails2: PropertyDetails = PropertyDetailsBuilder.getFullPropertyDetails("2", Some("something else"))
   lazy val propertyDetails3: PropertyDetails = PropertyDetailsBuilder.getFullPropertyDetails("3", Some("something more"), liabilityAmount = Some(BigDecimal(999.99)))

@@ -87,7 +87,7 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuit
       |}
     """.stripMargin
 
-  implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
+  implicit val hc: HeaderCarrier = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
   val propertyDetails1 = PropertyDetailsBuilder.getFullPropertyDetails("1", Some("something"))
   val propertyDetails2 = PropertyDetailsBuilder.getFullPropertyDetails("2", Some("something else"))
   val propertyDetails3 = PropertyDetailsBuilder.getFullPropertyDetails("3", Some("something more"), liabilityAmount = Some(BigDecimal(999.99)))

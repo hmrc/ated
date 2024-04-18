@@ -72,7 +72,7 @@ class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite w
       "work if we have valid data" in new Setup {
         val addressDetails = AddressDetails("Correspondence", "line1", "line2", None, None, Some("postCode"), "GB")
         val updatedData = UpdateSubscriptionDataRequest(true, ChangeIndicators(), List(Address(addressDetails = addressDetails)))
-        implicit val hc = HeaderCarrier()
+        implicit val hc:HeaderCarrier = HeaderCarrier()
 
         when(mockEtmpConnector.updateSubscriptionData(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
         mockRetrievingNoAuthRef()
