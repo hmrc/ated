@@ -27,7 +27,7 @@ trait AuthFunctionalityHelper {
   self: MockitoSugar =>
 
   val mockAuthConnector: AuthConnector
-  val enrolment = Enrolment("HMRC-AGENT-AGENT", Seq(EnrolmentIdentifier("test", "test")), "Activated")
+  val enrolment: Enrolment = Enrolment("HMRC-AGENT-AGENT", Seq(EnrolmentIdentifier("test", "test")), "Activated")
 
   def mockRetrievingAuthRef(): Unit = {
     when(mockAuthConnector.authorise[Enrolments](ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))

@@ -13,7 +13,7 @@ private object AppDependencies {
   )
 
   val test: Seq[ModuleID] = Seq(
-    "uk.gov.hmrc"            %% "bootstrap-test-play-30" % "8.5.0",
+    "uk.gov.hmrc" %% "bootstrap-test-play-30" % "8.5.0",
   ).map(_ % Test)
 
   val itDependencies: Seq[ModuleID] = Seq()

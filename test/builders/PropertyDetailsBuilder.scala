@@ -23,7 +23,7 @@ import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 
 object PropertyDetailsBuilder  extends PlaySpec with GuiceOneServerPerSuite {
 
-  def getPropertyDetailsValueRevalued(): Option[PropertyDetailsValue] = {
+  def getPropertyDetailsValueRevalued: Option[PropertyDetailsValue] = {
     Some(new PropertyDetailsValue(anAcquisition = Some(true),
       isPropertyRevalued = Some(true),
       revaluedValue = Some(BigDecimal(1111.11)),
@@ -31,7 +31,7 @@ object PropertyDetailsBuilder  extends PlaySpec with GuiceOneServerPerSuite {
     ))
   }
 
-  def getPropertyDetailsValueFull(): Option[PropertyDetailsValue] = {
+  def getPropertyDetailsValueFull: Option[PropertyDetailsValue] = {
 
     Some(new PropertyDetailsValue(
       anAcquisition = Some(true),
@@ -49,7 +49,7 @@ object PropertyDetailsBuilder  extends PlaySpec with GuiceOneServerPerSuite {
     ))
   }
 
-  def getPropertyDetailsPeriod(): Option[PropertyDetailsPeriod] = {
+  def getPropertyDetailsPeriod: Option[PropertyDetailsPeriod] = {
     Some(new PropertyDetailsPeriod(isFullPeriod = Some(true)))
   }
 
@@ -68,7 +68,7 @@ object PropertyDetailsBuilder  extends PlaySpec with GuiceOneServerPerSuite {
     ))
   }
 
-  def getPropertyDetailsTitle(): Option[PropertyDetailsTitle] = {
+  def getPropertyDetailsTitle: Option[PropertyDetailsTitle] = {
     Some(new PropertyDetailsTitle("titleNo"))
   }
 
@@ -105,9 +105,9 @@ object PropertyDetailsBuilder  extends PlaySpec with GuiceOneServerPerSuite {
       id = id,
       periodKey = 2015,
       addressProperty = getPropertyDetailsAddress(postCode),
-      title = getPropertyDetailsTitle(),
-      value = getPropertyDetailsValueRevalued(),
-      period = getPropertyDetailsPeriod(),
+      title = getPropertyDetailsTitle,
+      value = getPropertyDetailsValueRevalued,
+      period = getPropertyDetailsPeriod,
       calculated = getPropertyDetailsCalculatedNoValuation(liabilityAmount))
   }
 
@@ -119,9 +119,9 @@ object PropertyDetailsBuilder  extends PlaySpec with GuiceOneServerPerSuite {
       id = id,
       periodKey = 2015,
       addressProperty = getPropertyDetailsAddress(postCode),
-      title = getPropertyDetailsTitle(),
-      value = getPropertyDetailsValueRevalued(),
-      period = getPropertyDetailsPeriod(),
+      title = getPropertyDetailsTitle,
+      value = getPropertyDetailsValueRevalued,
+      period = getPropertyDetailsPeriod,
       calculated = getPropertyDetailsCalculated(liabilityAmount))
   }
 
@@ -133,8 +133,8 @@ object PropertyDetailsBuilder  extends PlaySpec with GuiceOneServerPerSuite {
       id = id,
       periodKey = 2015,
       addressProperty = getPropertyDetailsAddress(postCode),
-      title = getPropertyDetailsTitle(),
-      value = getPropertyDetailsValueFull(),
+      title = getPropertyDetailsTitle,
+      value = getPropertyDetailsValueFull,
       period = getPropertyDetailsPeriodFull(),
       calculated = getPropertyDetailsCalculated(liabilityAmount))
     
@@ -151,8 +151,8 @@ object PropertyDetailsBuilder  extends PlaySpec with GuiceOneServerPerSuite {
       id = id,
       periodKey = 2015,
       addressProperty = getPropertyDetailsAddress(postCode),
-      title = getPropertyDetailsTitle(),
-      value = getPropertyDetailsValueFull(),
+      title = getPropertyDetailsTitle,
+      value = getPropertyDetailsValueFull,
       period = noReliefPeriods,
       calculated = noCalculatedReliefPeriods)
   }
@@ -167,8 +167,8 @@ object PropertyDetailsBuilder  extends PlaySpec with GuiceOneServerPerSuite {
       id = id,
       periodKey = 2015,
       addressProperty = getPropertyDetailsAddress(postCode),
-      title = getPropertyDetailsTitle(),
-      value = getPropertyDetailsValueFull(),
+      title = getPropertyDetailsTitle,
+      value = getPropertyDetailsValueFull,
       period = noLiabilitiesPeriods,
       calculated = noCalculatedLiabilities)
 

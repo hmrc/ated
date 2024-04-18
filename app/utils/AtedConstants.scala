@@ -18,23 +18,15 @@ package utils
 
 object AtedConstants {
 
-  val Authorise = "Authorise"
-  val AtedRefNoUri = "ref-no"
-  val ArnUri = "arn"
-  val ToUri = "to"
-  val FromUri = "from"
-  val AgentUri = "agent"
-  val ActiveOnlyUri = "active-only"
+
 
   val PeriodStartMonth = "4"
   val PeriodStartDay = "1"
 
-  val PropertyKeyLength = 10
 
   val TypeReliefDraft = "Relief"
   val TypeLiabilityDraft = "Liability"
   val TypeChangeLiabilityDraft = "Change_Liability"
-  val TypeMoveToReliefDraft = "Move_To_Relief"
   val TypeDisposeLiabilityDraft = "Dispose_Liability"
 
 }
