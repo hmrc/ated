@@ -89,7 +89,7 @@ case class BicSwiftCode(swiftCode: String) {
 
 }
 
-case class SensitiveBicSwiftCode(override val decryptedValue: BicSwiftCode) extends Sensitive[BicSwiftCode]
+case class SensitiveBicSwiftCode(override val decryptedValue: Option[BicSwiftCode]) extends Sensitive[Option[BicSwiftCode]]
 
 object SensitiveBicSwiftCode {
   implicit val formats: OFormat[SensitiveBicSwiftCode] = {
@@ -127,7 +127,7 @@ object Iban extends (String => Iban){
   }
 }
 
-case class SensitiveIban( override val decryptedValue: Iban) extends Sensitive[Iban]
+case class SensitiveIban( override val decryptedValue: Option[Iban]) extends Sensitive[Option[Iban]]
 
 object SensitiveIban {
   implicit val formats: OFormat[SensitiveIban] = {
@@ -148,9 +148,14 @@ object ProtectedBankDetails {
     implicit val decryptedOptionBooleanFormats = JsonEncryption.sensitiveEncrypterDecrypter(SensitiveBoolean.apply)
     implicit val decryptedOptionStringFormats = JsonEncryption.sensitiveEncrypterDecrypter(SensitiveString.apply)
     implicit val decryptedOptionSortCodeFormats = JsonEncryption.sensitiveEncrypterDecrypter(SensitiveSortCode.apply)
-    implicit val decryptedOptionBicSiftCodeFormats = JsonEncryption.sensitiveEncrypterDecrypter(SensitiveBicSwiftCode.apply)
-    implicit val decryptedOptionIbanFormats = JsonEncryption.sensitiveEncrypterDecrypter(SensitiveIban.apply)
-
+    implicit val decryptedOptionBicSiftCodeFormats: Format[SensitiveBicSwiftCode] = {
+      implicit val f: Format[Option[models.BicSwiftCode]] = Format.nullable(__)
+      JsonEncryption.sensitiveEncrypterDecrypter(SensitiveBicSwiftCode.apply)
+    }
+    implicit val decryptedOptionIbanFormats = {
+      implicit val f: Format[Option[models.Iban]] = Format.nullable(__)
+      JsonEncryption.sensitiveEncrypterDecrypter(SensitiveIban.apply)
+    }
     Json.format[ProtectedBankDetails]
   }
 }
@@ -173,20 +178,28 @@ object BankDetailsConversions {
       bankDetails.accountName.map(SensitiveString),
       bankDetails.accountNumber.map(SensitiveString),
       bankDetails.sortCode.map(SensitiveSortCode(_)),
-      bankDetails.bicSwiftCode.map(SensitiveBicSwiftCode(_)),
-      bankDetails.iban.map(SensitiveIban(_))
+      bankDetails.bicSwiftCode.map(x => SensitiveBicSwiftCode(Some(BicSwiftCode(x.swiftCode)))),
+      bankDetails.iban.map(x => SensitiveIban(Some(Iban(x.iban))))
     )
   }
 
   implicit def protected2BankDetails(protectedBankDetails: ProtectedBankDetails): BankDetails = {
-    BankDetails(
+    val x = BankDetails(
       protectedBankDetails.hasUKBankAccount.map(_.decryptedValue),
       protectedBankDetails.accountName.map(_.decryptedValue),
       protectedBankDetails.accountNumber.map(_.decryptedValue),
       protectedBankDetails.sortCode.map(_.decryptedValue),
-      protectedBankDetails.bicSwiftCode.map(_.decryptedValue),
-      protectedBankDetails.iban.map(_.decryptedValue)
+      protectedBankDetails.bicSwiftCode.flatMap(x => x.decryptedValue.map(y => BicSwiftCode(y.swiftCode)) ), //match {
+       // case Some(x) => x.decryptedValue.map(y => BicSwiftCode(y.swiftCode)) //match {
+          //case Some(y) => Some(BicSwiftCode(y.swiftCode))
+         // case _ => None
+        //}
+      //  case _ => None
+      //},
+      protectedBankDetails.iban.flatMap(x => x.decryptedValue.map(y => Iban(y.iban)) )
     )
+
+    x
   }
 }
 

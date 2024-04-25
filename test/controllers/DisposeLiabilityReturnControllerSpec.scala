@@ -117,7 +117,7 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
     "updateHasBankDetails" must {
       "for successful save, return DisposeLiabilityReturn model with OK as response status" in new Setup {
         lazy val formBundleResp: FormBundleReturn = ChangeLiabilityReturnBuilder.generateFormBundleResponse(periodKey)
-        val bank1: BankDetailsModel = BankDetailsModel(true, Some(BankDetails(None, None, None, None)))
+        val bank1: BankDetailsModel = BankDetailsModel(true, Some(BankDetails(None, None, None, None, Some(BicSwiftCode("00000000000")))))
         val dispose1: DisposeLiabilityReturn = DisposeLiabilityReturn(atedRefNo, formBundle1, formBundleResp, bankDetails = Some(bank1))
         val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(true))
         when(mockDisposeLiabilityReturnService
@@ -143,7 +143,7 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
     "updateBankDetails" must {
       "for successful save, return DisposeLiabilityReturn model with OK as response status" in new Setup {
         lazy val formBundleResp: FormBundleReturn = ChangeLiabilityReturnBuilder.generateFormBundleResponse(periodKey)
-        val bank1: BankDetails = BankDetails(None, None, None, None)
+        val bank1: BankDetails = BankDetails(None, None, None, None, Some(BicSwiftCode("00000000000")))
         val dispose1: DisposeLiabilityReturn = DisposeLiabilityReturn(atedRefNo, formBundle1, formBundleResp, bankDetails = Some(BankDetailsModel(true, Some(bank1))))
         val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(bank1))
         when(mockDisposeLiabilityReturnService.updateDraftDisposeBankDetails(ArgumentMatchers.eq(atedRefNo),
@@ -155,7 +155,7 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
       }
 
       "for unsuccessful save, return None with NOT_FOUND as response status" in new Setup {
-        val bank1: BankDetails = BankDetails(None, None, None, None)
+        val bank1: BankDetails = BankDetails(None, None, None, None, Some(BicSwiftCode("00000000000")))
         val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(bank1))
         when(mockDisposeLiabilityReturnService.updateDraftDisposeBankDetails(ArgumentMatchers.eq(atedRefNo),
           ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(bank1))(ArgumentMatchers.any()))

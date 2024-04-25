@@ -174,19 +174,19 @@ class ChangeLiabilityUtilsSpec extends PlaySpec with GuiceOneServerPerSuite with
       }
 
       "return None, if hasBankDetails is false or hasUKBankAccount is false, or if any of the required string is of 0 length" in {
-        val bank1 = BankDetailsModel(hasBankDetails = true, bankDetails = Some(BankDetails(hasUKBankAccount = Some(false), accountName = None, accountNumber = None, sortCode = None)))
+        val bank1 = BankDetailsModel(hasBankDetails = true, bankDetails = Some(BankDetails(hasUKBankAccount = Some(false), accountName = None, accountNumber = None, sortCode = None, Some(BicSwiftCode("00000000000")))))
         val result1 = ChangeLiabilityUtils.getEtmpBankDetails(Some(ChangeLiabilityReturnBuilder.covertToProtectedBankDetails(bank1)))
         result1 must be(None)
 
-        val bank2 = BankDetailsModel(hasBankDetails = false, bankDetails = Some(BankDetails(hasUKBankAccount = None, accountName = None, accountNumber = None, sortCode = None)))
+        val bank2 = BankDetailsModel(hasBankDetails = false, bankDetails = Some(BankDetails(hasUKBankAccount = None, accountName = None, accountNumber = None, sortCode = None, Some(BicSwiftCode("00000000000")))))
         val result2 = ChangeLiabilityUtils.getEtmpBankDetails(Some(ChangeLiabilityReturnBuilder.covertToProtectedBankDetails(bank2)))
         result2 must be(None)
 
-        val bank3 = BankDetailsModel(hasBankDetails = true, bankDetails = Some(BankDetails(hasUKBankAccount = Some(true), accountName = Some(""), accountNumber = Some("123"), sortCode = None)))
+        val bank3 = BankDetailsModel(hasBankDetails = true, bankDetails = Some(BankDetails(hasUKBankAccount = Some(true), accountName = Some(""), accountNumber = Some("123"), sortCode = None, Some(BicSwiftCode("00000000000")))))
         val result3 = ChangeLiabilityUtils.getEtmpBankDetails(Some(ChangeLiabilityReturnBuilder.covertToProtectedBankDetails(bank3)))
         result3 must be(None)
 
-        val bank4 = BankDetailsModel(hasBankDetails = true, bankDetails = Some(BankDetails(hasUKBankAccount = Some(true), accountName = None, accountNumber = None, sortCode = None)))
+        val bank4 = BankDetailsModel(hasBankDetails = true, bankDetails = Some(BankDetails(hasUKBankAccount = Some(true), accountName = None, accountNumber = None, sortCode = None, Some(BicSwiftCode("00000000000")))))
         val result4 = ChangeLiabilityUtils.getEtmpBankDetails(Some(ChangeLiabilityReturnBuilder.covertToProtectedBankDetails(bank4)))
         result4 must be(None)
 
