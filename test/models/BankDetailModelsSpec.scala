@@ -92,18 +92,18 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
              |    "hasBankDetails": false,
              |    "protectedBankDetails" : {
              |      "hasUKBankAccount" : "N3aBb38antBm3t1jI4zlhg==",
-             |      "accountName" : "+FsJBNzKH38QPY9we5ebyQ==",
-             |      "accountNumber" : "rn8JErJ9wM/7nQwJce9fOw==",
-             |      "sortCode" : "F0vOiYU8dp8L7M7oHJ2lRTN4+H02TzWdW98bsF8tI1gsIwENDROLYtWfpunYaZqYxZVMOavTLAtmAQGCHjsVFA==",
-             |      "bicSwiftCode" : "vrPsPHFTZTzDkAs47XbyLXkoaCflT3w4MM80DzAW3cM=",
-             |       "iban" : "fT98XnPNxN88UtlRy/DiamnNU1JKYdD5nTfOSKSdBlU="
+             |      "accountName" : "AgRrB7hjGHSPCP/tOoC4e1PkDrL+/GWL0fk3OSrFFg0=",
+             |      "accountNumber" : "KB+g5/qReFmvl+V+YJlO4A==",
+             |      "sortCode" : "F0vOiYU8dp8L7M7oHJ2lRaSekYjhPwCa0Dyu8Tw9bh7WiT1SveRojOCco4aPD/d9b7JjylAOv+GPowsmDoaRiQ==",
+             |      "bicSwiftCode" : "+ZKJ7XVtuMrxNikqKNfLyQ==",
+             |      "iban" : "+ZKJ7XVtuMrxNikqKNfLyQ=="
              |     }
              |}
           """.stripMargin
 
         val protectedBankDetails = ProtectedBankDetails(Some(SensitiveBoolean(true)),
-          Some(SensitiveString("AcountName")), Some(SensitiveString("1111111")), Some(SensitiveSortCode(SortCode("00", "01", "02"))),
-          Some(SensitiveBicSwiftCode(BicSwiftCode("12345678901"))), Some(SensitiveIban(Iban("iBanCode"))))
+          Some(SensitiveString("ATED Tax Payer")), Some(SensitiveString("123456789")), Some(SensitiveSortCode(SortCode("11", "11", "11"))),
+          None, None)
 
         val entity: BankDetailsModel = Json.fromJson(Json.parse(encryptedProtectedBankDetailsJson))(BankDetailsModel.format).asOpt.value
 
