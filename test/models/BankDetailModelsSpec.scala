@@ -93,7 +93,7 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
              |    "protectedBankDetails" : {
              |      "hasUKBankAccount" : "N3aBb38antBm3t1jI4zlhg==",
              |      "accountName" : "AgRrB7hjGHSPCP/tOoC4e1PkDrL+/GWL0fk3OSrFFg0=",
-             |      "accountNumber" : "rn8JErJ9wM/7nQwJce9fOw==",
+             |      "accountNumber" : "iSIG6rtb94AjAqHTFruOww==",
              |      "sortCode" : "F0vOiYU8dp8L7M7oHJ2lRaSekYjhPwCa0Dyu8Tw9bh7WiT1SveRojOCco4aPD/d9b7JjylAOv+GPowsmDoaRiQ==",
              |      "bicSwiftCode" : "+ZKJ7XVtuMrxNikqKNfLyQ==",
              |      "iban" : "+ZKJ7XVtuMrxNikqKNfLyQ=="
@@ -102,7 +102,7 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
           """.stripMargin
 
         val protectedBankDetails = ProtectedBankDetails(Some(SensitiveBoolean(true)),
-          Some(SensitiveString("ATED Tax Payer")), Some(SensitiveAccountNumber(Some("1111111"))), Some(SensitiveSortCode(SortCode("11", "11", "11"))),
+          Some(SensitiveString("ATED Tax Payer")), Some(SensitiveAccountNumber(Some("11628798"))), Some(SensitiveSortCode(SortCode("11", "11", "11"))),
           Some(SensitiveBicSwiftCode(None)), Some(SensitiveIban(None)))
 
         val entity: BankDetailsModel = Json.fromJson(Json.parse(encryptedProtectedBankDetailsJson))(BankDetailsModel.format).asOpt.value
@@ -118,7 +118,7 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
       implicit val jsonCrypto: Encrypter with Decrypter = crypto.JsonCrypto
 
       val protectedBankDetails = ProtectedBankDetails(Some(SensitiveBoolean(true)),
-        Some(SensitiveString("AcountName")), Some(SensitiveAccountNumber(Some("1111111"))), Some(SensitiveSortCode(SortCode.fromString("000102"))),
+        Some(SensitiveString("AcountName")), Some(SensitiveAccountNumber(Some("11111111"))), Some(SensitiveSortCode(SortCode.fromString("000102"))),
         Some(SensitiveBicSwiftCode(Some(BicSwiftCode("12345678901")))), Some(SensitiveIban(Some(Iban("iBanCode")))))
 
       val json: JsValue = Json.toJson(protectedBankDetails)(ProtectedBankDetails.bankDetailsFormats)

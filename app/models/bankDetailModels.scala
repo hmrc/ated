@@ -135,13 +135,13 @@ object SensitiveIban {
   }
 }
 
-case class AccountNumber(accountNumber: String) {
+/*case class AccountNumber(accountNumber: String) {
   override def toString = accountNumber
 }
 object AccountNumber extends (String => AccountNumber){
 
   implicit val formats: OFormat[AccountNumber] = Json.format[AccountNumber]
-}
+}*/
 
 case class SensitiveAccountNumber( override val decryptedValue: Option[String]) extends Sensitive[Option[String]]
 
@@ -178,7 +178,7 @@ object ProtectedBankDetails {
       JsonEncryption.sensitiveEncrypterDecrypter(SensitiveBicSwiftCode.apply)
     }
 
-    implicit val decryptedOptionIbanFormats = {
+    implicit val decryptedOptionIbanFormats: Format[SensitiveIban] = {
       implicit val f: Format[Option[models.Iban]] = Format.nullable(__)
       JsonEncryption.sensitiveEncrypterDecrypter(SensitiveIban.apply)
     }
