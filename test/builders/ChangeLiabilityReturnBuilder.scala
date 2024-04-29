@@ -150,7 +150,7 @@ object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite
         ProtectedBankDetails(
           bd.hasUKBankAccount.map(x => SensitiveBoolean(x)),
           bd.accountName.map(x => SensitiveString(x)),
-          bd.accountNumber.map(x => SensitiveString(x)),
+          bd.accountNumber.map(x => SensitiveAccountNumber(Some(x))),
           bd.sortCode.map(x => SensitiveSortCode(x)),
           bd.bicSwiftCode.map(x => SensitiveBicSwiftCode(Some(x))), //.map(x => SensitiveBicSwiftCode(x)),
           bd.iban.map(x => SensitiveIban(Some(x)))
