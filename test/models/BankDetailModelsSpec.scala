@@ -21,7 +21,6 @@ import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsString, JsValue, Json}
-import uk.gov.hmrc.crypto.Sensitive.{SensitiveBoolean, SensitiveString}
 import uk.gov.hmrc.crypto.{ApplicationCrypto, Decrypter, Encrypter}
 
 import scala.reflect.ClassManifestFactory.Nothing
@@ -82,7 +81,7 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
 
   "BankDetailsModel" must {
     "decrypt the elements" when {
-      "when there are protected bank details" in {
+      "when there are non-Null protected bank details" in {
         val crypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
         implicit val jsonCrypto: Encrypter with Decrypter = crypto.JsonCrypto
 
@@ -93,16 +92,47 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
              |    "protectedBankDetails" : {
              |      "hasUKBankAccount" : "N3aBb38antBm3t1jI4zlhg==",
              |      "accountName" : "AgRrB7hjGHSPCP/tOoC4e1PkDrL+/GWL0fk3OSrFFg0=",
-             |      "accountNumber" : "iSIG6rtb94AjAqHTFruOww==",
+             |      "accountNumber" : "rn8JErJ9wM/7nQwJce9fOw==",
              |      "sortCode" : "F0vOiYU8dp8L7M7oHJ2lRaSekYjhPwCa0Dyu8Tw9bh7WiT1SveRojOCco4aPD/d9b7JjylAOv+GPowsmDoaRiQ==",
+             |      "bicSwiftCode" : "vrPsPHFTZTzDkAs47XbyLXkoaCflT3w4MM80DzAW3cM=",
+             |      "iban" : "fT98XnPNxN88UtlRy/DiamnNU1JKYdD5nTfOSKSdBlU="
+             |     }
+             |}
+          """.stripMargin
+
+        val protectedBankDetails = ProtectedBankDetails(Some(SensitiveHasUKBankAccount(Some(true))),
+          Some(SensitiveAccountName(Some("ATED Tax Payer"))), Some(SensitiveAccountNumber(Some("1111111"))), Some(SensitiveSortCode(Some(SortCode("11", "11", "11")))),
+          Some(SensitiveBicSwiftCode(Some(BicSwiftCode("12345678901")))), Some(SensitiveIban(Some(Iban("iBanCode")))))
+
+        val entity: BankDetailsModel = Json.fromJson(Json.parse(encryptedProtectedBankDetailsJson))(BankDetailsModel.format).asOpt.value
+
+        entity.protectedBankDetails match {
+          case Some(x) => x shouldBe protectedBankDetails
+          case _ => Nothing
+        }
+      }
+
+      "when there are Null protected bank details for every field" in {
+        val crypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
+        implicit val jsonCrypto: Encrypter with Decrypter = crypto.JsonCrypto
+
+        val encryptedProtectedBankDetailsJson =
+          s"""
+             |{
+             |    "hasBankDetails": false,
+             |    "protectedBankDetails" : {
+             |      "hasUKBankAccount" : "+ZKJ7XVtuMrxNikqKNfLyQ==",
+             |      "accountName" : "+ZKJ7XVtuMrxNikqKNfLyQ==",
+             |      "accountNumber" : "+ZKJ7XVtuMrxNikqKNfLyQ==",
+             |      "sortCode" : "+ZKJ7XVtuMrxNikqKNfLyQ==",
              |      "bicSwiftCode" : "+ZKJ7XVtuMrxNikqKNfLyQ==",
              |      "iban" : "+ZKJ7XVtuMrxNikqKNfLyQ=="
              |     }
              |}
           """.stripMargin
 
-        val protectedBankDetails = ProtectedBankDetails(Some(SensitiveBoolean(true)),
-          Some(SensitiveString("ATED Tax Payer")), Some(SensitiveAccountNumber(Some("11628798"))), Some(SensitiveSortCode(SortCode("11", "11", "11"))),
+        val protectedBankDetails = ProtectedBankDetails(Some(SensitiveHasUKBankAccount(None)),
+          Some(SensitiveAccountName(None)), Some(SensitiveAccountNumber(None)), Some(SensitiveSortCode(None)),
           Some(SensitiveBicSwiftCode(None)), Some(SensitiveIban(None)))
 
         val entity: BankDetailsModel = Json.fromJson(Json.parse(encryptedProtectedBankDetailsJson))(BankDetailsModel.format).asOpt.value
@@ -113,12 +143,12 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
         }
       }
     }
-    "encrypt/decrypt ProtectdBankDetails entity" in {
+    "encrypt/decrypt ProtectedBankDetails entity that are Non-Null" in {
       val crypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
       implicit val jsonCrypto: Encrypter with Decrypter = crypto.JsonCrypto
 
-      val protectedBankDetails = ProtectedBankDetails(Some(SensitiveBoolean(true)),
-        Some(SensitiveString("AcountName")), Some(SensitiveAccountNumber(Some("11111111"))), Some(SensitiveSortCode(SortCode.fromString("000102"))),
+      val protectedBankDetails = ProtectedBankDetails(Some(SensitiveHasUKBankAccount(Some(true))),
+        Some(SensitiveAccountName(Some("AcountName"))), Some(SensitiveAccountNumber(Some("1111111"))), Some(SensitiveSortCode(Some(SortCode.fromString("000102")))),
         Some(SensitiveBicSwiftCode(Some(BicSwiftCode("12345678901")))), Some(SensitiveIban(Some(Iban("iBanCode")))))
 
       val json: JsValue = Json.toJson(protectedBankDetails)(ProtectedBankDetails.bankDetailsFormats)
@@ -129,6 +159,23 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
       (json \ "sortCode").get shouldBe JsString("F0vOiYU8dp8L7M7oHJ2lRTN4+H02TzWdW98bsF8tI1gsIwENDROLYtWfpunYaZqYxZVMOavTLAtmAQGCHjsVFA==")
       (json \ "bicSwiftCode").get shouldBe JsString("vrPsPHFTZTzDkAs47XbyLXkoaCflT3w4MM80DzAW3cM=")
       (json \ "iban").get shouldBe JsString("fT98XnPNxN88UtlRy/DiamnNU1JKYdD5nTfOSKSdBlU=")
+    }
+    "encrypt/decrypt ProtectedBankDetails entity that are all Null" in {
+      val crypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
+      implicit val jsonCrypto: Encrypter with Decrypter = crypto.JsonCrypto
+
+      val protectedBankDetails = ProtectedBankDetails(Some(SensitiveHasUKBankAccount(None)),
+        Some(SensitiveAccountName(None)), Some(SensitiveAccountNumber(None)), Some(SensitiveSortCode(None)),
+        Some(SensitiveBicSwiftCode(None)), Some(SensitiveIban(None)))
+
+      val json: JsValue = Json.toJson(protectedBankDetails)(ProtectedBankDetails.bankDetailsFormats)
+
+      (json \ "hasUKBankAccount").get shouldBe JsString("+ZKJ7XVtuMrxNikqKNfLyQ==")
+      (json \ "accountName").get shouldBe JsString("+ZKJ7XVtuMrxNikqKNfLyQ==")
+      (json \ "accountNumber").get shouldBe JsString("+ZKJ7XVtuMrxNikqKNfLyQ==")
+      (json \ "sortCode").get shouldBe JsString("8B8yBnV3SEbDieXbkU1veQ==")
+      (json \ "bicSwiftCode").get shouldBe JsString("8B8yBnV3SEbDieXbkU1veQ==")
+      (json \ "iban").get shouldBe JsString("8B8yBnV3SEbDieXbkU1veQ==")
     }
   }
 }

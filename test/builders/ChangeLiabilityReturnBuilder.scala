@@ -20,7 +20,6 @@ import models._
 import java.time.{ZonedDateTime, LocalDate, ZoneId, ZoneOffset}
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
-import uk.gov.hmrc.crypto.Sensitive.{SensitiveBoolean, SensitiveString}
 
 object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite {
 
@@ -148,10 +147,10 @@ object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite
     val pd = bankDetailsModel.bankDetails.map{
       bd =>
         ProtectedBankDetails(
-          bd.hasUKBankAccount.map(x => SensitiveBoolean(x)),
-          bd.accountName.map(x => SensitiveString(x)),
+          bd.hasUKBankAccount.map(x => SensitiveHasUKBankAccount(Some(x))),
+          bd.accountName.map(x => SensitiveAccountName(Some(x))),
           bd.accountNumber.map(x => SensitiveAccountNumber(Some(x))),
-          bd.sortCode.map(x => SensitiveSortCode(x)),
+          bd.sortCode.map(x => SensitiveSortCode(Some(x))),
           bd.bicSwiftCode.map(x => SensitiveBicSwiftCode(Some(x))), //.map(x => SensitiveBicSwiftCode(x)),
           bd.iban.map(x => SensitiveIban(Some(x)))
         )
