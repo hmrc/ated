@@ -262,7 +262,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
         disposeLiabilityReturnList <- disposeLiabilityReturnListFuture
         submitStatus: HttpResponse <- {
           disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
-            case Some(x) => etmpReturnsConnector.submitEditedLiabilityReturns(atedRefNo, generateEditReturnRequest(x, agentRefNo), true)
+            case Some(x) => etmpReturnsConnector.submitEditedLiabilityReturns(atedRefNo, generateEditReturnRequest(x, agentRefNo), disposal = true)
             case None => Future.successful(HttpResponse(NOT_FOUND, ""))
           }
         }

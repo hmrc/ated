@@ -9,4 +9,6 @@ addSbtPlugin("org.playframework"  % "sbt-plugin"  % "3.0.2")
 
 addSbtPlugin("org.scoverage" %% "sbt-scoverage" % "2.0.11")
 
+addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.5.3")
+
 

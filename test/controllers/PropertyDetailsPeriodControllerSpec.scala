@@ -66,7 +66,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPe
 
         lazy val testPropertyDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsDatesLiable: PropertyDetailsDatesLiable = PropertyDetailsDatesLiable(LocalDate.of(1970, 1, 1), LocalDate.of(1970, 1, 1))
-        lazy val testPropertyDetailsPeriod: IsFullTaxPeriod = IsFullTaxPeriod(true, Some(testPropertyDetailsDatesLiable))
+        lazy val testPropertyDetailsPeriod: IsFullTaxPeriod = IsFullTaxPeriod(isFullPeriod = true, datesLiable = Some(testPropertyDetailsDatesLiable))
         when(mockPropertyDetailsService.cacheDraftFullTaxPeriod(ArgumentMatchers.eq(testAccountRef),
           ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(Some(testPropertyDetails)))
 
@@ -79,7 +79,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPe
       "respond with BAD_REQUEST and if this failed" in new Setup {
         val testAccountRef = "ATED1223123"
 
-        lazy val testPropertyDetailsPeriod: IsFullTaxPeriod = IsFullTaxPeriod(true, None)
+        lazy val testPropertyDetailsPeriod: IsFullTaxPeriod = IsFullTaxPeriod(isFullPeriod = true, datesLiable = None)
         when(mockPropertyDetailsService.cacheDraftFullTaxPeriod(ArgumentMatchers.eq(testAccountRef),
           ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any())).thenReturn(Future.successful(None))
 

@@ -98,7 +98,7 @@ class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite w
         val registeredDetails: RegisteredAddressDetails = RegisteredAddressDetails(addressLine1 = "", addressLine2 = "", countryCode = "GB")
 
         val updatedData = new UpdateRegistrationDetailsRequest(
-          None, false, None, Some(Organisation("testName")), registeredDetails, ContactDetails(), false, false)
+          None, isAnIndividual = false, None, Some(Organisation("testName")), registeredDetails, ContactDetails(), isAnAgent = false, isAGroup = false)
 
         when(mockEtmpConnector.updateRegistrationDetails(
           ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))

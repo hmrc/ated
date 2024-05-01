@@ -187,7 +187,7 @@ class SubscriptionDataControllerSpec extends PlaySpec with GuiceOneServerPerSuit
 
     "update registration details" must {
       val registeredDetails = RegisteredAddressDetails(addressLine1 = "", addressLine2 = "", countryCode = "GB")
-      val updatedData = new UpdateRegistrationDetailsRequest(None, false, None, Some(Organisation("testName")), registeredDetails, ContactDetails(), false, false)
+      val updatedData = new UpdateRegistrationDetailsRequest(None, isAnIndividual = false, None, Some(Organisation("testName")), registeredDetails, ContactDetails(), isAnAgent = false, isAGroup = false)
       val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(updatedData))
 
       "respond with OK, for successful GET" in new Setup {

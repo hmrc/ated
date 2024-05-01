@@ -158,8 +158,6 @@ object SensitiveHasUKBankAccount {
   }
 }
 
-
-
 case class ProtectedBankDetails(hasUKBankAccount: Option[SensitiveHasUKBankAccount],
                                      accountName: Option[SensitiveAccountName],
                                      accountNumber: Option[SensitiveAccountNumber],

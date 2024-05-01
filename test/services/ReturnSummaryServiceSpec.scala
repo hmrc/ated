@@ -141,7 +141,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
           PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")),
             Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5), None, None)),
               List(SubmittedLiabilityReturns("12345", "line1 line2", 1000, LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5),
-                true, "pay-123")))))))
+                changeAllowed = true, paymentReference = "pay-123")))))))
 
         when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
@@ -181,10 +181,10 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
             PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")),
               Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5), None, None)),
                   List(
-                    SubmittedLiabilityReturns("12346", "line1 line2", 1000, LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5), true, "pay-123")
+                    SubmittedLiabilityReturns("12346", "line1 line2", 1000, LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5), changeAllowed = true, paymentReference = "pay-123")
                   ),
                   List(
-                    SubmittedLiabilityReturns("12345", "line1 line2", 1000, LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 1, 1), false, "pay-123")
+                    SubmittedLiabilityReturns("12345", "line1 line2", 1000, LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 1, 1), changeAllowed = false, paymentReference = "pay-123")
                   )
                 )
               )

@@ -29,7 +29,7 @@ object EtmpReturnsResponseModelBuilder extends PlaySpec with GuiceOneServerPerSu
     val org = "OrganisationName"
 
     val etmpReturn = EtmpReturn("12345", LocalDate.of(periodKey.toInt, 5, 5),
-      LocalDate.of(periodKey.toInt, 9, 5), LocalDate.of(periodKey.toInt, 10, 5), 1000, "pay-123", true)
+      LocalDate.of(periodKey.toInt, 9, 5), LocalDate.of(periodKey.toInt, 10, 5), 1000, "pay-123", changeAllowed = true)
 
     val etmpPropertySummary = EtmpPropertySummary("abc", None, "line1", "line2", Seq(etmpReturn))
 
@@ -50,7 +50,7 @@ object EtmpReturnsResponseModelBuilder extends PlaySpec with GuiceOneServerPerSu
     val org = "OrganisationName"
 
     val etmpReturn = EtmpReturn("12345", LocalDate.of(periodKey.toInt, 5, 5),
-      LocalDate.of(periodKey.toInt, 9, 5), LocalDate.of(periodKey.toInt, 10, 5), 1000, "pay-123", true)
+      LocalDate.of(periodKey.toInt, 9, 5), LocalDate.of(periodKey.toInt, 10, 5), 1000, "pay-123", changeAllowed = true)
 
     val etmpPropertySummary = EtmpPropertySummary("abc", None, "line1", "line2", Seq(etmpReturn))
 

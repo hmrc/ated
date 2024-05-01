@@ -195,7 +195,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         when(mockDisposeLiabilityReturnRepository
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
           .thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(atedRefNo, formBundle1, true))
+        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(atedRefNo, formBundle1, hasBankDetails = true))
         result.get.bankDetails.get.hasBankDetails must be(true)
         result.get.bankDetails.get.bankDetails.isDefined must be(false)
         result.get.bankDetails.get.protectedBankDetails.isDefined must be(false)
@@ -208,7 +208,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         when(mockDisposeLiabilityReturnRepository
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
           .thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(atedRefNo, formBundle1, true))
+        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(atedRefNo, formBundle1, hasBankDetails = true))
         result.get.bankDetails.get.hasBankDetails must be(true)
         result.get.bankDetails.get.bankDetails.isDefined must be(false)
         result.get.bankDetails.get.protectedBankDetails.isDefined must be(true)
@@ -221,7 +221,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         when(mockDisposeLiabilityReturnRepository
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
           .thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(atedRefNo, formBundle1, false))
+        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(atedRefNo, formBundle1, hasBankDetails = false))
         result.get.bankDetails.get.hasBankDetails must be(false)
         result.get.bankDetails.get.bankDetails.isDefined must be(false)
         result.get.bankDetails.get.protectedBankDetails.isDefined must be(false)
@@ -234,7 +234,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         when(mockDisposeLiabilityReturnRepository
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
           .thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(atedRefNo, formBundle1, true))
+        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(atedRefNo, formBundle1, hasBankDetails = true))
         result must be(None)
       }
     }
