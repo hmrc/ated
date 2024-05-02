@@ -23,9 +23,9 @@ import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
-import uk.gov.hmrc.auth.core.AuthorisedFunctions
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
 import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.http.HeaderCarrier
@@ -34,20 +34,20 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class NotificationServiceSpec extends PlaySpec with GuiceOneServerPerSuite with BeforeAndAfterEach with MockAuthConnector {
 
-  val mockEmailConnector = mock[EmailConnector]
+  val mockEmailConnector: EmailConnector = mock[EmailConnector]
 
-  override def beforeEach() = {
+  override def beforeEach(): Unit = {
     reset(mockEmailConnector)
   }
 
-  val name = Some(Name(Some("gary"),Some("bloggs")))
+  val name: Option[Name] = Some(Name(Some("gary"),Some("bloggs")))
   val noName:Option[Name] = None
 
   trait Setup {
     class TestNotificationService extends NotificationService with AuthorisedFunctions {
       implicit val ec: ExecutionContext = app.injector.instanceOf[ExecutionContext]
-      override val emailConnector = mockEmailConnector
-      override val authConnector = mockAuthConnector
+      override val emailConnector: EmailConnector = mockEmailConnector
+      override val authConnector: AuthConnector = mockAuthConnector
     }
 
     val testNotificationService = new TestNotificationService()
@@ -55,27 +55,73 @@ class NotificationServiceSpec extends PlaySpec with GuiceOneServerPerSuite with 
 
   "sendMail" must {
 
-    implicit val hc = HeaderCarrier()
+    implicit val hc: HeaderCarrier = HeaderCarrier()
 
     "send email when email address present and name is present" in new Setup {
-      when(mockEmailConnector.sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
+      when(mockEmailConnector
+        .sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(
+          ArgumentMatchers.any()))thenReturn Future.successful(EmailSent)
       mockAuthorise(retrievals = Retrievals.name)(Future.successful(name))
 
-      val json = Json.parse( """{"safeId":"1111111111","organisationName":"Test Org","address":[{"name1":"name1","name2":"name2","addressDetails":{"addressType":"Correspondence","addressLine1":"address line 1","addressLine2":"address line 2","addressLine3":"address line 3","addressLine4":"address line 4","postalCode":"ZZ1 1ZZ","countryCode":"GB"},"contactDetails":{"phoneNumber":"01234567890","mobileNumber":"0712345678","emailAddress":"test@mail.com"}}]}""")
+      val json: JsValue = Json
+        .parse(
+          """{
+            |"safeId":"1111111111",
+            |"organisationName":"Test Org",
+            |"address":[{"name1":"name1","name2":"name2",
+            |"addressDetails":{"addressType":"Correspondence","addressLine1":"address line 1",
+            |"addressLine2":"address line 2",
+            |"addressLine3":"address line 3",
+            |"addressLine4":"address line 4",
+            |"postalCode":"ZZ1 1ZZ","countryCode":"GB"},
+            |"contactDetails":{"phoneNumber":"01234567890",
+            |"mobileNumber":"0712345678",
+            |"emailAddress":"test@mail.com"}}]}"""
+            .stripMargin)
       await(testNotificationService.sendMail(json, "")) must be(EmailSent)
       verify(mockEmailConnector, times(1)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
     }
 
     "send email when email address present and name is not present" in new Setup {
-      when(mockEmailConnector.sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
+      when(mockEmailConnector
+        .sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(
+          ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
       mockAuthorise(retrievals = Retrievals.name)(Future.successful(noName))
 
-      val json = Json.parse( """{"safeId":"1111111111","organisationName":"Test Org","address":[{"name1":"name1","name2":"name2","addressDetails":{"addressType":"Correspondence","addressLine1":"address line 1","addressLine2":"address line 2","addressLine3":"address line 3","addressLine4":"address line 4","postalCode":"ZZ1 1ZZ","countryCode":"GB"},"contactDetails":{"phoneNumber":"01234567890","mobileNumber":"0712345678","emailAddress":"test@mail.com"}}]}""")
+      val json: JsValue = Json.parse(
+        """{
+          |"safeId":"1111111111",
+          |"organisationName":"Test Org",
+          |"address":[{"name1":"name1","name2":"name2",
+          |"addressDetails":{"addressType":"Correspondence",
+          |"addressLine1":"address line 1",
+          |"addressLine2":"address line 2",
+          |"addressLine3":"address line 3",
+          |"addressLine4":"address line 4",
+          |"postalCode":"ZZ1 1ZZ",
+          |"countryCode":"GB"},
+          |"contactDetails":{"phoneNumber":"01234567890",
+          |"mobileNumber":"0712345678",
+          |"emailAddress":"test@mail.com"}}]}"""
+          .stripMargin)
       await(testNotificationService.sendMail(json, "")) must be(EmailSent)
     }
 
     "handle missing email address" in new Setup {
-      val json = Json.parse( """{"safeId":"1111111111","organisationName":"Test Org","address":[{"name1":"name1","name2":"name2","addressDetails":{"addressType":"Correspondence","addressLine1":"address line 1","addressLine2":"address line 2","addressLine3":"address line 3","addressLine4":"address line 4","postalCode":"ZZ1 1ZZ","countryCode":"GB"},"contactDetails":{"phoneNumber":"01234567890","mobileNumber":"0712345678"}}]}""")
+      val json: JsValue = Json.parse(
+        """{
+          |"safeId":"1111111111",
+          |"organisationName":"Test Org",
+          |"address":[{"name1":"name1","name2":"name2",
+          |"addressDetails":{"addressType":"Correspondence",
+          |"addressLine1":"address line 1",
+          |"addressLine2":"address line 2",
+          |"addressLine3":"address line 3",
+          |"addressLine4":"address line 4",
+          |"postalCode":"ZZ1 1ZZ","countryCode":"GB"},
+          |"contactDetails":{"phoneNumber":"01234567890",
+          |"mobileNumber":"0712345678"}}]}"""
+          .stripMargin)
       await(testNotificationService.sendMail(json, "")) must be(EmailNotSent)
     }
   }

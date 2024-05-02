@@ -31,7 +31,7 @@ case class ClientsAgent(
                        )
 
 object ClientsAgent {
-  implicit val formats = Json.format[ClientsAgent]
+  implicit val formats: OFormat[ClientsAgent] = Json.format[ClientsAgent]
 }
 
 case class Client(atedReferenceNo: String, clientName: String)
@@ -39,7 +39,7 @@ case class Client(atedReferenceNo: String, clientName: String)
 // single client for an agent
 
 object Client {
-  implicit val formats = Json.format[Client]
+  implicit val formats: OFormat[Client] = Json.format[Client]
 }
 
 case class DisposeLiability(dateOfDisposal: Option[LocalDate] = None, periodKey: Int)
@@ -53,7 +53,7 @@ object DisposeLiability {
 case class DisposeCalculated(liabilityAmount: BigDecimal, amountDueOrRefund: BigDecimal)
 
 object DisposeCalculated {
-  implicit val formats = Json.format[DisposeCalculated]
+  implicit val formats: OFormat[DisposeCalculated] = Json.format[DisposeCalculated]
 }
 
 case class DisposeLiabilityReturn(atedRefNo: String,

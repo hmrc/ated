@@ -40,16 +40,20 @@ trait Auditable {
     )
   }
 
-  def doFailedAudit(auditType: String, requestUrl: String, request: Option[String], response: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Unit = {
+  def doFailedAudit(auditType: String,
+                    requestUrl: String,
+                    request: Option[String],
+                    response: String)
+                   (implicit hc: HeaderCarrier, ec: ExecutionContext): Unit = {
 
-    val auditDetails = Map("requestUrl" -> requestUrl,
-                           "response" -> response)
+    val auditDetails = Map(
+      "requestUrl" -> requestUrl,
+      "response" -> response
+    )
 
-    val requestDetails = {
-      request match {
-        case Some(x) => Map("request" -> x)
-        case None => Map.empty
-      }
+    val requestDetails = request match {
+      case Some(x) => Map("request" -> x)
+      case None => Map.empty
     }
 
     sendDataEvent(auditType, detail = auditDetails ++ requestDetails)

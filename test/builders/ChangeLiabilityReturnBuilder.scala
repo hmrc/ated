@@ -20,7 +20,6 @@ import models._
 import java.time.{ZonedDateTime, LocalDate, ZoneId, ZoneOffset}
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
-import uk.gov.hmrc.crypto.Protected
 
 object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite {
 
@@ -138,7 +137,7 @@ object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite
   }
 
   def generateLiabilityBankDetailsNoBankDetails: BankDetailsModel = {
-    BankDetailsModel(hasBankDetails = false,
+    BankDetailsModel(
       bankDetails = None,
       protectedBankDetails = None
     )
@@ -148,12 +147,12 @@ object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite
     val pd = bankDetailsModel.bankDetails.map{
       bd =>
         ProtectedBankDetails(
-          Protected(bd.hasUKBankAccount),
-          Protected(bd.accountName),
-          Protected(bd.accountNumber),
-          Protected(bd.sortCode),
-          Protected(bd.bicSwiftCode),
-          Protected(bd.iban)
+          bd.hasUKBankAccount.map(x => SensitiveHasUKBankAccount(Some(x))),
+          bd.accountName.map(x => SensitiveAccountName(Some(x))),
+          bd.accountNumber.map(x => SensitiveAccountNumber(Some(x))),
+          bd.sortCode.map(x => SensitiveSortCode(Some(x))),
+          bd.bicSwiftCode.map(x => SensitiveBicSwiftCode(Some(x))), //.map(x => SensitiveBicSwiftCode(x)),
+          bd.iban.map(x => SensitiveIban(Some(x)))
         )
     }
     bankDetailsModel.copy(bankDetails = None, protectedBankDetails = pd)
@@ -180,37 +179,37 @@ object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite
   }
 
 
-  def updateChangeLiabilityReturnWithAddress(periodKey: Int, formBundle: String, addressRef: PropertyDetailsAddress) = {
+  def updateChangeLiabilityReturnWithAddress(periodKey: Int, formBundle: String, addressRef: PropertyDetailsAddress): PropertyDetails = {
     val x = generateChangeLiabilityReturn(periodKey, formBundle)
     x.copy(addressProperty = addressRef)
   }
 
-  def updateChangeLiabilityReturnWithTitle(periodKey: Int, formBundle: String, title: PropertyDetailsTitle) = {
+  def updateChangeLiabilityReturnWithTitle(periodKey: Int, formBundle: String, title: PropertyDetailsTitle): PropertyDetails = {
     val x = generateChangeLiabilityReturn(periodKey, formBundle)
     x.copy(title = Some(title))
   }
 
-  def updateChangeLiabilityReturnWithValue(periodKey: Int, formBundle: String, value: PropertyDetailsValue) = {
+  def updateChangeLiabilityReturnWithValue(periodKey: Int, formBundle: String, value: PropertyDetailsValue): PropertyDetails = {
     val x = generateChangeLiabilityReturn(periodKey, formBundle)
     x.copy(value = Some(value))
   }
 
-  def updateChangeLiabilityReturnWithPeriod(periodKey: Int, formBundle: String, period: PropertyDetailsPeriod) = {
+  def updateChangeLiabilityReturnWithPeriod(periodKey: Int, formBundle: String, period: PropertyDetailsPeriod): PropertyDetails = {
     val x = generateChangeLiabilityReturn(periodKey, formBundle)
     x.copy(period = Some(period))
   }
 
-  def updateChangeLiabilityReturnWithBankDetails(periodKey: Int, formBundle: String, bankDetails: BankDetailsModel) = {
+  def updateChangeLiabilityReturnWithBankDetails(periodKey: Int, formBundle: String, bankDetails: BankDetailsModel): PropertyDetails = {
     val x = generateChangeLiabilityReturn(periodKey, formBundle)
     x.copy(bankDetails = Some(bankDetails))
   }
 
-  def updateChangeLiabilityReturnWithProtectedBankDetails(periodKey: Int, formBundle: String, bankDetails: BankDetailsModel) = {
+  def updateChangeLiabilityReturnWithProtectedBankDetails(periodKey: Int, formBundle: String, bankDetails: BankDetailsModel): PropertyDetails = {
     val x = generateChangeLiabilityReturn(periodKey, formBundle)
     x.copy(bankDetails = Some(bankDetails))
   }
 
-  def generateCalculated = {
+  def generateCalculated: PropertyDetailsCalculated = {
     val liabilityPeriods = List(CalculatedPeriod(BigDecimal(2500000),LocalDate.of(2015, 4, 1), LocalDate.of(2016, 3, 31), "Liability"))
     val reliefPeriods = Nil
     PropertyDetailsCalculated(liabilityPeriods = liabilityPeriods, reliefPeriods = reliefPeriods,
@@ -220,7 +219,7 @@ object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite
       amountDueOrRefund = Some(BigDecimal(-500.00)))
   }
 
-  def generateCalculated1 = {
+  def generateCalculated1: PropertyDetailsCalculated = {
     val liabilityPeriods = List(CalculatedPeriod(BigDecimal(2500000),LocalDate.of(2015, 4, 1), LocalDate.of(2016, 3, 31), "Liability"))
     val reliefPeriods = Nil
     PropertyDetailsCalculated(liabilityPeriods = liabilityPeriods, reliefPeriods = reliefPeriods,
@@ -230,7 +229,7 @@ object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite
       amountDueOrRefund = Some(BigDecimal(-500.00)))
   }
 
-  def generateEditLiabilityReturnResponse(oldFormBundleNo: String) = {
+  def generateEditLiabilityReturnResponse(oldFormBundleNo: String): EditLiabilityReturnsResponseModel = {
     val liability = EditLiabilityReturnsResponse("Post", oldFormBundleNo, Some("1234567890123"), liabilityAmount = BigDecimal(2000.00), amountDueOrRefund = BigDecimal(-500.00), paymentReference = Some("payment-ref-123"))
     EditLiabilityReturnsResponseModel(processingDate = ZonedDateTime.of(2016, 4, 20, 12, 41, 41, 839, ZoneId.ofOffset("UTC", ZoneOffset.ofHours(0))), liabilityReturnResponse = Seq(liability), accountBalance = BigDecimal(1200.00))
   }

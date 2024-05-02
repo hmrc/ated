@@ -16,7 +16,7 @@
 
 package models
 
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 
 case class ContactDetails(phoneNumber: Option[String] = None,
                           mobileNumber: Option[String] = None,
@@ -24,7 +24,7 @@ case class ContactDetails(phoneNumber: Option[String] = None,
                           emailAddress: Option[String] = None)
 
 object ContactDetails {
-  implicit val formats = Json.format[ContactDetails]
+  implicit val formats: OFormat[ContactDetails] = Json.format[ContactDetails]
 }
 
 case class AddressDetails(addressType: String,
@@ -36,7 +36,7 @@ case class AddressDetails(addressType: String,
                           countryCode: String)
 
 object AddressDetails {
-  implicit val formats = Json.format[AddressDetails]
+  implicit val formats: OFormat[AddressDetails] = Json.format[AddressDetails]
 }
 
 case class Address(name1: Option[String] = None,
@@ -45,7 +45,7 @@ case class Address(name1: Option[String] = None,
                    contactDetails: Option[ContactDetails] = None)
 
 object Address {
-  implicit val formats = Json.format[Address]
+  implicit val formats: OFormat[Address] = Json.format[Address]
 }
 
 
@@ -55,13 +55,13 @@ case class ChangeIndicators(nameChanged: Boolean = false,
                             contactDetailsChanged: Boolean = false)
 
 object ChangeIndicators {
-  implicit val formats = Json.format[ChangeIndicators]
+  implicit val formats: OFormat[ChangeIndicators] = Json.format[ChangeIndicators]
 }
 
 case class UpdateSubscriptionDataRequest(emailConsent: Boolean, changeIndicators: ChangeIndicators, address: Seq[Address])
 
 object UpdateSubscriptionDataRequest {
-  implicit val formats = Json.format[UpdateSubscriptionDataRequest]
+  implicit val formats: OFormat[UpdateSubscriptionDataRequest] = Json.format[UpdateSubscriptionDataRequest]
 }
 
 case class UpdateEtmpSubscriptionDataRequest(acknowledgementReference: String,
@@ -71,5 +71,5 @@ case class UpdateEtmpSubscriptionDataRequest(acknowledgementReference: String,
                                              address: Seq[Address])
 
 object UpdateEtmpSubscriptionDataRequest {
-  implicit val formats = Json.format[UpdateEtmpSubscriptionDataRequest]
+  implicit val formats: OFormat[UpdateEtmpSubscriptionDataRequest] = Json.format[UpdateEtmpSubscriptionDataRequest]
 }

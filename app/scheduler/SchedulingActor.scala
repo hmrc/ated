@@ -16,7 +16,7 @@
 
 package scheduler
 
-import akka.actor.{Actor, ActorLogging, Props}
+import org.apache.pekko.actor.{Actor, ActorLogging, Props}
 import play.api.Logging
 import scheduler.SchedulingActor._
 

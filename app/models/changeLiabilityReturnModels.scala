@@ -17,7 +17,7 @@
 package models
 
 import java.time.LocalDate
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 import play.api.libs.json.Writes._
 import play.api.libs.json.Reads._
 
@@ -28,7 +28,7 @@ case class FormBundleProperty(propertyValue: BigDecimal,
                               reliefDescription: Option[String])
 
 object FormBundleProperty {
-  implicit val formats = Json.format[FormBundleProperty]
+  implicit val formats: OFormat[FormBundleProperty] = Json.format[FormBundleProperty]
 }
 
 case class FormBundleAddress(addressLine1: String,
@@ -39,7 +39,7 @@ case class FormBundleAddress(addressLine1: String,
                              countryCode: String)
 
 object FormBundleAddress {
-  implicit val formats = Json.format[FormBundleAddress]
+  implicit val formats: OFormat[FormBundleAddress] = Json.format[FormBundleAddress]
 }
 
 
@@ -48,7 +48,7 @@ case class FormBundlePropertyDetails(titleNumber: Option[String],
                                      additionalDetails: Option[String])
 
 object FormBundlePropertyDetails {
-  implicit val formats = Json.format[FormBundlePropertyDetails]
+  implicit val formats: OFormat[FormBundlePropertyDetails] = Json.format[FormBundlePropertyDetails]
 }
 
 case class FormBundleReturn(periodKey: String,
@@ -67,5 +67,5 @@ case class FormBundleReturn(periodKey: String,
                             lineItem: Seq[FormBundleProperty])
 
 object FormBundleReturn {
-  implicit val formats = Json.format[FormBundleReturn]
+  implicit val formats: OFormat[FormBundleReturn] = Json.format[FormBundleReturn]
 }

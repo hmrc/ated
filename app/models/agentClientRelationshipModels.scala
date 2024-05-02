@@ -17,20 +17,20 @@
 package models
 
 import java.time.LocalDate
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 import play.api.libs.json.Writes._
 import play.api.libs.json.Reads._
 
 case class IndividualRelationship(firstName: String, lastName: String)
 
 object IndividualRelationship {
-  implicit val formats = Json.format[IndividualRelationship]
+  implicit val formats: OFormat[IndividualRelationship] = Json.format[IndividualRelationship]
 }
 
 case class OrganisationRelationship(organisationName: String)
 
 object OrganisationRelationship {
-  implicit val formats = Json.format[OrganisationRelationship]
+  implicit val formats: OFormat[OrganisationRelationship] = Json.format[OrganisationRelationship]
 }
 
 case class RelationshipDetails(atedReferenceNumber: String,
@@ -42,13 +42,13 @@ case class RelationshipDetails(atedReferenceNumber: String,
                                contractAccountCategory: String)
 
 object RelationshipDetails {
-  implicit val formats = Json.format[RelationshipDetails]
+  implicit val formats: OFormat[RelationshipDetails] = Json.format[RelationshipDetails]
 }
 
 case class AgentClientRelationshipResponseModel(relationship: Seq[RelationshipDetails])
 
 object AgentClientRelationshipResponseModel {
-  implicit val formats = Json.format[AgentClientRelationshipResponseModel]
+  implicit val formats: OFormat[AgentClientRelationshipResponseModel] = Json.format[AgentClientRelationshipResponseModel]
 }
 
 case class AgentClientRelationshipRequestModel(agent: Boolean,
@@ -59,5 +59,5 @@ case class AgentClientRelationshipRequestModel(agent: Boolean,
                                                from: Option[String] = None)
 
 object AgentClientRelationshipRequestModel {
-  implicit val formats = Json.format[AgentClientRelationshipRequestModel]
+  implicit val formats: OFormat[AgentClientRelationshipRequestModel] = Json.format[AgentClientRelationshipRequestModel]
 }

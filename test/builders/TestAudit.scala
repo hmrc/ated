@@ -37,7 +37,7 @@ class TestAudit(val auditConnector: AuditConnector) extends Audit("test", auditC
 
   def capturedDataEvents: Seq[DataEvent] = dataEvents.toArray(new Array[DataEvent](0)).toSeq
 
-  def captureDataEvent(event: DataEvent) = {
+  def captureDataEvent(event: DataEvent): Unit = {
     this.dataEvents.add(event)
     ()
   }

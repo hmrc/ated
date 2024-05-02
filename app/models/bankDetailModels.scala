@@ -17,10 +17,11 @@
 package models
 
 import play.api.libs.json.{Json, Reads, Writes, _}
-import uk.gov.hmrc.crypto.json.JsonEncryptor
-import uk.gov.hmrc.crypto.{Encrypter, Decrypter, Protected}
-import utils.JsonOptionDecryptor
+import uk.gov.hmrc.crypto.json.JsonEncryption
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter, Sensitive}
+
 import scala.language.implicitConversions
+
 
 case class SortCode(firstElement: String, secondElement: String, thirdElement: String) {
   override def toString: String = s"$firstElement - $secondElement - $thirdElement"
@@ -40,6 +41,14 @@ object SortCode {
     apply(sixDigits.substring(FIRST_ELEMENT_START, SECOND_ELEMENT_START),
       sixDigits.substring(SECOND_ELEMENT_START, THIRD_ELEMENT_START),
       sixDigits.substring(THIRD_ELEMENT_START, SORT_CODE_LENGTH))
+  }
+}
+
+case class SensitiveSortCode(override val decryptedValue: Option[SortCode]) extends Sensitive[Option[SortCode]]
+
+object SensitiveSortCode {
+  implicit val formats: OFormat[SensitiveSortCode] = {
+    Json.format[SensitiveSortCode]
   }
 }
 
@@ -79,6 +88,14 @@ case class BicSwiftCode(swiftCode: String) {
 
 }
 
+case class SensitiveBicSwiftCode(override val decryptedValue: Option[BicSwiftCode]) extends Sensitive[Option[BicSwiftCode]]
+
+object SensitiveBicSwiftCode {
+  implicit val formats: OFormat[SensitiveBicSwiftCode] = {
+    Json.format[SensitiveBicSwiftCode]
+  }
+}
+
 
 object BicSwiftCode extends (String => BicSwiftCode){
   implicit val formats: OFormat[BicSwiftCode] = Json.format[BicSwiftCode]
@@ -109,32 +126,91 @@ object Iban extends (String => Iban){
   }
 }
 
-case class ProtectedBankDetails(hasUKBankAccount: Protected[Option[Boolean]],
-                                     accountName: Protected[Option[String]],
-                                     accountNumber: Protected[Option[String]],
-                                     sortCode: Protected[Option[SortCode]],
-                                     bicSwiftCode: Protected[Option[BicSwiftCode]],
-                                     iban: Protected[Option[Iban]])
+case class SensitiveIban( override val decryptedValue: Option[Iban]) extends Sensitive[Option[Iban]]
 
-object ProtectedBankDetails {
-  def bankDetailsFormats(implicit crypto: Encrypter with Decrypter): OFormat[ProtectedBankDetails] = {
-    implicit val encryptedOptionStringFormats: JsonEncryptor[Option[String]] = new JsonEncryptor[Option[String]]
-    implicit val encryptedOptionSortCodeFormats: JsonEncryptor[Option[SortCode]] = new JsonEncryptor[Option[SortCode]]
-    implicit val encryptedOptionSwiftBicCodeFormats: JsonEncryptor[Option[BicSwiftCode]] = new JsonEncryptor[Option[BicSwiftCode]]
-    implicit val encryptedOptionIbanFormats: JsonEncryptor[Option[Iban]] = new JsonEncryptor[Option[Iban]]
-    implicit val encryptedOptionBooleanFormats: JsonEncryptor[Option[Boolean]] = new JsonEncryptor[Option[Boolean]]
-
-    implicit val decryptedOptionStringFormats: JsonOptionDecryptor[String] = new utils.JsonOptionDecryptor[String]
-    implicit val decryptedOptionSortCodeFormats: JsonOptionDecryptor[SortCode] = new utils.JsonOptionDecryptor[SortCode]
-    implicit val decryptedOptionBicSiftCodeFormats: JsonOptionDecryptor[BicSwiftCode] = new utils.JsonOptionDecryptor[BicSwiftCode]
-    implicit val decryptedOptionIbanFormats: JsonOptionDecryptor[Iban] = new utils.JsonOptionDecryptor[Iban]
-    implicit val decryptedOptionBooleanFormats: JsonOptionDecryptor[Boolean] = new utils.JsonOptionDecryptor[Boolean]
-
-    Json.format[ProtectedBankDetails]
+object SensitiveIban {
+  implicit val formats: OFormat[SensitiveIban] = {
+    Json.format[SensitiveIban]
   }
 }
 
+case class SensitiveAccountNumber( override val decryptedValue: Option[String]) extends Sensitive[Option[String]]
 
+object SensitiveAccountNumber {
+  implicit val formats: OFormat[SensitiveAccountNumber] = {
+    Json.format[SensitiveAccountNumber]
+  }
+}
+
+case class SensitiveAccountName( override val decryptedValue: Option[String]) extends Sensitive[Option[String]]
+
+object SensitiveAccountName {
+  implicit val formats: OFormat[SensitiveAccountName] = {
+    Json.format[SensitiveAccountName]
+  }
+}
+
+case class SensitiveHasUKBankAccount( override val decryptedValue: Option[Boolean]) extends Sensitive[Option[Boolean]]
+
+object SensitiveHasUKBankAccount {
+  implicit val formats: OFormat[SensitiveHasUKBankAccount] = {
+    Json.format[SensitiveHasUKBankAccount]
+  }
+}
+
+case class ProtectedBankDetails(hasUKBankAccount: Option[SensitiveHasUKBankAccount],
+                                     accountName: Option[SensitiveAccountName],
+                                     accountNumber: Option[SensitiveAccountNumber],
+                                     sortCode: Option[SensitiveSortCode],
+                                     bicSwiftCode: Option[SensitiveBicSwiftCode],
+                                     iban: Option[SensitiveIban])
+
+object ProtectedBankDetails {
+  def bankDetailsFormats(implicit crypto: Encrypter with Decrypter): OFormat[ProtectedBankDetails] = {
+
+    def nullable[A](implicit f: Format[A]): Format[Option[A]] =
+      Format(
+        { case JsNull => JsSuccess(None)
+        case other => f.reads(other).map(Some.apply)
+        },
+        {
+          case Some(v) => f.writes(v)
+          case None => JsNull
+        }
+      )
+
+    implicit val decryptedOptionHasUKBankAccountFormats: Format[SensitiveHasUKBankAccount] = {
+      implicit val f: Format[Option[Boolean]] = nullable
+      JsonEncryption.sensitiveEncrypterDecrypter[Option[Boolean], SensitiveHasUKBankAccount](SensitiveHasUKBankAccount.apply)
+    }
+
+    implicit val decryptedOptionAccountNameFormats: Format[SensitiveAccountName] = {
+      implicit val f: Format[Option[String]] = nullable
+      JsonEncryption.sensitiveEncrypterDecrypter[Option[String], SensitiveAccountName](SensitiveAccountName.apply)
+    }
+
+    implicit val decryptedOptionAccountNumberFormats: Format[SensitiveAccountNumber] = {
+      implicit val f: Format[Option[String]] = nullable
+      JsonEncryption.sensitiveEncrypterDecrypter[Option[String], SensitiveAccountNumber](SensitiveAccountNumber.apply)
+    }
+
+    implicit val decryptedOptionSortCodeFormats: Format[SensitiveSortCode] = {
+      implicit val f: Format[Option[models.SortCode]] = Format.nullable(__)
+      JsonEncryption.sensitiveEncrypterDecrypter(SensitiveSortCode.apply)
+    }
+
+    implicit val decryptedOptionBicSiftCodeFormats: Format[SensitiveBicSwiftCode] = {
+      implicit val f: Format[Option[models.BicSwiftCode]] = Format.nullable(__)
+      JsonEncryption.sensitiveEncrypterDecrypter(SensitiveBicSwiftCode.apply)
+    }
+
+    implicit val decryptedOptionIbanFormats: Format[SensitiveIban] = {
+      implicit val f: Format[Option[models.Iban]] = Format.nullable(__)
+      JsonEncryption.sensitiveEncrypterDecrypter(SensitiveIban.apply)
+    }
+    Json.format[ProtectedBankDetails]
+  }
+}
 
 case class BankDetails(hasUKBankAccount: Option[Boolean] = None,
                         accountName: Option[String] = None,
@@ -149,26 +225,24 @@ object BankDetails {
 
 object BankDetailsConversions {
   implicit def bankDetails2Protected(bankDetails: BankDetails): ProtectedBankDetails = {
-    implicit def plain2Protected[A](value: A): Protected[A] = Protected(value)
     ProtectedBankDetails(
-      bankDetails.hasUKBankAccount,
-      bankDetails.accountName,
-      bankDetails.accountNumber,
-      bankDetails.sortCode,
-      bankDetails.bicSwiftCode,
-      bankDetails.iban
+      bankDetails.hasUKBankAccount.map(x => SensitiveHasUKBankAccount(Some(x))),
+      bankDetails.accountName.map(x => SensitiveAccountName(Some(x))),
+      bankDetails.accountNumber.map(x => SensitiveAccountNumber(Some(x))),
+      bankDetails.sortCode.map(x => SensitiveSortCode(Some(x))),
+      bankDetails.bicSwiftCode.map(x => SensitiveBicSwiftCode(Some(x))),
+      bankDetails.iban.map(x => SensitiveIban(Some(x)))
     )
   }
 
   implicit def protected2BankDetails(protectedBankDetails: ProtectedBankDetails): BankDetails = {
-    implicit def protected2Plain[A](value: Protected[A]): A = value.decryptedValue
     BankDetails(
-      protectedBankDetails.hasUKBankAccount,
-      protectedBankDetails.accountName,
-      protectedBankDetails.accountNumber,
-      protectedBankDetails.sortCode,
-      protectedBankDetails.bicSwiftCode,
-      protectedBankDetails.iban
+      protectedBankDetails.hasUKBankAccount.flatMap(x => x.decryptedValue),
+      protectedBankDetails.accountName.flatMap(x => x.decryptedValue),
+      protectedBankDetails.accountNumber.flatMap(x => x.decryptedValue),
+      protectedBankDetails.sortCode.flatMap(x => x.decryptedValue),
+      protectedBankDetails.bicSwiftCode.flatMap(x => x.decryptedValue),
+      protectedBankDetails.iban.flatMap(x => x.decryptedValue),
     )
   }
 }
@@ -179,7 +253,7 @@ case class BankDetailsModel(hasBankDetails: Boolean = false,
 
 object BankDetailsModel {
   def format(implicit crypto: Encrypter with Decrypter): Format[BankDetailsModel] = {
-    val reads = new Reads[BankDetailsModel] {
+    val reads: Reads[BankDetailsModel] = new Reads[BankDetailsModel] {
       override def reads(json: JsValue): JsResult[BankDetailsModel] = {
         val hasBankDetails: Option[Boolean] = (json \ "hasBankDetails").asOpt[Boolean]
         val bankDetails: Option[BankDetails] = (json \ "bankDetails").asOpt[BankDetails]

@@ -36,18 +36,18 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
-  val mockPropertyDetailsCache = mock[PropertyDetailsMongoRepository]
-  val mockEtmpConnector = mock[EtmpReturnsConnector]
-  val mockAuthConnector = mock[AuthConnector]
+  val mockPropertyDetailsCache: PropertyDetailsMongoRepository = mock[PropertyDetailsMongoRepository]
+  val mockEtmpConnector: EtmpReturnsConnector = mock[EtmpReturnsConnector]
+  val mockAuthConnector: AuthConnector = mock[AuthConnector]
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   trait Setup {
 
     class TestPropertyDetailsService extends PropertyDetailsValuesService {
       implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
-      override val propertyDetailsCache = mockPropertyDetailsCache
-      override val etmpConnector = mockEtmpConnector
-      override val authConnector = mockAuthConnector
+      override val propertyDetailsCache: PropertyDetailsMongoRepository = mockPropertyDetailsCache
+      override val etmpConnector: EtmpReturnsConnector = mockEtmpConnector
+      override val authConnector: AuthConnector = mockAuthConnector
     }
 
     val testPropertyDetailsService = new TestPropertyDetailsService()
@@ -61,7 +61,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
     reset(mockEtmpConnector)
   }
 
-  val jsonEtmpResponse =
+  val jsonEtmpResponse: String =
     """
       |{
       |  "processingDate": "2001-12-17T09:30:47Z",
@@ -88,41 +88,43 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       |}
     """.stripMargin
 
-  implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
+  implicit val hc:HeaderCarrier = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
   lazy val propertyDetails1: PropertyDetails = PropertyDetailsBuilder.getFullPropertyDetails("1", Some("something"))
   lazy val propertyDetails2: PropertyDetails = PropertyDetailsBuilder.getFullPropertyDetails("2", Some("something else"))
-  lazy val propertyDetails3: PropertyDetails = PropertyDetailsBuilder.getFullPropertyDetails("3", Some("something more"), liabilityAmount = Some(BigDecimal(999.99)))
+  lazy val propertyDetails3: PropertyDetails = PropertyDetailsBuilder
+    .getFullPropertyDetails("3", Some("something more"), liabilityAmount = Some(BigDecimal(999.99)))
 
   "Cache Draft HasValue Change" must {
 
     "Saving existing property details hasValueChanged value when we don't have it in an existing list" in new Setup {
-      lazy val updatedpropertyDetails4 = PropertyDetailsBuilder.getPropertyDetails("4", Some("something better"))
+      lazy val updatedpropertyDetails4: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("4", Some("something better"))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftHasValueChanged(accountRef,
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftHasValueChanged(accountRef,
         updatedpropertyDetails4.id,
-        true)
+        newValue = true)
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(false)
     }
 
     "Saving existing property details hasValueChanged updates an existing list. Dont Change value so keep old values" in new Setup {
 
-      val oldPropertyDetails3 = propertyDetails3.copy(value = Some(PropertyDetailsValue(hasValueChanged = Some(true), revaluedValue = Some(BigDecimal(1111.11)))))
+      val oldPropertyDetails3: PropertyDetails = propertyDetails3
+        .copy(value = Some(PropertyDetailsValue(hasValueChanged = Some(true), revaluedValue = Some(BigDecimal(1111.11)))))
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, oldPropertyDetails3)))
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftHasValueChanged(accountRef,
-        propertyDetails3.id, true)
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftHasValueChanged(accountRef,
+        propertyDetails3.id, newValue = true)
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -134,16 +136,17 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
 
     "Saving existing property details hasValueChanged updates an existing list. Change value so clear future values" in new Setup {
 
-      val oldPropertyDetails3 = propertyDetails3.copy(value = Some(PropertyDetailsValue(hasValueChanged = Some(true), revaluedValue = Some(BigDecimal(1111.11)))))
+      val oldPropertyDetails3: PropertyDetails = propertyDetails3
+        .copy(value = Some(PropertyDetailsValue(hasValueChanged = Some(true), revaluedValue = Some(BigDecimal(1111.11)))))
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, oldPropertyDetails3)))
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftHasValueChanged(accountRef,
-        propertyDetails3.id, false)
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftHasValueChanged(accountRef,
+        propertyDetails3.id, newValue = false)
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -158,18 +161,18 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
   "Save property details Acquisition" must {
 
     "Saving existing property details acquisiton value when we don't have it in an existing list" in new Setup {
-      lazy val updatedpropertyDetails4 = PropertyDetailsBuilder.getPropertyDetails("4", Some("something better"))
+      lazy val updatedpropertyDetails4: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("4", Some("something better"))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsAcquisition(accountRef,
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsAcquisition(accountRef,
         updatedpropertyDetails4.id,
-        true)
+        newValue = true)
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(false)
     }
 
@@ -181,10 +184,10 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsAcquisition(accountRef,
-        propertyDetails3.id, true)
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsAcquisition(accountRef,
+        propertyDetails3.id, newValue = true)
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -200,10 +203,10 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsAcquisition(accountRef,
-        propertyDetails3.id, false)
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsAcquisition(accountRef,
+        propertyDetails3.id, newValue = false)
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -225,11 +228,11 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsRevalued(accountRef,
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsRevalued(accountRef,
         propertyDetails3.id,
         updateValue)
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -238,7 +241,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       newProp.get.calculated.isDefined must be(true)
 
       newProp.get.value.isDefined must be(true)
-      val newValue = newProp.get.value.get
+      val newValue: PropertyDetailsValue = newProp.get.value.get
       newValue.anAcquisition must be(Some(true))
       newValue.isOwnedBeforePolicyYear.isDefined must be(true)
       newValue.ownedBeforePolicyYearValue.isDefined must be(true)
@@ -264,11 +267,11 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsRevalued(accountRef,
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsRevalued(accountRef,
         propertyDetails3.id,
         updateValue)
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -295,11 +298,11 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsOwnedBefore(accountRef,
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsOwnedBefore(accountRef,
         propertyDetails3.id,
         updateValue)
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -308,7 +311,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       newProp.get.calculated.isDefined must be(false)
 
       newProp.get.value.isDefined must be(true)
-      val newValue = newProp.get.value.get
+      val newValue: PropertyDetailsValue = newProp.get.value.get
       newValue.anAcquisition must be(Some(true))
       newValue.isOwnedBeforePolicyYear must be(Some(true))
       newValue.ownedBeforePolicyYearValue must be(Some(BigDecimal(333.22)))
@@ -329,17 +332,17 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
 
       val updateValue = new PropertyDetailsOwnedBefore(Some(false), Some(BigDecimal(333.22)))
 
-      val propertyDetails3NoValue = propertyDetails3.copy(value = None)
+      val propertyDetails3NoValue: PropertyDetails = propertyDetails3.copy(value = None)
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3NoValue)))
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsOwnedBefore(accountRef,
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsOwnedBefore(accountRef,
         propertyDetails3.id,
         updateValue)
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -348,7 +351,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       newProp.get.calculated.isDefined must be(false)
 
       newProp.get.value.isDefined must be(true)
-      val newValue = newProp.get.value.get
+      val newValue: PropertyDetailsValue = newProp.get.value.get
       newValue.isOwnedBeforePolicyYear must be(Some(false))
       newValue.ownedBeforePolicyYearValue must be(Some(BigDecimal(333.22)))
     }
@@ -364,11 +367,11 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsIsNewBuild(accountRef,
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsIsNewBuild(accountRef,
         propertyDetails3.id,
         updateValue)
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -376,7 +379,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       newProp.get.period must be(propertyDetails3.period)
       newProp.get.value.isDefined must be(true)
 
-      val newValue = newProp.get.value.get
+      val newValue: PropertyDetailsValue = newProp.get.value.get
       newValue.isNewBuild.isDefined must be(true)
       newValue.isNewBuild must be(updateValue.isNewBuild)
     }
@@ -395,11 +398,11 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuildDates(accountRef,
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuildDates(accountRef,
         propertyDetails3.id,
         updateValue)
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -407,7 +410,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       newProp.get.period must be(propertyDetails3.period)
       newProp.get.value.isDefined must be(true)
 
-      val newValue = newProp.get.value.get
+      val newValue: PropertyDetailsValue = newProp.get.value.get
       newValue.newBuildDate must be(updateValue.newBuildOccupyDate)
       newValue.isBuildDateKnown must be(None)
       newValue.localAuthRegDate must be(updateValue.newBuildRegisterDate)
@@ -423,11 +426,11 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuildDates(accountRef,
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuildDates(accountRef,
         propertyDetails3.id,
         updateValue)
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -436,7 +439,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       newProp.get.calculated.isDefined must be(false)
 
       newProp.get.value.isDefined must be(true)
-      val newValue = newProp.get.value.get
+      val newValue: PropertyDetailsValue = newProp.get.value.get
       newValue.anAcquisition must be(Some(true))
       newValue.isOwnedBeforePolicyYear.isDefined must be(true)
       newValue.ownedBeforePolicyYearValue.isDefined must be(true)
@@ -462,11 +465,11 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuildDates(accountRef,
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuildDates(accountRef,
         propertyDetails3.id,
         updateValue)
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -475,7 +478,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       newProp.get.calculated.isDefined must be(false)
 
       newProp.get.value.isDefined must be(true)
-      val newValue = newProp.get.value.get
+      val newValue: PropertyDetailsValue = newProp.get.value.get
       newValue.anAcquisition must be(Some(true))
       newValue.isOwnedBeforePolicyYear.isDefined must be(true)
       newValue.ownedBeforePolicyYearValue.isDefined must be(true)
@@ -505,13 +508,13 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuildValue(
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuildValue(
         accountRef,
         propertyDetails3.id,
         updateValue
       )
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -520,7 +523,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       newProp.get.calculated.isDefined must be(true)
 
       newProp.get.value.isDefined must be(true)
-      val newValue = newProp.get.value.get
+      val newValue: PropertyDetailsValue = newProp.get.value.get
       newValue.anAcquisition must be(Some(true))
       newValue.isOwnedBeforePolicyYear.isDefined must be(true)
       newValue.ownedBeforePolicyYearValue.isDefined must be(true)
@@ -542,13 +545,13 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuildValue(
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsNewBuildValue(
         accountRef,
         propertyDetails3.id,
         updateValue
       )
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -557,7 +560,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       newProp.get.calculated.isDefined must be(false)
 
       newProp.get.value.isDefined must be(true)
-      val newValue = newProp.get.value.get
+      val newValue: PropertyDetailsValue = newProp.get.value.get
       newValue.anAcquisition must be(Some(true))
       newValue.isOwnedBeforePolicyYear.isDefined must be(true)
       newValue.ownedBeforePolicyYearValue.isDefined must be(true)
@@ -582,13 +585,13 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsValueAcquired(
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsValueAcquired(
         accountRef,
         propertyDetails3.id,
         updateValue
       )
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -597,7 +600,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       newProp.get.calculated.isDefined must be(true)
 
       newProp.get.value.isDefined must be(true)
-      val newValue = newProp.get.value.get
+      val newValue: PropertyDetailsValue = newProp.get.value.get
       newValue.anAcquisition must be(Some(true))
       newValue.isOwnedBeforePolicyYear.isDefined must be(true)
       newValue.ownedBeforePolicyYearValue.isDefined must be(true)
@@ -619,13 +622,13 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsValueAcquired(
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsValueAcquired(
         accountRef,
         propertyDetails3.id,
         updateValue
       )
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -634,7 +637,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       newProp.get.calculated.isDefined must be(false)
 
       newProp.get.value.isDefined must be(true)
-      val newValue = newProp.get.value.get
+      val newValue: PropertyDetailsValue = newProp.get.value.get
       newValue.anAcquisition must be(Some(true))
       newValue.isOwnedBeforePolicyYear.isDefined must be(true)
       newValue.ownedBeforePolicyYearValue.isDefined must be(true)
@@ -649,7 +652,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
 
   "Cache property details date of acquisition" must {
     "not update the cache when the value of acquisition has not changed" in new Setup {
-      val updateValue = PropertyDetailsDateOfAcquisition(
+      val updateValue: PropertyDetailsDateOfAcquisition = PropertyDetailsDateOfAcquisition(
         propertyDetails3.value.get.notNewBuildDate
       )
 
@@ -658,13 +661,13 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsDatesAcquired(
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsDatesAcquired(
         accountRef,
         propertyDetails3.id,
         updateValue
       )
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -673,7 +676,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       newProp.get.calculated.isDefined must be(true)
 
       newProp.get.value.isDefined must be(true)
-      val newValue = newProp.get.value.get
+      val newValue: PropertyDetailsValue = newProp.get.value.get
       newValue.anAcquisition must be(Some(true))
       newValue.isOwnedBeforePolicyYear.isDefined must be(true)
       newValue.ownedBeforePolicyYearValue.isDefined must be(true)
@@ -687,20 +690,20 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
     }
 
     "update the value of the cache when the date of acquistion has changed" in new Setup {
-      val updateValue = PropertyDetailsDateOfAcquisition(Some(LocalDate.of(2012, 1, 1)))
+      val updateValue: PropertyDetailsDateOfAcquisition = PropertyDetailsDateOfAcquisition( Some(LocalDate.of(2012, 1, 1)))
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsDatesAcquired(
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsDatesAcquired(
         accountRef,
         propertyDetails3.id,
         updateValue
       )
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -709,7 +712,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       newProp.get.calculated.isDefined must be(false)
 
       newProp.get.value.isDefined must be(true)
-      val newValue = newProp.get.value.get
+      val newValue: PropertyDetailsValue = newProp.get.value.get
       newValue.anAcquisition must be(Some(true))
       newValue.isOwnedBeforePolicyYear.isDefined must be(true)
       newValue.ownedBeforePolicyYearValue.isDefined must be(true)
@@ -732,11 +735,11 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsProfessionallyValued(accountRef,
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsProfessionallyValued(accountRef,
         propertyDetails3.id,
         updateValue)
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -745,7 +748,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       newProp.get.calculated.isDefined must be(true)
 
       newProp.get.value.isDefined must be(true)
-      val newValue = newProp.get.value.get
+      val newValue: PropertyDetailsValue = newProp.get.value.get
       newValue.anAcquisition must be(Some(true))
       newValue.isOwnedBeforePolicyYear.isDefined must be(true)
       newValue.ownedBeforePolicyYearValue.isDefined must be(true)
@@ -770,11 +773,11 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result = testPropertyDetailsService.cacheDraftPropertyDetailsProfessionallyValued(accountRef,
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsProfessionallyValued(accountRef,
         propertyDetails3.id,
         updateValue)
 
-      val newProp = await(result)
+      val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
@@ -783,7 +786,7 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
       newProp.get.calculated.isDefined must be(false)
 
       newProp.get.value.isDefined must be(true)
-      val newValue = newProp.get.value.get
+      val newValue: PropertyDetailsValue = newProp.get.value.get
       newValue.anAcquisition must be(Some(true))
       newValue.isOwnedBeforePolicyYear.isDefined must be(true)
       newValue.ownedBeforePolicyYearValue.isDefined must be(true)

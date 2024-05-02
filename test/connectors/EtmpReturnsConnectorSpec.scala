@@ -192,7 +192,7 @@ class EtmpReturnsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
         when(mockWSHttp.PUT[JsValue, HttpResponse](any(), ArgumentMatchers.eq(Json.toJson(editLiablityReturns)), any())(any(), any(), any(), any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
 
 
-        val result = connector.submitEditedLiabilityReturns("ATED-123", editLiablityReturns, true)
+        val result = connector.submitEditedLiabilityReturns("ATED-123", editLiablityReturns, disposal = true)
         val response = await(result)
         response.status must be(OK)
         response.json must be(successResponse)

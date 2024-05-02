@@ -1,49 +1,22 @@
-import sbt._
+import play.sbt.PlayImport.ws
+import sbt.*
 
-object AppDependencies {
-
-  import play.sbt.PlayImport._
-  import play.core.PlayVersion
-
-  private val bootstrapVersion = "7.23.0"
+private object AppDependencies {
 
   val compile: Seq[ModuleID] = Seq(
     ws,
-		"com.enragedginger" %% "akka-quartz-scheduler"      % "1.9.3-akka-2.6.x",
-    "uk.gov.hmrc"       %% "bootstrap-backend-play-28"  % bootstrapVersion,
-    "uk.gov.hmrc"       %% "domain"                     % "8.3.0-play-28",
-    "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-28"         % "1.7.0",
-    "uk.gov.hmrc"       %% "json-encryption"            % "5.3.0-play-28"
+    "uk.gov.hmrc"            %% "bootstrap-backend-play-30" % "8.5.0",
+    "io.github.samueleresca" %% "pekko-quartz-scheduler"    % "1.2.0-pekko-1.0.x",
+    "uk.gov.hmrc"            %% "domain-play-30"            % "9.0.0",
+    "uk.gov.hmrc.mongo"      %% "hmrc-mongo-play-30"        % "1.9.0",
+    "uk.gov.hmrc"            %% "crypto-json-play-30"       % "7.6.0"
   )
 
-  trait TestDependencies {
-    lazy val scope: String = "it,test"
-    lazy val test: Seq[ModuleID] = ???
-  }
+  val test: Seq[ModuleID] = Seq(
+    "uk.gov.hmrc" %% "bootstrap-test-play-30" % "8.5.0",
+  ).map(_ % Test)
 
-  object Test {
-    def apply(): Seq[ModuleID] = new TestDependencies {
-      override lazy val test: Seq[ModuleID] = Seq(
-        "uk.gov.hmrc"                  %% "bootstrap-test-play-28"  % bootstrapVersion    % scope,
-        "org.scalatestplus.play"       %% "scalatestplus-play"      % "5.1.0"             % scope,
-        "org.mockito"                  %  "mockito-core"            % "5.10.0"             % scope,
-        "com.typesafe.play"            %% "play-test"               % PlayVersion.current % scope,
-        "com.fasterxml.jackson.module" %% "jackson-module-scala"    % "2.16.1"            % scope
-      )
-    }.test
-  }
+  val itDependencies: Seq[ModuleID] = Seq()
 
-	object IntegrationTest {
-		def apply(): Seq[ModuleID] = new TestDependencies {
-			override lazy val test = Seq(
-        "uk.gov.hmrc"            %% "bootstrap-test-play-28" % bootstrapVersion    % scope,
-				"com.typesafe.play"			 %% "play-test" 				     % PlayVersion.current % scope,
-				"org.scalatestplus.play" %% "scalatestplus-play"     % "5.1.0"             % scope,
-        "org.scalatestplus"      %% "mockito-4-6"            % "3.2.15.0"          % scope,
-				"com.github.tomakehurst" %  "wiremock-jre8"			     % "2.35.2"            % scope
-			)
-		}.test
-	}
-
-  def apply(): Seq[ModuleID] = compile ++ Test() ++ IntegrationTest()
+  def apply(): Seq[ModuleID] = compile ++ test
 }

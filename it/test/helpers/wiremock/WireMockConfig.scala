@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-package utils
+package helpers.wiremock
 
-object AtedConstants {
-
-
-
-  val PeriodStartMonth = "4"
-  val PeriodStartDay = "1"
-
-
-  val TypeReliefDraft = "Relief"
-  val TypeLiabilityDraft = "Liability"
-  val TypeChangeLiabilityDraft = "Change_Liability"
-  val TypeDisposeLiabilityDraft = "Dispose_Liability"
-
+trait WireMockConfig {
+  val wireMockPort: Int    = 11111
+  val wireMockHost: String = "localhost"
+  val wireMockUrl: String  = s"http://$wireMockPort:$wireMockPort"
 }

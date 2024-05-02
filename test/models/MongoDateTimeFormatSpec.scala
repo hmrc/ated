@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package models.mongo
+package models
 
-import java.time.{LocalDate, ZonedDateTime, ZoneId, Instant}
+import models.mongo.MongoDateTimeFormats
+
+import java.time.{Instant, LocalDate, ZoneId, ZonedDateTime}
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsNumber, JsObject, JsResult, JsString, JsSuccess, Json}

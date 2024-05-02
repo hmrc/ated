@@ -42,7 +42,7 @@ case class TaxAvoidance(
                        )
 
 object TaxAvoidance {
-  implicit val formats = Json.format[TaxAvoidance]
+  implicit val formats: OFormat[TaxAvoidance] = Json.format[TaxAvoidance]
 }
 
 case class Reliefs( periodKey: Int,

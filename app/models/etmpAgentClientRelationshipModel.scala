@@ -16,16 +16,16 @@
 
 package models
 
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 
 case class EtmpRelationship(action: String, isExclusiveAgent: Boolean)
 
 object EtmpRelationship {
-  implicit val formats = Json.format[EtmpRelationship]
+  implicit val formats: OFormat[EtmpRelationship] = Json.format[EtmpRelationship]
 }
 
 case class EtmpAgentClientRelationship(acknowledgementReference: String, atedRefNumber: String, agentReferenceNumber: String, authorisation: EtmpRelationship)
 
 object EtmpAgentClientRelationship {
-  implicit val formats = Json.format[EtmpAgentClientRelationship]
+  implicit val formats: OFormat[EtmpAgentClientRelationship] = Json.format[EtmpAgentClientRelationship]
 }

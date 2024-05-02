@@ -20,6 +20,7 @@ import builders.ChangeLiabilityReturnBuilder._
 import builders._
 import connectors.EtmpReturnsConnector
 import models._
+
 import java.time.LocalDate
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
@@ -27,7 +28,7 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
@@ -35,13 +36,13 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
-  val mockEtmpConnector = mock[EtmpReturnsConnector]
-  val mockPropertyDetailsService = mock[PropertyDetailsService]
-  val mockReliefsService = mock[ReliefsService]
-  val mockDisposeLiabilityReturnService = mock[DisposeLiabilityReturnService]
+  val mockEtmpConnector: EtmpReturnsConnector = mock[EtmpReturnsConnector]
+  val mockPropertyDetailsService: PropertyDetailsService = mock[PropertyDetailsService]
+  val mockReliefsService: ReliefsService = mock[ReliefsService]
+  val mockDisposeLiabilityReturnService: DisposeLiabilityReturnService = mock[DisposeLiabilityReturnService]
   val atedRefNo = "ATED-123"
   val noOfYears = 4
-  val successResponseJson = Json.parse( """{"sapNumber":"1234567890", "safeId": "EX0012345678909", "agentReferenceNumber": "AARN1234567"}""")
+  val successResponseJson: JsValue = Json.parse( """{"sapNumber":"1234567890", "safeId": "EX0012345678909", "agentReferenceNumber": "AARN1234567"}""")
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
@@ -49,11 +50,11 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
   val formBundle1 = "123456789012"
   val formBundle2 = "123456789000"
   val periodKey = 2014
-  val formBundleReturn1 = generateFormBundleResponse(periodKey)
-  val formBundleReturn2 = generateFormBundleResponse(periodKey)
-  val disposeCalculated2 = DisposeCalculated(1000, 200)
+  val formBundleReturn1: FormBundleReturn = generateFormBundleResponse(periodKey)
+  val formBundleReturn2: FormBundleReturn = generateFormBundleResponse(periodKey)
+  val disposeCalculated2: DisposeCalculated = DisposeCalculated(1000, 200)
 
-  override def beforeEach() = {
+  override def beforeEach(): Unit = {
     reset(mockEtmpConnector)
     reset(mockPropertyDetailsService)
     reset(mockReliefsService)
@@ -62,10 +63,10 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
 
   trait Setup {
     class TestReturnSummaryService extends ReturnSummaryService {
-      override val etmpConnector = mockEtmpConnector
-      override val propertyDetailsService = mockPropertyDetailsService
-      override val reliefsService = mockReliefsService
-      override val disposeLiabilityReturnService = mockDisposeLiabilityReturnService
+      override val etmpConnector: EtmpReturnsConnector = mockEtmpConnector
+      override val propertyDetailsService: PropertyDetailsService = mockPropertyDetailsService
+      override val reliefsService: ReliefsService = mockReliefsService
+      override val disposeLiabilityReturnService: DisposeLiabilityReturnService = mockDisposeLiabilityReturnService
     }
 
     val testReturnSummaryService = new TestReturnSummaryService()
@@ -79,11 +80,11 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
     "getPartialSummaryReturn" must {
 
       "return SummaryReturnModel with drafts, from Mongo DB" in new Setup {
-        val relDraft = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
-        val reliefDrafts = Seq(relDraft)
-        val propDetails = PropertyDetailsBuilder.getPropertyDetails("1")
-        val propDetailsSeq = Seq(propDetails)
-        val dispLiab = Seq(disposeLiability1)
+        val relDraft: ReliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
+        val reliefDrafts: Seq[ReliefsTaxAvoidance] = Seq(relDraft)
+        val propDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1")
+        val propDetailsSeq: Seq[PropertyDetails] = Seq(propDetails)
+        val dispLiab: Seq[DisposeLiabilityReturn] = Seq(disposeLiability1)
 
         val expected = SummaryReturnsModel(None, List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", None, "Liability")), None),
           PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")), None)))
@@ -93,23 +94,23 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
         when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(dispLiab))
 
-        val result = testReturnSummaryService.getPartialSummaryReturn(atedRefNo)
+        val result: Future[SummaryReturnsModel] = testReturnSummaryService.getPartialSummaryReturn(atedRefNo)
         await(result) must be(expected)
       }
 
       "return blank SummaryReturnModel, for no matching period key" in new Setup {
-        val reliefDrafts = Nil
-        val propDetailsSeq = Nil
+        val reliefDrafts: Seq[Nothing] = Nil
+        val propDetailsSeq: Seq[Nothing] = Nil
 
-        val dispLiab = Nil
+        val dispLiab: Seq[Nothing] = Nil
 
-        val expected = SummaryReturnsModel(None, Nil)
+        val expected: SummaryReturnsModel = SummaryReturnsModel(None, Nil)
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
         when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(dispLiab))
 
-        val result = testReturnSummaryService.getPartialSummaryReturn(atedRefNo)
+        val result: Future[SummaryReturnsModel] = testReturnSummaryService.getPartialSummaryReturn(atedRefNo)
         await(result) must be(expected)
       }
     }
@@ -120,7 +121,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
 
         //TODO: if etmp reverts back to numeric, uncomment next line and comment next-to-next
         //val etmpReturnJson = Json.toJson(etmpReturn)
-        val etmpReturnJson =
+        val etmpReturnJson: JsValue =
           Json.parse(
             """ {"safeId":"123Safe","organisationName":"ACNE LTD.","periodData":[{"periodKey":"2014",
               |"returnData":{"reliefReturnSummary":[{"formBundleNumber":"12345","dateOfSubmission":"2014-05-05","relief":"Farmhouses","reliefStartDate":"2014-09-05","reliefEndDate":"2014-10-05"}],
@@ -128,11 +129,11 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
               |"return":[
               |{"formBundleNumber":"12345","dateOfSubmission":"2014-05-05","dateFrom":"2014-09-05","dateTo":"2014-10-05","liabilityAmount":"1000","paymentReference":"pay-123","changeAllowed":true}
               |]}]}]}}],"atedBalance":"10000"} """.stripMargin)
-        val relDraft = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
-        val reliefDrafts = Seq(relDraft)
-        val propDetails = PropertyDetailsBuilder.getPropertyDetails("1")
-        val propDetailsSeq = Seq(propDetails)
-        val dispLiab = Seq(disposeLiability1)
+        val relDraft: ReliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
+        val reliefDrafts: Seq[ReliefsTaxAvoidance] = Seq(relDraft)
+        val propDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1")
+        val propDetailsSeq: Seq[PropertyDetails] = Seq(propDetails)
+        val dispLiab: Seq[DisposeLiabilityReturn] = Seq(disposeLiability1)
 
         val years = 6
 
@@ -140,7 +141,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
           PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")),
             Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5), None, None)),
               List(SubmittedLiabilityReturns("12345", "line1 line2", 1000, LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5),
-                true, "pay-123")))))))
+                changeAllowed = true, paymentReference = "pay-123")))))))
 
         when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
@@ -149,7 +150,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
         when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(dispLiab))
 
-        val result = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
+        val result: Future[SummaryReturnsModel] = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
         await(result) must be(expected)
       }
 
@@ -157,7 +158,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
 
         //TODO: if etmp reverts back to numeric, uncomment next line and comment next-to-next
         //val etmpReturnJson = Json.toJson(etmpReturn)
-        val etmpReturnJson =
+        val etmpReturnJson: JsValue =
           Json.parse(
             """ {"safeId":"123Safe","organisationName":"ACNE LTD.","periodData":[{"periodKey":"2014",
               |"returnData":{"reliefReturnSummary":[{"formBundleNumber":"12345","dateOfSubmission":"2014-05-05","relief":"Farmhouses","reliefStartDate":"2014-09-05","reliefEndDate":"2014-10-05"}],
@@ -166,11 +167,11 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
               |{"formBundleNumber":"12346","dateOfSubmission":"2014-05-05","dateFrom":"2014-09-05","dateTo":"2014-10-05","liabilityAmount":"1000","paymentReference":"pay-123","changeAllowed":true},
               |{"formBundleNumber":"12345","dateOfSubmission":"2014-01-01","dateFrom":"2014-09-05","dateTo":"2014-10-05","liabilityAmount":"1000","paymentReference":"pay-123","changeAllowed":false}
               |]}]}]}}],"atedBalance":"10000"} """.stripMargin)
-        val relDraft = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
-        val reliefDrafts = Seq(relDraft)
-        val propDetails = PropertyDetailsBuilder.getPropertyDetails("1")
-        val propDetailsSeq = Seq(propDetails)
-        val dispLiab = Seq(disposeLiability1)
+        val relDraft: ReliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
+        val reliefDrafts: Seq[ReliefsTaxAvoidance] = Seq(relDraft)
+        val propDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1")
+        val propDetailsSeq: Seq[PropertyDetails] = Seq(propDetails)
+        val dispLiab: Seq[DisposeLiabilityReturn] = Seq(disposeLiability1)
 
         val years = 6
 
@@ -180,10 +181,10 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
             PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")),
               Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5), None, None)),
                   List(
-                    SubmittedLiabilityReturns("12346", "line1 line2", 1000, LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5), true, "pay-123")
+                    SubmittedLiabilityReturns("12346", "line1 line2", 1000, LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5), changeAllowed = true, paymentReference = "pay-123")
                   ),
                   List(
-                    SubmittedLiabilityReturns("12345", "line1 line2", 1000, LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 1, 1), false, "pay-123")
+                    SubmittedLiabilityReturns("12345", "line1 line2", 1000, LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 1, 1), changeAllowed = false, paymentReference = "pay-123")
                   )
                 )
               )
@@ -198,22 +199,22 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
         when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(dispLiab))
 
-        val result = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
+        val result: Future[SummaryReturnsModel] = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
         await(result) must be(expected)
       }
 
       "return SummaryReturnModel with drafts and submitted return - from Mongo DB and ETMP - no liability or draft" in new Setup {
 
-        val etmpReturnJson = Json.parse("""{"safeId":"123Safe","organisationName":"organisationName","periodData":[{"periodKey":"2014","returnData":{}}],"atedBalance":"0"}""")
-        val relDraft = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
-        val reliefDrafts = Seq(relDraft)
-        val propDetails = PropertyDetailsBuilder.getPropertyDetails("1")
-        val propDetailsSeq = Seq(propDetails)
-        val dispLiab = Seq(disposeLiability1)
+        val etmpReturnJson: JsValue = Json.parse("""{"safeId":"123Safe","organisationName":"organisationName","periodData":[{"periodKey":"2014","returnData":{}}],"atedBalance":"0"}""")
+        val relDraft: ReliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
+        val reliefDrafts: Seq[ReliefsTaxAvoidance] = Seq(relDraft)
+        val propDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1")
+        val propDetailsSeq: Seq[PropertyDetails] = Seq(propDetails)
+        val dispLiab: Seq[DisposeLiabilityReturn] = Seq(disposeLiability1)
 
         val years = 6
 
-        val expected = SummaryReturnsModel(Some(0), List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", None, "Liability")), None),
+        val expected: SummaryReturnsModel = SummaryReturnsModel(Some(0), List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", None, "Liability")), None),
           PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")),
             Some(SubmittedReturns(periodKey, List(), List())))))
 
@@ -224,22 +225,22 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
         when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(dispLiab))
 
-        val result = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
+        val result: Future[SummaryReturnsModel] = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
         await(result) must be(expected)
       }
 
       "return SummaryReturnModel with drafts and submitted return - from Mongo DB and ETMP - no liabliity amount in liabilty return" in new Setup {
 
-        val etmpReturnJson = Json.parse("""{"safeId":"123Safe","organisationName":"organisationName","periodData":[{"periodKey":"2014","returnData":{"reliefReturnSummary":[{"formBundleNumber":"12345","dateOfSubmission":"2014-05-05","relief":"Farmhouses","reliefStartDate":"2014-09-05","reliefEndDate":"2014-10-05"}],"liabilityReturnSummary":[{}]}}],"atedBalance":"0"}""")
-        val relDraft = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
-        val reliefDrafts = Seq(relDraft)
-        val propDetails = PropertyDetails(atedRefNo = "ated-ref-1", "123456789099", periodKey, addressProperty = PropertyDetailsBuilder.getPropertyDetailsAddress(None), calculated = None, formBundleReturn = Some(ChangeLiabilityReturnBuilder.generateFormBundleResponse(periodKey)))
-        val propDetailsSeq = Seq(propDetails)
-        val dispLiab = Seq(disposeLiability2)
+        val etmpReturnJson: JsValue = Json.parse("""{"safeId":"123Safe","organisationName":"organisationName","periodData":[{"periodKey":"2014","returnData":{"reliefReturnSummary":[{"formBundleNumber":"12345","dateOfSubmission":"2014-05-05","relief":"Farmhouses","reliefStartDate":"2014-09-05","reliefEndDate":"2014-10-05"}],"liabilityReturnSummary":[{}]}}],"atedBalance":"0"}""")
+        val relDraft: ReliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
+        val reliefDrafts: Seq[ReliefsTaxAvoidance] = Seq(relDraft)
+        val propDetails: PropertyDetails = PropertyDetails(atedRefNo = "ated-ref-1", "123456789099", periodKey, addressProperty = PropertyDetailsBuilder.getPropertyDetailsAddress(None), calculated = None, formBundleReturn = Some(ChangeLiabilityReturnBuilder.generateFormBundleResponse(periodKey)))
+        val propDetailsSeq: Seq[PropertyDetails] = Seq(propDetails)
+        val dispLiab: Seq[DisposeLiabilityReturn] = Seq(disposeLiability2)
 
         val years = 6
 
-        val expected = SummaryReturnsModel(Some(0), List(PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789099", "addr1 addr2", None, "Change_Liability"),
+        val expected: SummaryReturnsModel = SummaryReturnsModel(Some(0), List(PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789099", "addr1 addr2", None, "Change_Liability"),
           DraftReturns(periodKey, "123456789012", "line1 line2", Some(1000), "Dispose_Liability")),
           Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5),
             LocalDate.of(2014, 5, 5), None, None)), List())))))
@@ -251,17 +252,17 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
         when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(dispLiab))
 
-        val result = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
+        val result: Future[SummaryReturnsModel] = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
         await(result) must be(expected)
       }
 
       "return SummaryReturnModel with drafts but no ETMP data found - from Mongo DB " in new Setup {
 
-        val relDraft = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey, Reliefs(periodKey, rentalBusiness = true))
-        val reliefDrafts = Seq(relDraft)
-        val propDetails = PropertyDetailsBuilder.getPropertyDetails("1", liabilityAmount = Some(1000))
-        val propDetailsSeq = Seq(propDetails)
-        val dispLiab = Seq(disposeLiability1)
+        val relDraft: ReliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey, Reliefs(periodKey, rentalBusiness = true))
+        val reliefDrafts: Seq[ReliefsTaxAvoidance] = Seq(relDraft)
+        val propDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", liabilityAmount = Some(1000))
+        val propDetailsSeq: Seq[PropertyDetails] = Seq(propDetails)
+        val dispLiab: Seq[DisposeLiabilityReturn] = Seq(disposeLiability1)
         val years = 6
 
         when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
@@ -271,20 +272,20 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
         when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(dispLiab))
 
-        val expected = SummaryReturnsModel(None, List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", Some(1000), "Liability")), None),
+        val expected: SummaryReturnsModel = SummaryReturnsModel(None, List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", Some(1000), "Liability")), None),
           PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "", "Rental businesses", None, "Relief"),
             DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")), None)))
 
-        val result = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
+        val result: Future[SummaryReturnsModel] = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
         await(result) must be(expected)
       }
       "return blank SummaryReturnModel no drafts and NO submitted ETMP return found, - for no matching period keys" in new Setup {
-        val reliefDrafts = Nil
-        val propDetailsSeq = Nil
-        val dispLiab = Nil
+        val reliefDrafts: Seq[Nothing] = Nil
+        val propDetailsSeq: Seq[Nothing] = Nil
+        val dispLiab: Seq[Nothing] = Nil
         val years = 6
 
-        val expected = SummaryReturnsModel(None, Nil)
+        val expected: SummaryReturnsModel = SummaryReturnsModel(None, Nil)
 
         when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(NOT_FOUND, "")))
@@ -293,17 +294,17 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
         when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(dispLiab))
 
-        val result = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
+        val result: Future[SummaryReturnsModel] = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
         await(result) must be(expected)
       }
 
       "return blank SummaryReturnModel no ETMP Return - internal server error" in new Setup {
-        val reliefDrafts = Nil
-        val propDetailsSeq = Nil
-        val dispLiab = Nil
+        val reliefDrafts: Seq[Nothing] = Nil
+        val propDetailsSeq: Seq[Nothing] = Nil
+        val dispLiab: Seq[Nothing] = Nil
         val years = 6
 
-        val expected = SummaryReturnsModel(None, Nil)
+        val expected: SummaryReturnsModel = SummaryReturnsModel(None, Nil)
 
         when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, "")))
@@ -312,18 +313,18 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
         when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(dispLiab))
 
-        val result = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
+        val result: Future[SummaryReturnsModel] = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
         await(result) must be(expected)
       }
 
       "return blank SummaryReturnModel for no drafts but no matching period key" in new Setup {
-        val etmpReturnJson = Json.parse("""{"safeId":"123Safe","organisationName":"organisationName","periodData":[],"atedBalance":"0"}""")
-        val reliefDrafts = Nil
-        val propDetailsSeq = Nil
-        val dispLiab = Nil
+        val etmpReturnJson: JsValue = Json.parse("""{"safeId":"123Safe","organisationName":"organisationName","periodData":[],"atedBalance":"0"}""")
+        val reliefDrafts: Seq[Nothing] = Nil
+        val propDetailsSeq: Seq[Nothing] = Nil
+        val dispLiab: Seq[Nothing] = Nil
         val years = 6
 
-        val expected = SummaryReturnsModel(None, Nil)
+        val expected: SummaryReturnsModel = SummaryReturnsModel(None, Nil)
 
         when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
@@ -333,7 +334,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
         when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(dispLiab))
 
-        val result = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
+        val result: Future[SummaryReturnsModel] = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
         await(result) must be(expected)
       }
     }
@@ -341,37 +342,37 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
 
   "filterReturnsByOldAndNew" must {
     "return Nil if we have no Periods" in new Setup {
-      val returnTuple = testReturnSummaryService.filterReturnsByOldAndNew(Nil)
+      val returnTuple: (Seq[SubmittedLiabilityReturns], Seq[SubmittedLiabilityReturns]) = testReturnSummaryService.filterReturnsByOldAndNew(Nil)
       returnTuple._1.isEmpty must be (true)
       returnTuple._2.isEmpty must be (true)
     }
 
     "return Nil if we have no returns for a property" in new Setup {
-      val propertySummary = EtmpPropertySummary(contractObject = "", titleNumber = None, addressLine1 = "1", addressLine2 = "2", `return` = Nil)
+      val propertySummary: EtmpPropertySummary = EtmpPropertySummary(contractObject = "", titleNumber = None, addressLine1 = "1", addressLine2 = "2", `return` = Nil)
 
-      val returnTuple = testReturnSummaryService.filterReturnsByOldAndNew(List(propertySummary))
+      val returnTuple: (Seq[SubmittedLiabilityReturns], Seq[SubmittedLiabilityReturns]) = testReturnSummaryService.filterReturnsByOldAndNew(List(propertySummary))
       returnTuple._1.isEmpty must be (true)
       returnTuple._2.isEmpty must be (true)
     }
 
     "return new if we only have one return for each property" in new Setup {
-      val liability1 = EtmpReturn(formBundleNumber = "1", dateOfSubmission = LocalDate.of(2014, 5, 5),
+      val liability1: EtmpReturn = EtmpReturn(formBundleNumber = "1", dateOfSubmission = LocalDate.of(2014, 5, 5),
             dateFrom = LocalDate.of(2014, 4, 15),
             dateTo = LocalDate.of(2015, 3, 31),
             liabilityAmount = BigDecimal(1000),
             paymentReference = "123123m",
             changeAllowed = false)
-      val propertySummary1 = EtmpPropertySummary(contractObject = "", titleNumber = None, addressLine1 = "1", addressLine2 = "2", `return` = List(liability1))
+      val propertySummary1: EtmpPropertySummary = EtmpPropertySummary(contractObject = "", titleNumber = None, addressLine1 = "1", addressLine2 = "2", `return` = List(liability1))
 
-      val liability2 = EtmpReturn(formBundleNumber = "2", dateOfSubmission = LocalDate.of(2014, 5, 5),
+      val liability2: EtmpReturn = EtmpReturn(formBundleNumber = "2", dateOfSubmission = LocalDate.of(2014, 5, 5),
         dateFrom = LocalDate.of(2014, 4, 15),
         dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val propertySummary2 = EtmpPropertySummary(contractObject = "", titleNumber = None, addressLine1 = "1", addressLine2 = "2", `return` = List(liability2))
+      val propertySummary2: EtmpPropertySummary = EtmpPropertySummary(contractObject = "", titleNumber = None, addressLine1 = "1", addressLine2 = "2", `return` = List(liability2))
 
-      val returnTuple = testReturnSummaryService.filterReturnsByOldAndNew(List(propertySummary1, propertySummary2))
+      val returnTuple: (Seq[SubmittedLiabilityReturns], Seq[SubmittedLiabilityReturns]) = testReturnSummaryService.filterReturnsByOldAndNew(List(propertySummary1, propertySummary2))
       returnTuple._2.isEmpty must be (true)
 
       returnTuple._1.size must be (2)
@@ -380,28 +381,28 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
     }
 
     "return new and old if we have multiple returns for a property" in new Setup {
-      val liability1 = EtmpReturn(formBundleNumber = "1", dateOfSubmission = LocalDate.of(2014, 5, 5),
+      val liability1: EtmpReturn = EtmpReturn(formBundleNumber = "1", dateOfSubmission = LocalDate.of(2014, 5, 5),
         dateFrom = LocalDate.of(2014, 4, 15),
         dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val liability2 = EtmpReturn(formBundleNumber = "2", dateOfSubmission = LocalDate.of(2014, 5, 6),
+      val liability2: EtmpReturn = EtmpReturn(formBundleNumber = "2", dateOfSubmission = LocalDate.of(2014, 5, 6),
         dateFrom = LocalDate.of(2014, 4, 15),
         dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val liability3 = EtmpReturn(formBundleNumber = "3", dateOfSubmission = LocalDate.of(2014, 5, 4),
+      val liability3: EtmpReturn = EtmpReturn(formBundleNumber = "3", dateOfSubmission = LocalDate.of(2014, 5, 4),
         dateFrom = LocalDate.of(2014, 4, 15),
         dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val propertySummary1 = EtmpPropertySummary(contractObject = "", titleNumber = None, addressLine1 = "1", addressLine2 = "2", `return` = List(liability1, liability2, liability3))
+      val propertySummary1: EtmpPropertySummary = EtmpPropertySummary(contractObject = "", titleNumber = None, addressLine1 = "1", addressLine2 = "2", `return` = List(liability1, liability2, liability3))
 
 
-      val returnTuple = testReturnSummaryService.filterReturnsByOldAndNew(List(propertySummary1))
+      val returnTuple: (Seq[SubmittedLiabilityReturns], Seq[SubmittedLiabilityReturns]) = testReturnSummaryService.filterReturnsByOldAndNew(List(propertySummary1))
 
       returnTuple._1.size must be (1)
       returnTuple._1.find(_.formBundleNo == "2").isDefined must be (true)
@@ -413,28 +414,28 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
     }
 
     "if two returns have the same date, return the one that is editable as new (last in list is  editable)" in new Setup {
-      val liability1 = EtmpReturn(formBundleNumber = "1", dateOfSubmission = LocalDate.of(2014, 5, 5),
+      val liability1: EtmpReturn = EtmpReturn(formBundleNumber = "1", dateOfSubmission = LocalDate.of(2014, 5, 5),
         dateFrom = LocalDate.of(2014, 4, 15),
         dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val liability2 = EtmpReturn(formBundleNumber = "2", dateOfSubmission = LocalDate.of(2014, 5, 4),
+      val liability2: EtmpReturn = EtmpReturn(formBundleNumber = "2", dateOfSubmission = LocalDate.of(2014, 5, 4),
         dateFrom = LocalDate.of(2014, 4, 15),
         dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val liability3 = EtmpReturn(formBundleNumber = "3", dateOfSubmission = LocalDate.of(2014, 5, 5),
+      val liability3: EtmpReturn = EtmpReturn(formBundleNumber = "3", dateOfSubmission = LocalDate.of(2014, 5, 5),
         dateFrom = LocalDate.of(2014, 4, 15),
         dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = true)
-      val propertySummary1 = EtmpPropertySummary(contractObject = "", titleNumber = None, addressLine1 = "1", addressLine2 = "2", `return` = List(liability1, liability2, liability3))
+      val propertySummary1: EtmpPropertySummary = EtmpPropertySummary(contractObject = "", titleNumber = None, addressLine1 = "1", addressLine2 = "2", `return` = List(liability1, liability2, liability3))
 
 
-      val returnTuple = testReturnSummaryService.filterReturnsByOldAndNew(List(propertySummary1))
+      val returnTuple: (Seq[SubmittedLiabilityReturns], Seq[SubmittedLiabilityReturns]) = testReturnSummaryService.filterReturnsByOldAndNew(List(propertySummary1))
 
       returnTuple._1.size must be (1)
       returnTuple._1.find(_.formBundleNo == "3").isDefined must be (true)
@@ -446,28 +447,28 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
     }
 
     "if two returns have the same date, return the one that is editable as new (first in list is  editable)" in new Setup {
-      val liability1 = EtmpReturn(formBundleNumber = "1", dateOfSubmission = LocalDate.of(2014, 5, 5),
+      val liability1: EtmpReturn = EtmpReturn(formBundleNumber = "1", dateOfSubmission = LocalDate.of(2014, 5, 5),
         dateFrom = LocalDate.of(2014, 4, 15),
         dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = true)
-      val liability2 = EtmpReturn(formBundleNumber = "2", dateOfSubmission = LocalDate.of(2014, 5, 4),
+      val liability2: EtmpReturn = EtmpReturn(formBundleNumber = "2", dateOfSubmission = LocalDate.of(2014, 5, 4),
         dateFrom = LocalDate.of(2014, 4, 15),
         dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val liability3 = EtmpReturn(formBundleNumber = "3", dateOfSubmission = LocalDate.of(2014, 5, 5),
+      val liability3: EtmpReturn = EtmpReturn(formBundleNumber = "3", dateOfSubmission = LocalDate.of(2014, 5, 5),
         dateFrom = LocalDate.of(2014, 4, 15),
         dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val propertySummary1 = EtmpPropertySummary(contractObject = "", titleNumber = None, addressLine1 = "1", addressLine2 = "2", `return` = List(liability1, liability2, liability3))
+      val propertySummary1: EtmpPropertySummary = EtmpPropertySummary(contractObject = "", titleNumber = None, addressLine1 = "1", addressLine2 = "2", `return` = List(liability1, liability2, liability3))
 
 
-      val returnTuple = testReturnSummaryService.filterReturnsByOldAndNew(List(propertySummary1))
+      val returnTuple: (Seq[SubmittedLiabilityReturns], Seq[SubmittedLiabilityReturns]) = testReturnSummaryService.filterReturnsByOldAndNew(List(propertySummary1))
 
       returnTuple._1.size must be (1)
       returnTuple._1.find(_.formBundleNo == "1").isDefined must be (true)
@@ -479,28 +480,28 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
     }
 
     "if two returns have the same date, return the one that is editable as new : if neither is editable, put both in new" in new Setup {
-      val liability1 = EtmpReturn(formBundleNumber = "1", dateOfSubmission = LocalDate.of(2014, 5, 5),
+      val liability1: EtmpReturn = EtmpReturn(formBundleNumber = "1", dateOfSubmission = LocalDate.of(2014, 5, 5),
         dateFrom = LocalDate.of(2014, 4, 15),
         dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val liability2 = EtmpReturn(formBundleNumber = "2", dateOfSubmission = LocalDate.of(2014, 5, 4),
+      val liability2: EtmpReturn = EtmpReturn(formBundleNumber = "2", dateOfSubmission = LocalDate.of(2014, 5, 4),
         dateFrom = LocalDate.of(2014, 4, 15),
         dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val liability3 = EtmpReturn(formBundleNumber = "3", dateOfSubmission = LocalDate.of(2014, 5, 5),
+      val liability3: EtmpReturn = EtmpReturn(formBundleNumber = "3", dateOfSubmission = LocalDate.of(2014, 5, 5),
         dateFrom = LocalDate.of(2014, 4, 15),
         dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val propertySummary1 = EtmpPropertySummary(contractObject = "", titleNumber = None, addressLine1 = "1", addressLine2 = "2", `return` = List(liability1, liability2, liability3))
+      val propertySummary1: EtmpPropertySummary = EtmpPropertySummary(contractObject = "", titleNumber = None, addressLine1 = "1", addressLine2 = "2", `return` = List(liability1, liability2, liability3))
 
 
-      val returnTuple = testReturnSummaryService.filterReturnsByOldAndNew(List(propertySummary1))
+      val returnTuple: (Seq[SubmittedLiabilityReturns], Seq[SubmittedLiabilityReturns]) = testReturnSummaryService.filterReturnsByOldAndNew(List(propertySummary1))
 
       returnTuple._1.size must be (2)
       returnTuple._1.find(_.formBundleNo == "1").isDefined must be (true)
@@ -512,28 +513,28 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
     }
 
     "if two returns have the same date, return the one that is editable as new : if both are editable, put both in new" in new Setup {
-      val liability1 = EtmpReturn(formBundleNumber = "1", dateOfSubmission = LocalDate.of(2014, 5, 5),
+      val liability1: EtmpReturn = EtmpReturn(formBundleNumber = "1", dateOfSubmission = LocalDate.of(2014, 5, 5),
         dateFrom = LocalDate.of(2014, 4, 15),
         dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = true)
-      val liability2 = EtmpReturn(formBundleNumber = "2", dateOfSubmission = LocalDate.of(2014, 5, 4),
+      val liability2: EtmpReturn = EtmpReturn(formBundleNumber = "2", dateOfSubmission = LocalDate.of(2014, 5, 4),
         dateFrom = LocalDate.of(2014, 4, 15),
         dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = false)
-      val liability3 = EtmpReturn(formBundleNumber = "3", dateOfSubmission = LocalDate.of(2014, 5, 5),
+      val liability3: EtmpReturn = EtmpReturn(formBundleNumber = "3", dateOfSubmission = LocalDate.of(2014, 5, 5),
         dateFrom = LocalDate.of(2014, 4, 15),
         dateTo = LocalDate.of(2015, 3, 31),
         liabilityAmount = BigDecimal(1000),
         paymentReference = "123123m",
         changeAllowed = true)
-      val propertySummary1 = EtmpPropertySummary(contractObject = "", titleNumber = None, addressLine1 = "1", addressLine2 = "2", `return` = List(liability1, liability2, liability3))
+      val propertySummary1: EtmpPropertySummary = EtmpPropertySummary(contractObject = "", titleNumber = None, addressLine1 = "1", addressLine2 = "2", `return` = List(liability1, liability2, liability3))
 
 
-      val returnTuple = testReturnSummaryService.filterReturnsByOldAndNew(List(propertySummary1))
+      val returnTuple: (Seq[SubmittedLiabilityReturns], Seq[SubmittedLiabilityReturns]) = testReturnSummaryService.filterReturnsByOldAndNew(List(propertySummary1))
 
       returnTuple._1.size must be (2)
       returnTuple._1.find(_.formBundleNo == "1").isDefined must be (true)

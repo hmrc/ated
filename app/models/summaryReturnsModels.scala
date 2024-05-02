@@ -17,7 +17,7 @@
 package models
 
 import java.time.LocalDate
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 import play.api.libs.json.Writes._
 import play.api.libs.json.Reads._
 
@@ -30,7 +30,7 @@ case class DraftReturns(periodKey: Int, // periodKey so that we know which draft
 
 
 object DraftReturns {
-  implicit val formats = Json.format[DraftReturns]
+  implicit val formats: OFormat[DraftReturns] = Json.format[DraftReturns]
 }
 
 case class SubmittedReliefReturns(formBundleNo: String,
@@ -42,7 +42,7 @@ case class SubmittedReliefReturns(formBundleNo: String,
                                   promoterReferenceNumber: Option[String] = None)
 
 object SubmittedReliefReturns {
-  implicit val formats = Json.format[SubmittedReliefReturns]
+  implicit val formats: OFormat[SubmittedReliefReturns] = Json.format[SubmittedReliefReturns]
 }
 
 case class SubmittedLiabilityReturns(formBundleNo: String,
@@ -55,7 +55,7 @@ case class SubmittedLiabilityReturns(formBundleNo: String,
                                      paymentReference: String)
 
 object SubmittedLiabilityReturns {
-  implicit val formats = Json.format[SubmittedLiabilityReturns]
+  implicit val formats: OFormat[SubmittedLiabilityReturns] = Json.format[SubmittedLiabilityReturns]
 }
 
 case class SubmittedReturns(periodKey: Int, // periodKey so that we don't create any model in ated-fe.this model is cached there as a Seq
@@ -66,7 +66,7 @@ case class SubmittedReturns(periodKey: Int, // periodKey so that we don't create
 }
 
 object SubmittedReturns {
-  implicit val formats = Json.format[SubmittedReturns]
+  implicit val formats: OFormat[SubmittedReturns] = Json.format[SubmittedReturns]
 }
 
 case class PeriodSummaryReturns(periodKey: Int, // this is used for any other purpose
@@ -74,12 +74,12 @@ case class PeriodSummaryReturns(periodKey: Int, // this is used for any other pu
                                 submittedReturns: Option[SubmittedReturns] = None)
 
 object PeriodSummaryReturns {
-  implicit val formats = Json.format[PeriodSummaryReturns]
+  implicit val formats: OFormat[PeriodSummaryReturns] = Json.format[PeriodSummaryReturns]
 }
 
 case class SummaryReturnsModel(atedBalance: Option[BigDecimal] = None,
                                allReturns: Seq[PeriodSummaryReturns] = Nil)
 
 object SummaryReturnsModel {
-  implicit val formats = Json.format[SummaryReturnsModel]
+  implicit val formats: OFormat[SummaryReturnsModel] = Json.format[SummaryReturnsModel]
 }

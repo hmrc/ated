@@ -19,7 +19,7 @@ package models
 import java.time.LocalDate
 import play.api.libs.json.Writes._
 import play.api.libs.json.Reads._
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 
 case class EtmpAddress(addressLine1: String,
                        addressLine2: String,
@@ -29,7 +29,7 @@ case class EtmpAddress(addressLine1: String,
                        postalCode: Option[String] = None)
 
 object EtmpAddress {
-  implicit val formats = Json.format[EtmpAddress]
+  implicit val formats: OFormat[EtmpAddress] = Json.format[EtmpAddress]
 }
 
 
@@ -41,7 +41,7 @@ case class EtmpReliefReturns(reliefDescription: String,
                              taxAvoidancePromoterReference: Option[String] = None)
 
 object EtmpReliefReturns {
-  implicit val formats = Json.format[EtmpReliefReturns]
+  implicit val formats: OFormat[EtmpReliefReturns] = Json.format[EtmpReliefReturns]
 }
 
 
@@ -50,7 +50,7 @@ case class EtmpPropertyDetails(titleNumber: Option[String] = None,
                                additionalDetails: Option[String] = None)
 
 object EtmpPropertyDetails {
-  implicit val formats = Json.format[EtmpPropertyDetails]
+  implicit val formats: OFormat[EtmpPropertyDetails] = Json.format[EtmpPropertyDetails]
 }
 
 case class EtmpLineItems(propertyValue: BigDecimal,
@@ -60,7 +60,7 @@ case class EtmpLineItems(propertyValue: BigDecimal,
                          reliefDescription: Option[String] = None)
 
 object EtmpLineItems {
-  implicit val formats = Json.format[EtmpLineItems]
+  implicit val formats: OFormat[EtmpLineItems] = Json.format[EtmpLineItems]
 }
 
 case class EtmpLiabilityReturns(mode: String,
@@ -78,7 +78,7 @@ case class EtmpLiabilityReturns(mode: String,
                                 lineItems: Seq[EtmpLineItems])
 
 object EtmpLiabilityReturns {
-  implicit val formats = Json.format[EtmpLiabilityReturns]
+  implicit val formats: OFormat[EtmpLiabilityReturns] = Json.format[EtmpLiabilityReturns]
 }
 
 
@@ -88,14 +88,14 @@ case class SubmitEtmpReturnsRequest(acknowledgementReference: String,
                                     liabilityReturns: Option[Seq[EtmpLiabilityReturns]] = None)
 
 object SubmitEtmpReturnsRequest {
-  implicit val formats = Json.format[SubmitEtmpReturnsRequest]
+  implicit val formats: OFormat[SubmitEtmpReturnsRequest] = Json.format[SubmitEtmpReturnsRequest]
 }
 
 
 case class EtmpReliefReturnResponse(reliefDescription: String, formBundleNumber: String)
 
 object EtmpReliefReturnResponse {
-  implicit val formats = Json.format[EtmpReliefReturnResponse]
+  implicit val formats: OFormat[EtmpReliefReturnResponse] = Json.format[EtmpReliefReturnResponse]
 }
 
 
@@ -108,7 +108,7 @@ case class EtmpLiabilityReturnResponse(
                                       )
 
 object EtmpLiabilityReturnResponse {
-  implicit val formats = Json.format[EtmpLiabilityReturnResponse]
+  implicit val formats: OFormat[EtmpLiabilityReturnResponse] = Json.format[EtmpLiabilityReturnResponse]
 }
 
 
@@ -117,7 +117,5 @@ case class SubmitEtmpReturnsResponse(processingDate: String,
                                      liabilityReturnResponse: Option[Seq[EtmpLiabilityReturnResponse]] = None)
 
 object SubmitEtmpReturnsResponse {
-  implicit val formats = Json.format[SubmitEtmpReturnsResponse]
-//  implicit val reads = Json.reads[SubmitEtmpReturnsResponse]
-//  implicit val writes = Json.writes[SubmitEtmpReturnsResponse]
+  implicit val formats: OFormat[SubmitEtmpReturnsResponse] = Json.format[SubmitEtmpReturnsResponse]
 }

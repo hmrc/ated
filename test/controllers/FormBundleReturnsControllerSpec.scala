@@ -22,8 +22,8 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
-import play.api.libs.json.Json
-import play.api.mvc.ControllerComponents
+import play.api.libs.json.{JsValue, Json}
+import play.api.mvc.{ControllerComponents, Result}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import services.FormBundleService
@@ -34,12 +34,12 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class FormBundleReturnsControllerSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
-  val mockFormBundleService = mock[FormBundleService]
+  val mockFormBundleService: FormBundleService = mock[FormBundleService]
   val callingUtr = "ATED-123"
   val testFormBundleNum = "123456789012"
-  val successResponseJson = Json.parse( """{"sapNumber":"1234567890", "safeId": "EX0012345678909", "agentReferenceNumber": "AARN1234567"}""")
-  val failureResponseJson = Json.parse( """{"reason":"Agent not found!"}""")
-  val errorResponseJson = Json.parse( """{"reason":"Some Error."}""")
+  val successResponseJson: JsValue = Json.parse( """{"sapNumber":"1234567890", "safeId": "EX0012345678909", "agentReferenceNumber": "AARN1234567"}""")
+  val failureResponseJson: JsValue = Json.parse( """{"reason":"Agent not found!"}""")
+  val errorResponseJson: JsValue = Json.parse( """{"reason":"Some Error."}""")
 
   trait Setup {
     val cc: ControllerComponents = app.injector.instanceOf[ControllerComponents]
@@ -58,31 +58,31 @@ class FormBundleReturnsControllerSpec extends PlaySpec with GuiceOneServerPerSui
       "respond with OK, for successful GET" in new Setup {
         when(mockFormBundleService.getFormBundleReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
-        val result = controller.getFormBundleReturns(callingUtr, testFormBundleNum).apply(FakeRequest())
+        val result: Future[Result] = controller.getFormBundleReturns(callingUtr, testFormBundleNum).apply(FakeRequest())
         status(result) must be(OK)
       }
       "respond with NOT_FOUND, for unsuccessful GET" in new Setup {
         when(mockFormBundleService.getFormBundleReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(NOT_FOUND, failureResponseJson, Map.empty[String, Seq[String]])))
-        val result = controller.getFormBundleReturns(callingUtr, testFormBundleNum).apply(FakeRequest())
+        val result: Future[Result] = controller.getFormBundleReturns(callingUtr, testFormBundleNum).apply(FakeRequest())
         status(result) must be(NOT_FOUND)
       }
       "respond with BAD_REQUEST, if ETMP sends BadRequest status" in new Setup {
         when(mockFormBundleService.getFormBundleReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, errorResponseJson, Map.empty[String, Seq[String]])))
-        val result = controller.getFormBundleReturns(callingUtr, testFormBundleNum).apply(FakeRequest())
+        val result: Future[Result] = controller.getFormBundleReturns(callingUtr, testFormBundleNum).apply(FakeRequest())
         status(result) must be(BAD_REQUEST)
       }
       "respond with SERVICE_UNAVAILABLE, if ETMP is unavailable" in new Setup {
         when(mockFormBundleService.getFormBundleReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(SERVICE_UNAVAILABLE, errorResponseJson, Map.empty[String, Seq[String]])))
-        val result = controller.getFormBundleReturns(callingUtr, testFormBundleNum).apply(FakeRequest())
+        val result: Future[Result] = controller.getFormBundleReturns(callingUtr, testFormBundleNum).apply(FakeRequest())
         status(result) must be(SERVICE_UNAVAILABLE)
       }
       "respond with InternalServerError, if ETMP sends some server error response" in new Setup {
         when(mockFormBundleService.getFormBundleReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, errorResponseJson, Map.empty[String, Seq[String]])))
-        val result = controller.getFormBundleReturns(callingUtr, testFormBundleNum).apply(FakeRequest())
+        val result: Future[Result] = controller.getFormBundleReturns(callingUtr, testFormBundleNum).apply(FakeRequest())
         status(result) must be(INTERNAL_SERVER_ERROR)
       }
     }

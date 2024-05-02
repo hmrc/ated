@@ -140,9 +140,9 @@ class EtmpDetailsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
     "update subscription data" must {
       val addressDetails = AddressDetails("Correspondence", "line1", "line2", None, None, Some("postCode"), "GB")
       val addressDetailsNoPostcode = AddressDetails("Correspondence", "line1", "line2", None, None, None, "GB")
-      val updatedData = new UpdateEtmpSubscriptionDataRequest(SessionUtils.getUniqueAckNo, true, ChangeIndicators(), None,
+      val updatedData = new UpdateEtmpSubscriptionDataRequest(SessionUtils.getUniqueAckNo, emailConsent = true, ChangeIndicators(), None,
         List(Address(addressDetails = addressDetails)))
-      val updatedDataNoPostcode = new UpdateEtmpSubscriptionDataRequest(SessionUtils.getUniqueAckNo, true, ChangeIndicators(), None,
+      val updatedDataNoPostcode = new UpdateEtmpSubscriptionDataRequest(SessionUtils.getUniqueAckNo, emailConsent = true, ChangeIndicators(), None,
         List(Address(addressDetails = addressDetailsNoPostcode)))
 
       "Correctly submit data if with a valid response" in new Setup {
@@ -184,10 +184,10 @@ class EtmpDetailsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
     "update registration details" must {
       val registeredDetails = RegisteredAddressDetails(addressLine1 = "", addressLine2 = "", countryCode = "GB")
       val registeredDetailsWithPostcode = RegisteredAddressDetails(addressLine1 = "", addressLine2 = "", countryCode = "GB", postalCode = Some("NE1 1EN"))
-      val updatedData = new UpdateRegistrationDetailsRequest(None, false, None,
-        Some(Organisation("testName")), registeredDetails, ContactDetails(), false, false)
-      val updatedDataWithPostcode = new UpdateRegistrationDetailsRequest(None, false, None,
-        Some(Organisation("testName")), registeredDetailsWithPostcode, ContactDetails(), false, false)
+      val updatedData = new UpdateRegistrationDetailsRequest(None, isAnIndividual = false, None,
+        Some(Organisation("testName")), registeredDetails, ContactDetails(), isAnAgent = false, isAGroup = false)
+      val updatedDataWithPostcode = new UpdateRegistrationDetailsRequest(None, isAnIndividual = false, None,
+        Some(Organisation("testName")), registeredDetailsWithPostcode, ContactDetails(), isAnAgent = false, isAGroup = false)
 
       "Correctly submit data if with a valid response" in new Setup {
         val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
