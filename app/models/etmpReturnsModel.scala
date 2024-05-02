@@ -118,6 +118,4 @@ case class SubmitEtmpReturnsResponse(processingDate: String,
 
 object SubmitEtmpReturnsResponse {
   implicit val formats: OFormat[SubmitEtmpReturnsResponse] = Json.format[SubmitEtmpReturnsResponse]
-//  implicit val reads = Json.reads[SubmitEtmpReturnsResponse]
-//  implicit val writes = Json.writes[SubmitEtmpReturnsResponse]
 }
