@@ -23,7 +23,7 @@ import play.api.http.Status._
 import play.api.libs.json.Json
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import uk.gov.hmrc.http.HttpClient
+import uk.gov.hmrc.http.client.HttpClientV2
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -32,7 +32,7 @@ case object EmailSent extends EmailStatus
 case object EmailNotSent extends EmailStatus
 
 class EmailConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
-                                   val http: HttpClient,
+                                   val http: HttpClientV2,
                                    override implicit val ec: ExecutionContext) extends EmailConnector {
   val serviceUrl: String = servicesConfig.baseUrl("email")
   val sendEmailUri: String = "hmrc/email"
@@ -42,7 +42,7 @@ trait EmailConnector extends RawResponseReads with Logging {
   implicit val ec: ExecutionContext
   val serviceUrl: String
   val sendEmailUri: String
-  val http: HttpClient
+  val http: HttpClientV2
 
   def sendTemplatedEmail(emailAddress: String, templateName: String, params: Map[String, String])(implicit hc: HeaderCarrier): Future[EmailStatus] = {
     val sendEmailReq = SendEmailRequest(List(emailAddress), templateName, params, force = true)
@@ -50,7 +50,7 @@ trait EmailConnector extends RawResponseReads with Logging {
     val postUrl = s"$serviceUrl/$sendEmailUri"
     val jsonData = Json.toJson(sendEmailReq)
 
-    http.POST(postUrl, jsonData).map { response =>
+    http.post(url"$postUrl").withBody(jsonData).execute[HttpResponse].map{ response =>
       response.status match {
         case ACCEPTED =>
           EmailSent

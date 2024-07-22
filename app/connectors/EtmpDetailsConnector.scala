@@ -22,7 +22,8 @@ import models._
 import play.api.Logging
 import play.api.http.Status._
 import play.api.libs.json.Json
-import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.{Audit, EventTypes}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -31,7 +32,7 @@ import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class EtmpDetailsConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
-                                            val http: HttpClient,
+                                            val http: HttpClientV2,
                                             val auditConnector: AuditConnector,
                                             val metrics: ServiceMetrics)(implicit val ec: ExecutionContext) extends EtmpDetailsConnector {
 
@@ -56,7 +57,7 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging 
   def urlHeaderEnvironment: String
   def urlHeaderAuthorization: String
 
-  def http: HttpClient
+  def http: HttpClientV2
   def metrics: ServiceMetrics
 
   val atedBaseURI: String
@@ -69,7 +70,8 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging 
   def getDetails(identifier: String, identifierType: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     def getDetailsFromEtmp(getUrl: String): Future[HttpResponse] = {
       val timerContext = metrics.startTimer(MetricsEnum.EtmpGetDetails)
-      http.GET[HttpResponse](getUrl, Seq.empty, createHeaders).map { response =>
+      http.get(url"$getUrl").setHeader(createHeaders: _*).execute[HttpResponse].map{ response =>
+      //http.GET[HttpResponse](getUrl, Seq.empty, createHeaders).map { response =>
         timerContext.stop()
         response.status match {
           case OK => metrics.incrementSuccessCounter(MetricsEnum.EtmpGetDetails)
