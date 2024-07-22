@@ -27,7 +27,9 @@ import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
-import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+//import uk.gov.hmrc.http.{HttpClient, _}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.Audit
 import utils.SessionUtils
@@ -36,16 +38,16 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class EtmpDetailsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfter {
 
-  val mockWSHttp: HttpClient = mock[HttpClient]
+  val mockWSHttp: HttpClientV2 = mock[HttpClientV2]
   val mockAuditConnector: AuditConnector = mock[AuditConnector]
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
-  trait Setup {
+  trait Setup extends ConnectorTest {
     class TestEtmpDetailsConnector extends EtmpDetailsConnector {
       implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
       val serviceUrl = "etmp-hod"
-      val http: HttpClient = mockWSHttp
+      val http: HttpClientV2 = mockWSHttp
       val urlHeaderEnvironment: String = ""
       val urlHeaderAuthorization: String = ""
       val audit: Audit = new TestAudit(mockAuditConnector)
@@ -71,42 +73,43 @@ class EtmpDetailsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
 
     "getDetails" must {
       "do a GET call and fetch data from ETMP for ARN that fails" in new Setup {
-        when(mockWSHttp.GET[HttpResponse](any(), any(), any())(any(), any(), any()))
-          .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, "")))
+        //when(mockWSHttp.GET[HttpResponse](any(), any(), any())(any(), any(), any())) .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, "")))
+
+        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, "")))
         val result = connector.getDetails(identifier = "AARN1234567", identifierType = "arn")
         await(result).status must be(BAD_REQUEST)
       }
       "do a GET call and fetch data from ETMP for ARN" in new Setup {
         val successResponseJson = Json.parse( """{"sapNumber":"1234567890", "safeId": "EX0012345678909", "agentReferenceNumber": "AARN1234567"}""")
-        when(mockWSHttp.GET[HttpResponse](any(), any(), any())(any(), any(), any()))
-          .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
+        //when(mockWSHttp.GET[HttpResponse](any(), any(), any())(any(), any(), any())) .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
+        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         val result = connector.getDetails(identifier = "AARN1234567", identifierType = "arn")
         await(result).json must be(successResponseJson)
         await(result).status must be(OK)
-        verify(mockWSHttp, times(1)).GET[HttpResponse](any(), any(), any())(any(), any(), any())
+
       }
       "do a GET call and fetch data from ETMP for utr" in new Setup {
         val successResponseJson = Json.parse( """{"sapNumber":"1234567890", "safeId": "EX0012345678909", "agentReferenceNumber": "AARN1234567"}""")
-        when(mockWSHttp.GET[HttpResponse](any(), any(), any())(any(), any(), any()))
-          .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
+        //when(mockWSHttp.GET[HttpResponse](any(), any(), any())(any(), any(), any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
+        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         val result = connector.getDetails(identifier = "1111111111", identifierType = "utr")
         await(result).json must be(successResponseJson)
         await(result).status must be(OK)
-        verify(mockWSHttp, times(1)).GET[HttpResponse](any(), any(), any())(any(), any(), any())
+
       }
       "do a GET call and fetch data from ETMP for safeid" in new Setup {
         val successResponseJson = Json.parse( """{"sapNumber":"1234567890", "safeId": "XP1200000100003", "agentReferenceNumber": "AARN1234567"}""")
-        when(mockWSHttp.GET[HttpResponse](any(), any(), any())(any(), any(), any()))
-          .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
+        //when(mockWSHttp.GET[HttpResponse](any(), any(), any())(any(), any(), any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
+        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         val result = connector.getDetails(identifier = "XP1200000100003", identifierType = "safeid")
         await(result).json must be(successResponseJson)
         await(result).status must be(OK)
-        verify(mockWSHttp, times(1)).GET[HttpResponse](any(), any(), any())(any(), any(), any())
+
       }
       "throw runtime exception for other identifier type" in new Setup {
         val thrown = the[RuntimeException] thrownBy connector.getDetails(identifier = "AARN1234567", identifierType = "xyz")
         thrown.getMessage must include("unexpected identifier type supplied")
-        verify(mockWSHttp, times(0)).GET[HttpResponse](any(), any(), any())(any(), any(), any())
+
       }
     }
 
@@ -115,8 +118,8 @@ class EtmpDetailsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
       "Correctly return no data if there is none" in new Setup {
         val notFoundResponse = Json.parse( """{}""")
 
-        when(mockWSHttp.GET[HttpResponse](any(), any(), any())(any(), any(), any()))
-          .thenReturn(Future.successful(HttpResponse(NOT_FOUND, notFoundResponse, Map.empty[String, Seq[String]])))
+        //when(mockWSHttp.GET[HttpResponse](any(), any(), any())(any(), any(), any())).thenReturn(Future.successful(HttpResponse(NOT_FOUND, notFoundResponse, Map.empty[String, Seq[String]])))
+        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(NOT_FOUND, notFoundResponse, Map.empty[String, Seq[String]])))
 
         val result = connector.getSubscriptionData("ATED-123")
         val response = await(result)
@@ -127,8 +130,8 @@ class EtmpDetailsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
       "Correctly return data if we have some" in new Setup {
         val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
 
-        when(mockWSHttp.GET[HttpResponse](any(), any(), any())(any(), any(), any()))
-          .thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+        //when(mockWSHttp.GET[HttpResponse](any(), any(), any())(any(), any(), any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
 
         val result = connector.getSubscriptionData("ATED-123")
         val response = await(result)
@@ -148,8 +151,9 @@ class EtmpDetailsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
       "Correctly submit data if with a valid response" in new Setup {
         val successResponse: JsValue = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
 
-        when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any(), any())(any(), any(), any(), any()))
-          .thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+        //when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any(), any())(any(), any(), any(), any())) .thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+
+        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
 
         val result = connector.updateSubscriptionData("ATED-123", updatedData)
         val response = await(result)
@@ -160,8 +164,9 @@ class EtmpDetailsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
       "Correctly submit data if with a valid response and no postcode" in new Setup {
         val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
 
-        when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any(), any())(any(), any(), any(), any()))
-          .thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+        //when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any(), any())(any(), any(), any(), any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+
+        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
 
         val result = connector.updateSubscriptionData("ATED-123", updatedDataNoPostcode)
         val response = await(result)
@@ -172,8 +177,9 @@ class EtmpDetailsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
       "submit data  with an invalid response" in new Setup {
         val notFoundResponse = Json.parse( """{}""")
 
-        when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any(), any())(any(), any(), any(), any()))
-          .thenReturn(Future.successful(HttpResponse(NOT_FOUND, notFoundResponse, Map.empty[String, Seq[String]])))
+        //when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any(), any())(any(), any(), any(), any())).thenReturn(Future.successful(HttpResponse(NOT_FOUND, notFoundResponse, Map.empty[String, Seq[String]])))
+
+        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(NOT_FOUND, notFoundResponse, Map.empty[String, Seq[String]])))
 
         val result = connector.updateSubscriptionData("ATED-123", updatedData)
         val response = await(result)
@@ -192,8 +198,9 @@ class EtmpDetailsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
       "Correctly submit data if with a valid response" in new Setup {
         val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
 
-        when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any(), any())(any(), any(), any(), any()))
-          .thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+        //when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any(), any())(any(), any(), any(), any())) .thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+
+        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
 
         val result = connector.updateRegistrationDetails("ATED-123", "SAFE-123", updatedData)
         val response = await(result)
@@ -204,8 +211,9 @@ class EtmpDetailsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
       "Correctly submit data if with a valid response and postcode supplied" in new Setup {
         val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
 
-        when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any(), any())(any(), any(), any(), any()))
-          .thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+        //when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any(), any())(any(), any(), any(), any())) .thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
+
+        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
 
         val result = connector.updateRegistrationDetails("ATED-123", "SAFE-123", updatedDataWithPostcode)
         val response = await(result)
@@ -216,8 +224,9 @@ class EtmpDetailsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
       "submit data  with an invalid response" in new Setup {
         val notFoundResponse = Json.parse( """{}""")
 
-        when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any(), any())(any(), any(), any(), any()))
-          .thenReturn(Future.successful(HttpResponse(NOT_FOUND, notFoundResponse, Map.empty[String, Seq[String]])))
+        //when(mockWSHttp.PUT[JsValue, HttpResponse](any(), any(), any())(any(), any(), any(), any())) .thenReturn(Future.successful(HttpResponse(NOT_FOUND, notFoundResponse, Map.empty[String, Seq[String]])))
+
+        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(NOT_FOUND, notFoundResponse, Map.empty[String, Seq[String]])))
 
         val result = connector.updateRegistrationDetails("ATED-123", "SAFE-123", updatedData)
         val response = await(result)

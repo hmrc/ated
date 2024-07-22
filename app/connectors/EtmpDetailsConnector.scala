@@ -71,7 +71,6 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging 
     def getDetailsFromEtmp(getUrl: String): Future[HttpResponse] = {
       val timerContext = metrics.startTimer(MetricsEnum.EtmpGetDetails)
       http.get(url"$getUrl").setHeader(createHeaders: _*).execute[HttpResponse].map{ response =>
-      //http.GET[HttpResponse](getUrl, Seq.empty, createHeaders).map { response =>
         timerContext.stop()
         response.status match {
           case OK => metrics.incrementSuccessCounter(MetricsEnum.EtmpGetDetails)
@@ -100,7 +99,7 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging 
     val getUrl = s"""$serviceUrl/$atedBaseURI/$retrieveSubscriptionData/$atedReferenceNo"""
 
     val timerContext = metrics.startTimer(MetricsEnum.EtmpGetSubscriptionData)
-    http.GET[HttpResponse](getUrl, Seq.empty, createHeaders).map { response =>
+    http.get(url"$getUrl").setHeader(createHeaders: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
       response.status match {
         case OK =>
@@ -122,7 +121,7 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging 
 
     val timerContext = metrics.startTimer(MetricsEnum.EtmpUpdateSubscriptionData)
     val jsonData = Json.toJson(updatedData)
-    http.PUT(putUrl, jsonData, createHeaders).map { response =>
+    http.post(url"$putUrl").withBody(jsonData).setHeader(createHeaders: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
       auditUpdateSubscriptionData(atedReferenceNo, updatedData, response)
       response.status match {
@@ -144,7 +143,7 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging 
     val putUrl = s"""$serviceUrl/$saveRegistrationDetails/$safeId"""
     val timerContext = metrics.startTimer(MetricsEnum.EtmpUpdateRegistrationDetails)
     val jsonData = Json.toJson(updatedData)
-    http.PUT(putUrl, jsonData, createHeaders).map { response =>
+    http.put(url"$putUrl").withBody(jsonData).setHeader(createHeaders: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
       auditUpdateRegistrationDetails(atedReferenceNo, safeId, updatedData, response)
       response.status match {

@@ -25,9 +25,7 @@ import scheduler._
 import services._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
-import uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient
 import play.api.inject.{bind => playBind}
-import uk.gov.hmrc.http.HttpClient
 
 class ServiceBindings extends Module {
   override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] =
@@ -41,7 +39,6 @@ class ServiceBindings extends Module {
       playBind(classOf[EtmpDetailsConnector]).to(classOf[EtmpDetailsConnectorImpl]),
       playBind(classOf[EtmpReturnsConnector]).to(classOf[EtmpReturnsConnectorImpl]),
       playBind(classOf[ServiceMetrics]).to(classOf[ServiceMetricsImpl]),
-      playBind(classOf[HttpClient]).to(classOf[DefaultHttpClient]),
       playBind(classOf[ChangeLiabilityService]).to(classOf[ChangeLiabilityServiceImpl]),
       playBind(classOf[DisposeLiabilityReturnService]).to(classOf[DisposeLiabilityReturnServiceImpl]),
       playBind(classOf[FormBundleService]).to(classOf[FormBundleServiceImpl]),
