@@ -28,22 +28,16 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
-  val mockWSHttp: HttpClientV2 = mock[HttpClientV2]
-
   trait Setup extends ConnectorTest{
     class TestEmailConnector extends EmailConnector {
       implicit val ec: ExecutionContext = app.injector.instanceOf[ExecutionContext]
-      val http: HttpClientV2 = mockWSHttp
-      override val serviceUrl: String = ""
-      override val sendEmailUri: String = ""
+      val http: HttpClientV2 = mockHttpClient
+      override val serviceUrl: String = "http://localhost:9020/etmp-hod"
+      override val sendEmailUri: String = "http://localhost:9020/etmp-hod"
 
     }
 
     val connector = new TestEmailConnector()
-  }
-
-  override def beforeEach(): Unit = {
-    reset(mockWSHttp)
   }
 
   "EmailConnector" must {
