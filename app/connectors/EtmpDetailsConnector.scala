@@ -121,7 +121,7 @@ trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging 
 
     val timerContext = metrics.startTimer(MetricsEnum.EtmpUpdateSubscriptionData)
     val jsonData = Json.toJson(updatedData)
-    http.post(url"$putUrl").withBody(jsonData).setHeader(createHeaders: _*).execute[HttpResponse].map{ response =>
+    http.put(url"$putUrl").withBody(jsonData).setHeader(createHeaders: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
       auditUpdateSubscriptionData(atedReferenceNo, updatedData, response)
       response.status match {
