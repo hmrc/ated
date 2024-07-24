@@ -36,7 +36,7 @@ lazy val microservice = Project(appName, file("."))
     resolvers += Resolver.jcenterRepo
   )
   .settings(CodeCoverageSettings.settings: _*)
-  .enablePlugins((Seq(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin) ++ plugins) *)
+  .enablePlugins((Seq(play.sbt.PlayScala, SbtDistributablesPlugin) ++ plugins) *)
   .disablePlugins(JUnitXmlReportPlugin)
 
 lazy val it = project
