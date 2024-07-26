@@ -24,6 +24,7 @@ import play.api.libs.json.Json
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.HttpReads.Implicits._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -38,7 +39,7 @@ class EmailConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
   val sendEmailUri: String = "hmrc/email"
 }
 
-trait EmailConnector extends RawResponseReads with Logging {
+trait EmailConnector extends Logging {
   implicit val ec: ExecutionContext
   val serviceUrl: String
   val sendEmailUri: String

@@ -27,6 +27,7 @@ import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.{Audit, EventTypes}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import uk.gov.hmrc.http.HttpReads.Implicits._
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
@@ -51,7 +52,7 @@ class EtmpDetailsConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
   val saveRegistrationDetails: String = "registration/safeid"
 }
 
-trait EtmpDetailsConnector extends RawResponseReads with Auditable with Logging {
+trait EtmpDetailsConnector extends Auditable with Logging {
   implicit val ec: ExecutionContext
   def serviceUrl: String
   def urlHeaderEnvironment: String

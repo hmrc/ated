@@ -27,6 +27,7 @@ import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.{Audit, EventTypes}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import uk.gov.hmrc.http.HttpReads.Implicits._
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
@@ -49,7 +50,7 @@ class EtmpReturnsConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
   val formBundleReturns: String = "form-bundle"
 }
 
-trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging {
+trait EtmpReturnsConnector extends Auditable with Logging {
   def serviceUrl: String
   def urlHeaderEnvironment: String
   def urlHeaderAuthorization: String
