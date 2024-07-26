@@ -21,19 +21,21 @@ import metrics.{MetricsEnum, ServiceMetrics}
 import models._
 import play.api.Logging
 import play.api.http.Status._
-import play.api.libs.json.{JsValue, Json}
-import uk.gov.hmrc.http.{HttpClient, _}
+import play.api.libs.json.Json
+import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.{Audit, EventTypes}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import uk.gov.hmrc.http.HttpReads.Implicits._
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class EtmpReturnsConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
-                                            val http: HttpClient,
-                                            val auditConnector: AuditConnector,
-                                            val metrics: ServiceMetrics) extends EtmpReturnsConnector {
+                                         val http: HttpClientV2,
+                                         val auditConnector: AuditConnector,
+                                         val metrics: ServiceMetrics) extends EtmpReturnsConnector {
   val serviceUrl: String = servicesConfig.baseUrl("etmp-hod")
   val urlHeaderEnvironment: String = servicesConfig.getConfString("etmp-hod.environment", "")
   val urlHeaderAuthorization: String = s"Bearer ${servicesConfig.getConfString("etmp-hod.authorization-token", "")}"
@@ -48,13 +50,13 @@ class EtmpReturnsConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
   val formBundleReturns: String = "form-bundle"
 }
 
-trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging {
+trait EtmpReturnsConnector extends Auditable with Logging {
   def serviceUrl: String
   def urlHeaderEnvironment: String
   def urlHeaderAuthorization: String
 
   def metrics: ServiceMetrics
-  def http: HttpClient
+  def http: HttpClientV2
 
   val baseURI: String
   val submitReturnsURI: String
@@ -69,7 +71,7 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
 
     val jsonData = Json.toJson(submitReturns)
     val timerContext = metrics.startTimer(MetricsEnum.EtmpSubmitReturns)
-    http.POST(postUrl, jsonData, createHeaders).map { response =>
+      http.post(url"$postUrl").withBody(jsonData).setHeader(createHeaders: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
       auditSubmitReturns(atedReferenceNo, submitReturns, response)
       if (submitReturns.liabilityReturns.isDefined) {
@@ -93,7 +95,7 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
     val getUrl = s"""$serviceUrl/$baseURI/$getSummaryReturns/$atedReferenceNo?years=$years"""
 
     val timerContext = metrics.startTimer(MetricsEnum.EtmpGetSummaryReturns)
-    http.GET[HttpResponse](getUrl, Seq.empty, createHeaders).map { response =>
+    http.get(url"$getUrl").setHeader(createHeaders: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
       response.status match {
         case OK | NOT_FOUND =>
@@ -113,7 +115,7 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
     val getUrl = s"""$serviceUrl/$baseURI/$getSummaryReturns/$atedReferenceNo/$formBundleReturns/$formBundleNumber"""
 
     val timerContext = metrics.startTimer(MetricsEnum.EtmpGetFormBundleReturns)
-    http.GET[HttpResponse](getUrl, Seq.empty, createHeaders).map { response =>
+    http.get(url"$getUrl").setHeader(createHeaders: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
       response.status match {
         case OK =>
@@ -136,7 +138,7 @@ trait EtmpReturnsConnector extends RawResponseReads with Auditable with Logging 
 
     val jsonData = Json.toJson(editedLiabilityReturns)
     val timerContext = metrics.startTimer(MetricsEnum.EtmpSubmitEditedLiabilityReturns)
-    http.PUT[JsValue, HttpResponse](putUrl, jsonData, createHeaders).map { response =>
+    http.put(url"$putUrl").withBody(jsonData).setHeader(createHeaders: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
       auditSubmitEditedLiabilityReturns(atedReferenceNo, editedLiabilityReturns, response, disposal)
       response.status match {

@@ -16,36 +16,28 @@
 
 package connectors
 
-import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
-import play.api.libs.json.JsValue
-import play.api.test.Helpers._
-import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.http.client.HttpClientV2
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
-  val mockWSHttp: HttpClient = mock[HttpClient]
-
-  trait Setup {
+  trait Setup extends ConnectorTest{
     class TestEmailConnector extends EmailConnector {
       implicit val ec: ExecutionContext = app.injector.instanceOf[ExecutionContext]
-      val http: HttpClient = mockWSHttp
-      override val serviceUrl: String = ""
-      override val sendEmailUri: String = ""
+      val http: HttpClientV2 = mockHttpClient
+      override val serviceUrl: String = "http://localhost:9020/etmp-hod"
+      override val sendEmailUri: String = "http://localhost:9020/etmp-hod"
 
     }
 
     val connector = new TestEmailConnector()
-  }
-
-  override def beforeEach(): Unit = {
-    reset(mockWSHttp)
   }
 
   "EmailConnector" must {
@@ -59,9 +51,7 @@ class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
         val templateId = "relief_return_submit"
         val params = Map("testParam" -> "testParam")
 
-        when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
-          ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(202, "")))
+        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(202, "")))
 
         val response = connector.sendTemplatedEmail(emailString, templateId, params)
         await(response) must be(EmailSent)
@@ -69,6 +59,7 @@ class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
       }
 
     }
+
 
     "return other status" when {
 
@@ -78,9 +69,7 @@ class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
         val templateId = "relief_return_submit"
         val params = Map("testParam" -> "testParam")
 
-        when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
-          ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(404, "")))
+        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(404, "")))
 
         val response = connector.sendTemplatedEmail(invalidEmailString, templateId, params)
         await(response) must be(EmailNotSent)
