@@ -454,9 +454,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         .thenReturn(Future.successful(PropertyDetailsCached))
 
       val updatedValue: PropertyDetailsTaxAvoidance = PropertyDetailsTaxAvoidance(
-        propertyDetails3.period.flatMap(_.isTaxAvoidance.map(x => !x)),
-        propertyDetails3.period.flatMap(_.taxAvoidanceScheme),
-        propertyDetails3.period.flatMap(_.taxAvoidancePromoterReference)
+        propertyDetails3.period.flatMap(_.isTaxAvoidance.map(x => !x))
       )
       val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftTaxAvoidance(accountRef,
         propertyDetails3.id, updatedValue)
