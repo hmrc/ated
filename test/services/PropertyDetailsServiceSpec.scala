@@ -446,6 +446,60 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       newProp.isDefined must be(false)
     }
 
+    "Updating tax avoidence from yes to no removes avoidance scheme and avoidance promoter reference" in new Setup {
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
+
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val updatedValue: PropertyDetailsTaxAvoidance = PropertyDetailsTaxAvoidance(
+        propertyDetails3.period.flatMap(_.isTaxAvoidance.map(x => !x))
+      )
+
+      testPropertyDetailsService.cacheDraftTaxAvoidance(accountRef,
+        propertyDetails3.id, updatedValue)
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3.copy(period = propertyDetails3.period.map(_.copy(
+          isTaxAvoidance = Some(false)
+        ))))))
+
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftTaxAvoidance(accountRef,
+        propertyDetails3.id, updatedValue)
+
+      val newProp: Option[PropertyDetails] = await(result)
+      newProp.get.period.get.isTaxAvoidance must be (updatedValue.isTaxAvoidance)
+      newProp.get.period.get.taxAvoidanceScheme must be (None)
+      newProp.get.period.get.taxAvoidancePromoterReference must be (None)
+    }
+
+    "Updating tax avoidence scheme does not remove isAvoidance value" in new Setup {
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
+
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val updatedValue: PropertyDetailsTaxAvoidance = PropertyDetailsTaxAvoidance(
+        taxAvoidanceScheme = Some("New Scheme")
+      )
+
+      testPropertyDetailsService.cacheDraftTaxAvoidance(accountRef,
+        propertyDetails3.id, updatedValue)
+
+
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftTaxAvoidance(accountRef,
+        propertyDetails3.id, updatedValue)
+
+      val newProp: Option[PropertyDetails] = await(result)
+      newProp.get.period.get.isTaxAvoidance must be (Some(true))
+      newProp.get.period.get.taxAvoidanceScheme must be (Some("New Scheme"))
+      newProp.get.period.get.taxAvoidancePromoterReference must be (Some("taxAvoidancePromoterReference"))
+    }
+
     "Saving existing property details Tax Avoidance updates an existing list. Change value so clear future values" in new Setup {
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
