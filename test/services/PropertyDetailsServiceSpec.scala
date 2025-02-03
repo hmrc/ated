@@ -446,7 +446,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       newProp.isDefined must be(false)
     }
 
-    "Updating tax avoidence from yes to no removes avoidance scheme and avoidance promoter reference" in new Setup {
+    "Updating tax avoidance from yes to no removes avoidance scheme and avoidance promoter reference" in new Setup {
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
@@ -454,10 +454,8 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val updatedValue: PropertyDetailsTaxAvoidance = PropertyDetailsTaxAvoidance(
-        propertyDetails3.period.flatMap(_.isTaxAvoidance.map(x => !x))
-      )
-
+      val updatedValue: PropertyDetailsTaxAvoidance = PropertyDetailsTaxAvoidance(Some(false))
+   
       testPropertyDetailsService.cacheDraftTaxAvoidance(accountRef,
         propertyDetails3.id, updatedValue)
 
@@ -475,7 +473,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       newProp.get.period.get.taxAvoidancePromoterReference must be (None)
     }
 
-    "Updating tax avoidence scheme does not remove isAvoidance value" in new Setup {
+    "Updating tax avoidance scheme does not remove isAvoidance value" in new Setup {
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
