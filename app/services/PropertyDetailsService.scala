@@ -171,11 +171,21 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
             updatedDetails.taxAvoidancePromoterReference == foundPropertyDetails.period.flatMap(_.taxAvoidancePromoterReference))
             foundPropertyDetails
           else {
-            val updatedPeriod = foundPropertyDetails.period.map(_.copy(
-              isTaxAvoidance = updatedDetails.isTaxAvoidance,
-              taxAvoidanceScheme = updatedDetails.taxAvoidanceScheme,
-              taxAvoidancePromoterReference = updatedDetails.taxAvoidancePromoterReference
-            ))
+            val updatedPeriod = foundPropertyDetails.period.map{period =>
+              period.copy(
+                isTaxAvoidance = if(updatedDetails.isTaxAvoidance.isDefined)
+                  updatedDetails.isTaxAvoidance else period.isTaxAvoidance,
+                taxAvoidanceScheme = period.isTaxAvoidance match {
+                  case Some(true) => if(updatedDetails.taxAvoidanceScheme.isDefined)
+                    updatedDetails.taxAvoidanceScheme else period.taxAvoidanceScheme
+                  case _ => None
+                },
+                taxAvoidancePromoterReference = period.isTaxAvoidance match {
+                  case Some(true) => if(updatedDetails.taxAvoidancePromoterReference.isDefined)
+                    updatedDetails.taxAvoidancePromoterReference else period.taxAvoidancePromoterReference
+                  case _ => None
+                }
+            )}
             foundPropertyDetails.copy(period = updatedPeriod, calculated = None)
           }
       }
