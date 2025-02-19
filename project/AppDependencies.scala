@@ -5,15 +5,15 @@ private object AppDependencies {
 
   val compile: Seq[ModuleID] = Seq(
     ws,
-    "uk.gov.hmrc"            %% "bootstrap-backend-play-30" % "9.1.0",
-    "io.github.samueleresca" %% "pekko-quartz-scheduler"    % "1.2.1-pekko-1.0.x",
+    "uk.gov.hmrc"            %% "bootstrap-backend-play-30" % "9.9.0",
+    "io.github.samueleresca" %% "pekko-quartz-scheduler"    % "1.2.2-pekko-1.0.x",
     "uk.gov.hmrc"            %% "domain-play-30"            % "10.0.0",
-    "uk.gov.hmrc.mongo"      %% "hmrc-mongo-play-30"        % "2.2.0",
-    "uk.gov.hmrc"            %% "crypto-json-play-30"       % "8.0.0"
+    "uk.gov.hmrc.mongo"      %% "hmrc-mongo-play-30"        % "2.5.0",
+    "uk.gov.hmrc"            %% "crypto-json-play-30"       % "8.2.0"
   )
 
   val test: Seq[ModuleID] = Seq(
-    "uk.gov.hmrc" %% "bootstrap-test-play-30" % "9.1.0",
+    "uk.gov.hmrc" %% "bootstrap-test-play-30" % "9.9.0",
   ).map(_ % Test)
 
   val itDependencies: Seq[ModuleID] = Seq()
