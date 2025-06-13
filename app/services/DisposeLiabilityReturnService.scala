@@ -130,6 +130,50 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
     }
   }
 
+  def updateDraftDisposeHasUkBankDetails(atedRefNo: String,
+                                         oldFormBundleNo: String,
+                                         hasUkBankDetails: Boolean)(
+    implicit ec: ExecutionContext): Future[Option[DisposeLiabilityReturn]] = {
+    val disposeLiabilityReturnListFuture: Future[Seq[DisposeLiabilityReturn]] = retrieveDraftDisposeLiabilityReturns(atedRefNo)
+    for {
+      disposeLiabilityReturnList: Seq[DisposeLiabilityReturn] <- disposeLiabilityReturnListFuture
+      disposeLiabilityOpt: Option[DisposeLiabilityReturn] <- disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
+
+        case Some(existingReturn) =>
+
+          val oldBankDetailsModel: BankDetailsModel = existingReturn.bankDetails.getOrElse(BankDetailsModel())
+          val oldBankDetails: BankDetails = oldBankDetailsModel.bankDetails.getOrElse(BankDetails())
+
+          val updatedNestedBankDetails: BankDetailsModel = oldBankDetails.hasUKBankAccount match {
+
+            case Some(currentValue: Boolean) if currentValue == hasUkBankDetails =>
+              oldBankDetailsModel.copy(
+                bankDetails = Some(oldBankDetails.copy(hasUKBankAccount = Some(hasUkBankDetails)))
+              )
+
+            case _ =>
+              oldBankDetailsModel.copy(
+                bankDetails = Some(BankDetails(hasUKBankAccount = Some(hasUkBankDetails))),
+                protectedBankDetails = None
+              )
+          }
+
+          val updatedReturn: DisposeLiabilityReturn = existingReturn.copy(
+            bankDetails = Some(updatedNestedBankDetails),
+            calculated = None
+          )
+
+          disposeLiabilityReturnRepository
+            .cacheDisposeLiabilityReturns(updatedReturn)
+            .map(_ => Some(updatedReturn))
+
+        case None => Future.successful(None)
+      }
+    } yield {
+      disposeLiabilityOpt
+    }
+  }
+
   def updateDraftDisposeBankDetails(atedRefNo: String, oldFormBundleNo: String, updatedValue: BankDetails)(
     implicit ec: ExecutionContext): Future[Option[DisposeLiabilityReturn]] = {
     import models.BankDetailsConversions._

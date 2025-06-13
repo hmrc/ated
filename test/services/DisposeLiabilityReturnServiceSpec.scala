@@ -239,6 +239,94 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
       }
     }
 
+    "updateDraftDisposeHasUkBankDetails" must {
+
+      lazy val baseBankDetails: BankDetails = BankDetails(
+        hasUKBankAccount = Some(true),
+        accountName = Some("Account Name"),
+        accountNumber = Some("12345678"),
+        sortCode = Some(SortCode("12", "34", "56")),
+        bicSwiftCode = Some(BicSwiftCode("12345678901")),
+        iban = Some(Iban("GB00IBAN123456789"))
+      )
+
+      lazy val bankDetailsModelWithAllFields: BankDetailsModel = BankDetailsModel(
+        bankDetails = Some(baseBankDetails),
+        protectedBankDetails = Some(ProtectedBankDetails(
+          Some(SensitiveHasUKBankAccount(Some(false))),
+          Some(SensitiveAccountName(Some("encrypted"))),
+          Some(SensitiveAccountNumber(Some("encrypted"))),
+          Some(SensitiveSortCode(Some(SortCode("11", "11", "11")))),
+          Some(SensitiveBicSwiftCode(Some(BicSwiftCode("12345678901")))),
+          Some(SensitiveIban(Some(Iban("encrypted"))))))
+      )
+
+      lazy val existingReturnWithDetails = disposeLiability1.copy(bankDetails = Some(bankDetailsModelWithAllFields))
+      "create bankDetails model if it does not exist" in new Setup {
+        val returnWithoutBankDetails: DisposeLiabilityReturn = disposeLiability1.copy(bankDetails = None)
+        when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
+          .thenReturn(Future.successful(Seq(returnWithoutBankDetails)))
+        when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any()))
+          .thenReturn(Future.successful(DisposeLiabilityReturnCached))
+        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasUkBankDetails(atedRefNo,
+          formBundle1,
+          hasUkBankDetails = true))
+        result mustBe defined
+        result.get.bankDetails.get.bankDetails.get.hasUKBankAccount mustBe Some(true)
+        result.get.bankDetails.get.bankDetails.get.accountName mustBe None
+        result.get.bankDetails.get.protectedBankDetails mustBe None
+      }
+
+      "keep details if hasUKBankAccount is unchanged" in new Setup {
+        when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
+          .thenReturn(Future.successful(Seq(existingReturnWithDetails)))
+        when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any()))
+          .thenReturn(Future.successful(DisposeLiabilityReturnCached))
+        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasUkBankDetails(atedRefNo,
+          formBundle1,
+          hasUkBankDetails = true))
+        result mustBe defined
+        val updated: BankDetails = result.get.bankDetails.get.bankDetails.get
+        updated.hasUKBankAccount mustBe Some(true)
+        updated.accountName mustBe Some("Account Name")
+        result.get.bankDetails.get.protectedBankDetails mustBe Some(ProtectedBankDetails(
+          Some(SensitiveHasUKBankAccount(Some(false))),
+          Some(SensitiveAccountName(Some("encrypted"))),
+          Some(SensitiveAccountNumber(Some("encrypted"))),
+          Some(SensitiveSortCode(Some(SortCode("11", "11", "11")))),
+          Some(SensitiveBicSwiftCode(Some(BicSwiftCode("12345678901")))),
+          Some(SensitiveIban(Some(Iban("encrypted"))))))
+      }
+
+      "clear other fields if hasUKBankAccount is changed" in new Setup {
+        when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
+          .thenReturn(Future.successful(Seq(existingReturnWithDetails)))
+        when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any()))
+          .thenReturn(Future.successful(DisposeLiabilityReturnCached))
+        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasUkBankDetails(atedRefNo,
+          formBundle1,
+          hasUkBankDetails = false))
+        result mustBe defined
+        val updated: BankDetails = result.get.bankDetails.get.bankDetails.get
+        updated.hasUKBankAccount mustBe Some(false)
+        updated.accountName mustBe None
+        updated.accountNumber mustBe None
+        updated.sortCode mustBe None
+        updated.bicSwiftCode mustBe None
+        updated.iban mustBe None
+        result.get.bankDetails.get.protectedBankDetails mustBe None
+      }
+
+      "return None if form bundle not found" in new Setup {
+        when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
+          .thenReturn(Future.successful(Seq(disposeLiability2)))
+        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasUkBankDetails(atedRefNo,
+          formBundle1,
+          hasUkBankDetails = true))
+        result mustBe None
+      }
+    }
+
     "updateDraftDisposeBankDetails" must {
       "create bankDetails if we have none" in new Setup {
         lazy val bankDetails: BankDetailsModel = generateLiabilityBankDetails

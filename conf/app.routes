@@ -69,6 +69,7 @@ POST  /ated/:ated/liability-return/:oldFBNo/submit                  controllers.
 GET   /ated/:ated/dispose-liability/:oldFBNo                        controllers.DisposeLiabilityReturnControllerImpl.retrieveAndCacheDisposeLiabilityReturn(ated: String, oldFBNo: String)
 POST  /ated/:ated/dispose-liability/:oldFBNo/update-date            controllers.DisposeLiabilityReturnControllerImpl.updateDisposalDate(ated: String, oldFBNo: String)
 POST  /ated/:ated/dispose-liability/:oldFBNo/update-has-bank        controllers.DisposeLiabilityReturnControllerImpl.updateHasBankDetails(ated: String, oldFBNo: String)
+POST  /ated/:ated/dispose-liability/:oldFBNo/update-has-uk-bank     controllers.DisposeLiabilityReturnControllerImpl.updateHasUkBankDetails(ated: String, oldFBNo: String)
 POST  /ated/:ated/dispose-liability/:oldFBNo/update-bank            controllers.DisposeLiabilityReturnControllerImpl.updateBankDetails(ated: String, oldFBNo: String)
 GET   /ated/:ated/dispose-liability/:oldFBNo/calculate              controllers.DisposeLiabilityReturnControllerImpl.calculateDraftDisposal(ated: String, oldFBNo: String)
 POST  /ated/:ated/dispose-liability/:oldFBNo/submit                 controllers.DisposeLiabilityReturnControllerImpl.submitDisposeLiabilityReturn(ated: String, oldFBNo: String)
