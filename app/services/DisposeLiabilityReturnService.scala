@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2025 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,7 +77,10 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
                   case OK =>
                     val formBundleReturn = response.json.as[FormBundleReturn]
                     val dispose = DisposeLiability(dateOfDisposal = None, periodKey = formBundleReturn.periodKey.trim.toInt)
-                    val disposeLiability = DisposeLiabilityReturn(atedRefNo = atedRefNo, id = oldFormBundleNo, formBundleReturn = formBundleReturn, disposeLiability = Some(dispose))
+                    val disposeLiability = DisposeLiabilityReturn(atedRefNo = atedRefNo,
+                      id = oldFormBundleNo,
+                      formBundleReturn = formBundleReturn,
+                      disposeLiability = Some(dispose))
                     disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(disposeLiability).flatMap { _ =>
                       retrieveDraftDisposeLiabilityReturn(atedRefNo, oldFormBundleNo)
                     }
@@ -91,14 +94,16 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
     }
   }
 
-  def updateDraftDisposeLiabilityReturnDate(atedRefNo: String, oldFormBundleNo: String, updatedDate: DisposeLiability)(implicit ec: ExecutionContext): Future[Option[DisposeLiabilityReturn]] = {
+  def updateDraftDisposeLiabilityReturnDate(atedRefNo: String,
+                                            oldFormBundleNo: String,
+                                            updatedDate: DisposeLiability)(implicit ec: ExecutionContext): Future[Option[DisposeLiabilityReturn]] = {
     for {
       disposeLiabilityReturnList <- retrieveDraftDisposeLiabilityReturns(atedRefNo)
       disposeLiabilityOpt <- {
         disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
           case Some(x) =>
             val updatedReturn = x.copy(disposeLiability = Some(updatedDate), calculated = None)
-            disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(updatedReturn).flatMap(x => Future.successful(Some(updatedReturn)))
+            disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(updatedReturn).flatMap(_ => Future.successful(Some(updatedReturn)))
           case None => Future.successful(None)
         }
       }
@@ -116,14 +121,59 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
         disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
           case Some(x) =>
             val oldBankDetails = x.bankDetails.getOrElse(BankDetailsModel())
-            val updatedBankDetails = if (hasBankDetails)
+            val updatedBankDetails = if (hasBankDetails) {
               oldBankDetails.copy(hasBankDetails = hasBankDetails)
-            else
+            } else {
               oldBankDetails.copy(hasBankDetails = hasBankDetails, bankDetails = None, protectedBankDetails = None)
+            }
             val updatedReturn = x.copy(bankDetails = Some(updatedBankDetails), calculated = None)
-            disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(updatedReturn).flatMap(x => Future.successful(Some(updatedReturn)))
+            disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(updatedReturn).flatMap(_ => Future.successful(Some(updatedReturn)))
           case None => Future.successful(None)
         }
+      }
+    } yield {
+      disposeLiabilityOpt
+    }
+  }
+
+  def updateDraftDisposeHasUkBankAccount(atedRefNo: String,
+                                         oldFormBundleNo: String,
+                                         hasUkBankAccount: Boolean)(
+    implicit ec: ExecutionContext): Future[Option[DisposeLiabilityReturn]] = {
+    val disposeLiabilityReturnListFuture: Future[Seq[DisposeLiabilityReturn]] = retrieveDraftDisposeLiabilityReturns(atedRefNo)
+    for {
+      disposeLiabilityReturnList: Seq[DisposeLiabilityReturn] <- disposeLiabilityReturnListFuture
+      disposeLiabilityOpt: Option[DisposeLiabilityReturn] <- disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
+
+        case Some(existingReturn) =>
+
+          val oldBankDetailsModel: BankDetailsModel = existingReturn.bankDetails.getOrElse(BankDetailsModel())
+          val oldBankDetails: BankDetails = oldBankDetailsModel.bankDetails.getOrElse(BankDetails())
+
+          val updatedNestedBankDetails: BankDetailsModel = oldBankDetails.hasUKBankAccount match {
+
+            case Some(currentValue: Boolean) if currentValue == hasUkBankAccount =>
+              oldBankDetailsModel.copy(
+                bankDetails = Some(oldBankDetails.copy(hasUKBankAccount = Some(hasUkBankAccount)))
+              )
+
+            case _ =>
+              oldBankDetailsModel.copy(
+                bankDetails = Some(BankDetails(hasUKBankAccount = Some(hasUkBankAccount))),
+                protectedBankDetails = None
+              )
+          }
+
+          val updatedReturn: DisposeLiabilityReturn = existingReturn.copy(
+            bankDetails = Some(updatedNestedBankDetails),
+            calculated = None
+          )
+
+          disposeLiabilityReturnRepository
+            .cacheDisposeLiabilityReturns(updatedReturn)
+            .map(_ => Some(updatedReturn))
+
+        case None => Future.successful(None)
       }
     } yield {
       disposeLiabilityOpt
@@ -142,7 +192,7 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
             val oldBankDetails = x.bankDetails.getOrElse(BankDetailsModel(hasBankDetails = true))
             val updatedBankDetails: BankDetailsModel = oldBankDetails.copy(protectedBankDetails = Some(updatedValue))
             val updatedReturn = x.copy(bankDetails = Some(updatedBankDetails), calculated = None)
-            val result = disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(updatedReturn).flatMap(x => Future.successful(Some(updatedReturn)))
+            val result = disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(updatedReturn).flatMap(_ => Future.successful(Some(updatedReturn)))
             result
           case None => Future.successful(None)
         }
@@ -165,7 +215,8 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
                 x.disposeLiability.fold(DisposeLiability(periodKey = x.formBundleReturn.periodKey.trim.toInt))(a => a),
                 oldFormBundleNo, agentRefNo) flatMap { calculated =>
                 val updatedReturn = x.copy(calculated = Some(calculated))
-                disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(updatedReturn).flatMap(_ => Future.successful(Some(convertBankDetails(updatedReturn))))
+                disposeLiabilityReturnRepository
+                  .cacheDisposeLiabilityReturns(updatedReturn).flatMap(_ => Future.successful(Some(convertBankDetails(updatedReturn))))
               }
             case None => Future.successful(None)
           }
@@ -253,7 +304,9 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
           localAuthorityCode = x.formBundleReturn.localAuthorityCode,
           professionalValuation = x.formBundleReturn.professionalValuation,
           ninetyDayRuleApplies = x.formBundleReturn.ninetyDayRuleApplies,
-          lineItem = PropertyDetailsUtils.disposeLineItems(x.formBundleReturn.periodKey, x.formBundleReturn.lineItem, x.disposeLiability.flatMap(_.dateOfDisposal)),
+          lineItem = PropertyDetailsUtils.disposeLineItems(x.formBundleReturn.periodKey,
+            x.formBundleReturn.lineItem,
+            x.disposeLiability.flatMap(_.dateOfDisposal)),
           bankDetails = ChangeLiabilityUtils.getEtmpBankDetails(x.bankDetails))
         EditLiabilityReturnsRequestModel(acknowledgmentReference = getUniqueAckNo, agentReferenceNumber = agentRefNo, liabilityReturn = Seq(liabilityReturn))
       }

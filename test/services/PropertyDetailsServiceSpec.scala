@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2025 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,11 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       override val audit: Audit = mockAudit
       val auditConnector: AuditConnector = mockAuditConnector
     }
+
+    val periodKey2013: Int = 2013
+    val periodKey2014: Int = 2014
+    val periodKey2015: Int = 2015
+    val liabilityAmount999: Int = 999
     val testPropertyDetailsService = new TestPropertyDetailsService()
   }
 
@@ -173,14 +178,14 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
 
 
     "fetch the cached Property Details when we have an a Period Key" in new Setup {
-      lazy val tooEarly: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1").copy(periodKey = 2013)
-      lazy val tooLate: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("2").copy(periodKey = 2015)
-      lazy val entirePeriod: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("3").copy(periodKey = 2014)
-      lazy val startOfPeriod: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("4").copy(periodKey = 2014)
+      lazy val tooEarly: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1").copy(periodKey = periodKey2013)
+      lazy val tooLate: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("2").copy(periodKey = periodKey2015)
+      lazy val entirePeriod: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("3").copy(periodKey = periodKey2014)
+      lazy val startOfPeriod: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("4").copy(periodKey = periodKey2014)
 
       val testPropertyDetailsList: Seq[PropertyDetails] = Seq(tooEarly, tooLate, entirePeriod, startOfPeriod)
       when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.any())).thenReturn(Future.successful(testPropertyDetailsList))
-      val result: Future[Seq[PropertyDetails]] = testPropertyDetailsService.retrievePeriodDraftPropertyDetails(accountRef, 2014)
+      val result: Future[Seq[PropertyDetails]] = testPropertyDetailsService.retrievePeriodDraftPropertyDetails(accountRef, periodKey2014)
 
       val resultList: Seq[PropertyDetails] = await(result)
       resultList.head.id must be("3")
@@ -236,7 +241,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.createDraftPropertyDetails(accountRef, 2014, addressRef)
+      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.createDraftPropertyDetails(accountRef, periodKey2014, addressRef)
 
       val updateDetails: Option[PropertyDetails] = await(result)
       updateDetails.isDefined must be(true)
@@ -271,7 +276,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       lazy val propertyDetails2: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("2", Some("something else"))
 
       lazy val propertyDetails3: PropertyDetails = PropertyDetailsBuilder
-        .getPropertyDetails("3", Some("something more"), liabilityAmount = Some(BigDecimal(999)))
+        .getPropertyDetails("3", Some("something more"), liabilityAmount = Some(BigDecimal(liabilityAmount999)))
 
       lazy val updatedpropertyDetails3: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("3", Some("something better"))
 
@@ -634,16 +639,17 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
   }
 
   "cacheDraftHasBankDetails" must {
-    lazy val protectedBankDetails = ChangeLiabilityReturnBuilder.generateLiabilityProtectedBankDetails
+    lazy val protectedBankDetails: BankDetailsModel = ChangeLiabilityReturnBuilder.generateLiabilityProtectedBankDetails
+    val periodKey2016: Int = 2016
 
-    lazy val propertyDetailsWithBankDetails = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(
-      periodKey = 2016,
+    lazy val propertyDetailsWithBankDetails: PropertyDetails = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(
+      periodKey = periodKey2016,
       formBundle = "1",
       bankDetails = Some(protectedBankDetails)
     )
 
-    lazy val propertyDetailsNoBankDetails = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(
-      periodKey = 2016,
+    lazy val propertyDetailsNoBankDetails: PropertyDetails = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(
+      periodKey = periodKey2016,
       formBundle = "1",
       bankDetails = None
     )
@@ -713,16 +719,129 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
     }
   }
 
+  "cacheDraftHasUkBankAccount" must {
+
+    val propertyId = "prop-123"
+    val atedRefNo = "ATED123"
+    val periodKey2017: Int = 2017
+
+    lazy val baseBankDetails: BankDetails = BankDetails(
+      hasUKBankAccount = Some(true),
+      accountName = Some("Test Name"),
+      accountNumber = Some("87654321"),
+      sortCode = Some(SortCode("10", "20", "30")),
+      bicSwiftCode = Some(BicSwiftCode("12345678901")),
+      iban = Some(Iban("GB00IBAN123456789"))
+    )
+
+    lazy val bankDetailsModelWithAllFields: BankDetailsModel = BankDetailsModel(
+      bankDetails = Some(baseBankDetails),
+      protectedBankDetails = Some(ProtectedBankDetails(
+        Some(SensitiveHasUKBankAccount(Some(true))),
+        Some(SensitiveAccountName(Some("encryptedName"))),
+        Some(SensitiveAccountNumber(Some("encryptedNumber"))),
+        Some(SensitiveSortCode(Some(SortCode("99", "99", "99")))),
+        Some(SensitiveBicSwiftCode(Some(BicSwiftCode("12345678901")))),
+        Some(SensitiveIban(Some(Iban("encryptedIBAN"))))
+      ))
+    )
+
+    lazy val existingPropertyDetails: PropertyDetails = PropertyDetails(atedRefNo = atedRefNo,
+      id = propertyId,
+      bankDetails = Some(bankDetailsModelWithAllFields),
+      periodKey = periodKey2017,
+      addressProperty = PropertyDetailsAddress("", "", Some(""), Some("")))
+
+    "create bankDetails if not present" in new Setup {
+      val noBankDetailsProp: PropertyDetails = PropertyDetails(atedRefNo = atedRefNo,
+        id = propertyId,
+        bankDetails = None,
+        periodKey = periodKey2017,
+        addressProperty = PropertyDetailsAddress("", "", Some(""), Some("")))
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(atedRefNo))
+        .thenReturn(Future.successful(Seq(noBankDetailsProp)))
+      when(mockPropertyDetailsCache.cachePropertyDetails(any()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result: Option[PropertyDetails] = await(testPropertyDetailsService.cacheDraftHasUkBankAccount(atedRefNo, propertyId, hasUKBankAccount = true))
+
+      result mustBe defined
+
+      val bankDetails: BankDetails = result.get.bankDetails.get.bankDetails.get
+
+      bankDetails.hasUKBankAccount mustBe Some(true)
+      bankDetails.accountName mustBe None
+      result.get.bankDetails.get.protectedBankDetails mustBe None
+    }
+
+    "preserve existing details if hasUKBankAccount unchanged" in new Setup {
+      when(mockPropertyDetailsCache.fetchPropertyDetails(atedRefNo))
+        .thenReturn(Future.successful(Seq(existingPropertyDetails)))
+      when(mockPropertyDetailsCache.cachePropertyDetails(any()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result: Option[PropertyDetails] = await(testPropertyDetailsService.cacheDraftHasUkBankAccount(atedRefNo, propertyId, hasUKBankAccount = true))
+
+      result mustBe defined
+
+      val updated: BankDetails = result.get.bankDetails.get.bankDetails.get
+
+      updated.hasUKBankAccount mustBe Some(true)
+      updated.accountName mustBe Some("encryptedName")
+      updated.accountNumber mustBe Some("encryptedNumber")
+      updated.sortCode mustBe Some(SortCode("99", "99", "99"))
+      updated.bicSwiftCode mustBe Some(BicSwiftCode("12345678901"))
+      updated.iban mustBe Some(Iban("encryptedIBAN"))
+      result.get.bankDetails.get.protectedBankDetails mustBe None
+
+    }
+
+    "clear sensitive fields if hasUKBankAccount changed" in new Setup {
+      when(mockPropertyDetailsCache.fetchPropertyDetails(atedRefNo))
+        .thenReturn(Future.successful(Seq(existingPropertyDetails)))
+      when(mockPropertyDetailsCache.cachePropertyDetails(any()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result: Option[PropertyDetails] = await(testPropertyDetailsService.cacheDraftHasUkBankAccount(atedRefNo, propertyId, hasUKBankAccount = false))
+
+      result mustBe defined
+
+      val updated: BankDetails = result.get.bankDetails.get.bankDetails.get
+
+      updated.hasUKBankAccount mustBe Some(false)
+      updated.accountName mustBe None
+      updated.accountNumber mustBe None
+      updated.sortCode mustBe None
+      updated.bicSwiftCode mustBe None
+      updated.iban mustBe None
+      result.get.bankDetails.get.protectedBankDetails mustBe None
+
+    }
+
+    "return None if property ID not found" in new Setup {
+      val otherProperty: PropertyDetails = existingPropertyDetails.copy(id = "some-other-id")
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(atedRefNo))
+        .thenReturn(Future.successful(Seq(otherProperty)))
+
+      val result: Option[PropertyDetails] = await(testPropertyDetailsService.cacheDraftHasUkBankAccount(atedRefNo, propertyId, hasUKBankAccount = true))
+
+      result mustBe None
+    }
+  }
+
   "cacheDraftBankDetails" must {
-    lazy val protectedBankDetails = ChangeLiabilityReturnBuilder.generateLiabilityProtectedBankDetails
-    lazy val propertyDetailsWithBankDetails = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(
-      periodKey = 2016,
+    lazy val protectedBankDetails: BankDetailsModel = ChangeLiabilityReturnBuilder.generateLiabilityProtectedBankDetails
+    val periodKey2016: Int = 2016
+    lazy val propertyDetailsWithBankDetails: PropertyDetails = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(
+      periodKey = periodKey2016,
       formBundle = "1",
       bankDetails = Some(protectedBankDetails)
     )
 
-    lazy val propertyDetailsNoBankDetails = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(
-      periodKey = 2016,
+    lazy val propertyDetailsNoBankDetails: PropertyDetails = ChangeLiabilityReturnBuilder.generateChangeLiabilityReturn(
+      periodKey = periodKey2016,
       formBundle = "1",
       bankDetails = None
     )

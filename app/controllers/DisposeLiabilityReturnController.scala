@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2025 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,15 @@ trait DisposeLiabilityReturnController extends BackendController with Logging {
     }
   }
 
+  def updateHasUkBankAccount(atedRef: String, oldFormBundleNo: String): Action[JsValue] = Action.async(parse.json) {
+    implicit request => withJsonBody[Boolean] {
+      updatedValue => disposeLiabilityReturnService.updateDraftDisposeHasUkBankAccount(atedRef, oldFormBundleNo, updatedValue) map {
+        case Some(x) => Ok(Json.toJson(x))
+        case None => NotFound(Json.parse("""{}"""))
+      }
+    }
+  }
+
   def updateBankDetails(atedRef: String, oldFormBundleNo: String): Action[JsValue] = Action.async(parse.json) {
     implicit request => withJsonBody[BankDetails] {
       updatedValue => disposeLiabilityReturnService.updateDraftDisposeBankDetails(atedRef, oldFormBundleNo, updatedValue) map {
@@ -96,7 +105,7 @@ trait DisposeLiabilityReturnController extends BackendController with Logging {
     disposeLiabilityReturnService.submitDisposeLiability(atedRef, oldFormBundleNo) map { response =>
       response.status match {
         case OK => Ok(response.body)
-        case status =>
+        case _ =>
           logger.warn(s"[DisposeLiabilityReturnController][submitDisposeLiabilityReturn] - status = ${response.status} && response.body = ${response.body}")
           InternalServerError(response.body)
       }

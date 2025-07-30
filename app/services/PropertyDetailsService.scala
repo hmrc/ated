@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2025 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,8 @@ class PropertyDetailsServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnect
   lazy val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetailsMongoWrapper()
 }
 
-trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConstants with NotificationService with AuthFunctionality with Logging with Auditable {
+trait PropertyDetailsService
+  extends PropertyDetailsBaseService with ReliefConstants with NotificationService with AuthFunctionality with Logging with Auditable {
 
   implicit val ec: ExecutionContext
 
@@ -152,7 +153,7 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
             logger.warn(
               s"""[PropertyDetailsService][getLiabilityAmount]: failed with status 400""")
             throw new BadRequestException(response.body)
-          case status => throw new InternalServerException("[PropertyDetailsService][getLiabilityAmount] No Liability Amount Found")
+          case _ => throw new InternalServerException("[PropertyDetailsService][getLiabilityAmount] No Liability Amount Found")
         }
       }
       case None => throw new InternalServerException("[PropertyDetailsService][getLiabilityAmount] Invalid Data for the request")
@@ -168,21 +169,31 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
 
           if (updatedDetails.isTaxAvoidance == foundPropertyDetails.period.flatMap(_.isTaxAvoidance) &&
             updatedDetails.taxAvoidanceScheme == foundPropertyDetails.period.flatMap(_.taxAvoidanceScheme) &&
-            updatedDetails.taxAvoidancePromoterReference == foundPropertyDetails.period.flatMap(_.taxAvoidancePromoterReference))
+            updatedDetails.taxAvoidancePromoterReference == foundPropertyDetails.period.flatMap(_.taxAvoidancePromoterReference)) {
             foundPropertyDetails
+          }
           else {
             val updatedPeriod = foundPropertyDetails.period.map{period =>
               period.copy(
-                isTaxAvoidance = if(updatedDetails.isTaxAvoidance.isDefined)
-                  updatedDetails.isTaxAvoidance else period.isTaxAvoidance,
+                isTaxAvoidance = if(updatedDetails.isTaxAvoidance.isDefined) {
+                  updatedDetails.isTaxAvoidance
+                } else {
+                  period.isTaxAvoidance
+                },
                 taxAvoidanceScheme = period.isTaxAvoidance match {
-                  case Some(true) => if(updatedDetails.taxAvoidanceScheme.isDefined)
-                    updatedDetails.taxAvoidanceScheme else period.taxAvoidanceScheme
+                  case Some(true) => if(updatedDetails.taxAvoidanceScheme.isDefined) {
+                    updatedDetails.taxAvoidanceScheme
+                  } else {
+                    period.taxAvoidanceScheme
+                  }
                   case _ => None
                 },
                 taxAvoidancePromoterReference = period.isTaxAvoidance match {
-                  case Some(true) => if(updatedDetails.taxAvoidancePromoterReference.isDefined)
-                    updatedDetails.taxAvoidancePromoterReference else period.taxAvoidancePromoterReference
+                  case Some(true) => if(updatedDetails.taxAvoidancePromoterReference.isDefined) {
+                    updatedDetails.taxAvoidancePromoterReference
+                  } else {
+                    period.taxAvoidancePromoterReference
+                  }
                   case _ => None
                 }
             )}
@@ -202,8 +213,9 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
         foundPropertyDetails =>
 
-          if (foundPropertyDetails.period.flatMap(_.supportingInfo).contains(updatedDetails.supportingInfo))
+          if (foundPropertyDetails.period.flatMap(_.supportingInfo).contains(updatedDetails.supportingInfo)) {
             foundPropertyDetails
+          }
           else {
             val updatedPeriod = foundPropertyDetails.period.map(_.copy(
               supportingInfo = Some(updatedDetails.supportingInfo)
@@ -224,12 +236,47 @@ trait PropertyDetailsService extends PropertyDetailsBaseService with ReliefConst
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
         foundPropertyDetails =>
           val oldBankDetails = foundPropertyDetails.bankDetails.getOrElse(BankDetailsModel())
-          val updatedBankDetails = if (hasBankDetails)
+          val updatedBankDetails = if (hasBankDetails) {
             oldBankDetails.copy(hasBankDetails = hasBankDetails)
-          else
+          }
+          else {
             oldBankDetails.copy(hasBankDetails = hasBankDetails, protectedBankDetails = None, bankDetails = None)
+          }
 
           foundPropertyDetails.copy(bankDetails = Some(updatedBankDetails))
+      }
+      Future.successful(updatedPropertyDetails)
+    }
+
+    cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
+  }
+
+  def cacheDraftHasUkBankAccount(atedRefNo: String, id: String, hasUKBankAccount: Boolean)(
+    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+
+    def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
+      val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
+        foundPropertyDetails =>
+          val oldBankDetailsModel = foundPropertyDetails.bankDetails.getOrElse(BankDetailsModel())
+          val oldBankDetails: BankDetails = oldBankDetailsModel.bankDetails.getOrElse(BankDetails())
+
+          val updatedNestedBankDetails: BankDetailsModel = oldBankDetails.hasUKBankAccount match {
+            case Some(currentValue: Boolean) if currentValue == hasUKBankAccount =>
+              oldBankDetailsModel.copy(
+                bankDetails = Some(oldBankDetails.copy(hasUKBankAccount = Some(hasUKBankAccount)))
+              )
+
+            case _ =>
+              oldBankDetailsModel.copy(
+                bankDetails = Some(BankDetails(hasUKBankAccount = Some(hasUKBankAccount))),
+                protectedBankDetails = None
+              )
+          }
+
+          foundPropertyDetails.copy(
+            bankDetails = Some(updatedNestedBankDetails),
+            calculated = None
+          )
       }
       Future.successful(updatedPropertyDetails)
     }
