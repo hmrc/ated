@@ -56,8 +56,8 @@ trait PropertyDetailsController extends BackendController with Logging {
     implicit request =>
       withJsonBody[PropertyDetailsAddress] { draftPropertyDetails =>
         propertyDetailsService.createDraftPropertyDetails(atedRefNo, periodKey, draftPropertyDetails).map {
-          case Some(x) => Ok(Json.toJson(x))
-          case updatedDraftPropertyDetails@None => BadRequest(Json.toJson(updatedDraftPropertyDetails))
+          case Some(draftPropertyDetails) => Ok(Json.toJson(draftPropertyDetails))
+          case None => BadRequest(Json.toJson( "message" -> "Failed to create draft property details"))
         }
       }
   }
@@ -131,8 +131,8 @@ trait PropertyDetailsController extends BackendController with Logging {
 
   def calculateDraftPropertyDetails(atedRefNo: String, id: String): Action[AnyContent] = Action.async { implicit request =>
     propertyDetailsService.calculateDraftPropertyDetails(atedRefNo, id).map {
-      case updateResponse@Some(_) => Ok(Json.toJson(updateResponse))
-      case updateResponse@None => BadRequest(Json.toJson(updateResponse))
+      case Some(draftPropertyDetails) => Ok(Json.toJson(draftPropertyDetails))
+      case None => BadRequest(Json.toJson( "message" -> "Failed to calculate draft property details"))
     }
   }
 

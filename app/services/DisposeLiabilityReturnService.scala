@@ -139,44 +139,36 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
   def updateDraftDisposeHasUkBankAccount(atedRefNo: String,
                                          oldFormBundleNo: String,
                                          hasUkBankAccount: Boolean)(
-    implicit ec: ExecutionContext): Future[Option[DisposeLiabilityReturn]] = {
-    val disposeLiabilityReturnListFuture: Future[Seq[DisposeLiabilityReturn]] = retrieveDraftDisposeLiabilityReturns(atedRefNo)
-    for {
-      disposeLiabilityReturnList: Seq[DisposeLiabilityReturn] <- disposeLiabilityReturnListFuture
-      disposeLiabilityOpt: Option[DisposeLiabilityReturn] <- disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
-
-        case Some(existingReturn) =>
-
-          val oldBankDetailsModel: BankDetailsModel = existingReturn.bankDetails.getOrElse(BankDetailsModel())
-          val oldBankDetails: BankDetails = oldBankDetailsModel.bankDetails.getOrElse(BankDetails())
-
-          val updatedNestedBankDetails: BankDetailsModel = oldBankDetails.hasUKBankAccount match {
-
-            case Some(currentValue: Boolean) if currentValue == hasUkBankAccount =>
-              oldBankDetailsModel.copy(
-                bankDetails = Some(oldBankDetails.copy(hasUKBankAccount = Some(hasUkBankAccount)))
-              )
-
-            case _ =>
-              oldBankDetailsModel.copy(
-                bankDetails = Some(BankDetails(hasUKBankAccount = Some(hasUkBankAccount))),
-                protectedBankDetails = None
-              )
+    implicit ec: ExecutionContext): Future[Option[DisposeLiabilityReturn]] =
+    retrieveDraftDisposeLiabilityReturns(atedRefNo).flatMap {
+      draftReturns => draftReturns.find(_.id == oldFormBundleNo) match {
+        case Some(existingReturn) => val updatedReturn = updateBankDetails(existingReturn, hasUkBankAccount)
+          if (updatedReturn == existingReturn) {
+            Future.successful(Some(existingReturn))
+          } else {
+            disposeLiabilityReturnRepository
+              .cacheDisposeLiabilityReturns(updatedReturn)
+              .map(_ => Some(updatedReturn))
           }
-
-          val updatedReturn: DisposeLiabilityReturn = existingReturn.copy(
-            bankDetails = Some(updatedNestedBankDetails),
-            calculated = None
-          )
-
-          disposeLiabilityReturnRepository
-            .cacheDisposeLiabilityReturns(updatedReturn)
-            .map(_ => Some(updatedReturn))
 
         case None => Future.successful(None)
       }
-    } yield {
-      disposeLiabilityOpt
+    }
+
+  private def updateBankDetails(existingReturn: DisposeLiabilityReturn,
+                                 hasUkBankAccount: Boolean): DisposeLiabilityReturn = {
+    val currentModel = existingReturn.bankDetails.getOrElse(BankDetailsModel())
+    val currentDetails = currentModel.bankDetails.getOrElse(BankDetails())
+    val needsUpdate = !currentDetails.hasUKBankAccount.contains(hasUkBankAccount)
+    if (!needsUpdate) existingReturn else {
+
+      val updatedModel = BankDetailsModel(bankDetails = Some(BankDetails(hasUKBankAccount = Some(hasUkBankAccount))),
+        protectedBankDetails = None)
+
+      existingReturn.copy(
+        bankDetails = Some(updatedModel),
+        calculated = None
+      )
     }
   }
 
