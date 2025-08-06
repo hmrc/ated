@@ -24,11 +24,10 @@ import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions, UpdateOptions}
 import play.api.Logging
-import org.mongodb.scala._
 import uk.gov.hmrc.mongo._
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import models.mongo.MongoDateTimeFormats
-import uk.gov.hmrc.play.http.logging.Mdc.preservingMdc
+import uk.gov.hmrc.mdc.Mdc.preservingMdc
 
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}

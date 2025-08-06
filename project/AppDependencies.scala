@@ -3,7 +3,7 @@ import sbt.*
 
 private object AppDependencies {
 
-  val bootstrapVersion = "9.18.0"
+  val bootstrapVersion = "10.0.0"
 
   val compile: Seq[ModuleID] = Seq(
     ws,
@@ -11,7 +11,7 @@ private object AppDependencies {
     "io.github.samueleresca" %% "pekko-quartz-scheduler"    % "1.2.2-pekko-1.0.x",
     "uk.gov.hmrc"            %% "domain-play-30"            % "11.0.0",
     "uk.gov.hmrc.mongo"      %% "hmrc-mongo-play-30"        % "2.7.0",
-    "uk.gov.hmrc"            %% "crypto-json-play-30"       % "8.2.0"
+    "uk.gov.hmrc"            %% "crypto-json-play-30"       % "8.3.0"
   )
 
   val test: Seq[ModuleID] = Seq(

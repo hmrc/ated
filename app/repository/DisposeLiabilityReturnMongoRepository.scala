@@ -19,7 +19,6 @@ package repository
 import metrics.{MetricsEnum, ServiceMetrics}
 import models.DisposeLiabilityReturn
 import java.time.{ZonedDateTime, ZoneId}
-import org.mongodb.scala._
 import org.mongodb.scala.model.Filters.{equal, _}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
@@ -28,7 +27,7 @@ import play.api.Logging
 import uk.gov.hmrc.crypto.{ApplicationCrypto, Encrypter, Decrypter}
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
-import uk.gov.hmrc.play.http.logging.Mdc.preservingMdc
+import uk.gov.hmrc.mdc.Mdc.preservingMdc
 import models.mongo.MongoDateTimeFormats
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
