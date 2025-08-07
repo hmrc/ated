@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2025 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,7 +93,10 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
         lazy val formBundleResp: FormBundleReturn = ChangeLiabilityReturnBuilder.generateFormBundleResponse(periodKey)
         val d1: DisposeLiability = DisposeLiability(dateOfDisposal = None, periodKey)
         val dispose1: DisposeLiabilityReturn = DisposeLiabilityReturn(atedRefNo, formBundle1, formBundleResp, disposeLiability = Some(d1))
-        val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(d1))
+        val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST",
+          uri = "",
+          headers = FakeHeaders(Seq("Content-type" -> "application/json")),
+          body = Json.toJson(d1))
         when(mockDisposeLiabilityReturnService.updateDraftDisposeLiabilityReturnDate(ArgumentMatchers.eq(atedRefNo),
           ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(d1))(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(dispose1)))
@@ -104,7 +107,10 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
 
       "for unsuccessful save, return None with NOT_FOUND as response status" in new Setup {
         val d1: DisposeLiability = DisposeLiability(dateOfDisposal = None, periodKey)
-        val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(d1))
+        val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST",
+          uri = "",
+          headers = FakeHeaders(Seq("Content-type" -> "application/json")),
+          body = Json.toJson(d1))
         when(mockDisposeLiabilityReturnService.updateDraftDisposeLiabilityReturnDate(ArgumentMatchers.eq(atedRefNo),
           ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(d1))(ArgumentMatchers.any()))
           .thenReturn(Future.successful(None))
@@ -117,9 +123,13 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
     "updateHasBankDetails" must {
       "for successful save, return DisposeLiabilityReturn model with OK as response status" in new Setup {
         lazy val formBundleResp: FormBundleReturn = ChangeLiabilityReturnBuilder.generateFormBundleResponse(periodKey)
-        val bank1: BankDetailsModel = BankDetailsModel(hasBankDetails = true, bankDetails = Some(BankDetails(None, None, None, None, Some(BicSwiftCode("00000000000")))))
+        val bank1: BankDetailsModel = BankDetailsModel(hasBankDetails = true,
+          bankDetails = Some(BankDetails(None, None, None, None, Some(BicSwiftCode("00000000000")))))
         val dispose1: DisposeLiabilityReturn = DisposeLiabilityReturn(atedRefNo, formBundle1, formBundleResp, bankDetails = Some(bank1))
-        val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(true))
+        val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST",
+          uri = "",
+          headers = FakeHeaders(Seq("Content-type" -> "application/json")),
+          body = Json.toJson(true))
         when(mockDisposeLiabilityReturnService
           .updateDraftDisposeHasBankDetails(ArgumentMatchers.eq(atedRefNo),
           ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(true))(ArgumentMatchers.any()))
@@ -130,7 +140,10 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
       }
 
       "for unsuccessful save, return None with NOT_FOUND as response status" in new Setup {
-        val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(false))
+        val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST",
+          uri = "",
+          headers = FakeHeaders(Seq("Content-type" -> "application/json")),
+          body = Json.toJson(false))
         when(mockDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(ArgumentMatchers.eq(atedRefNo),
           ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(false))(ArgumentMatchers.any()))
           .thenReturn(Future.successful(None))
@@ -140,12 +153,58 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
       }
     }
 
+    "updateHasUkBankAccount" must {
+
+      "for successful save, return DisposeLiabilityReturn model with OK as response status" in new Setup {
+        lazy val formBundleResp: FormBundleReturn = ChangeLiabilityReturnBuilder.generateFormBundleResponse(periodKey)
+        val bank1: BankDetailsModel = BankDetailsModel(hasBankDetails = true,
+          bankDetails = Some(BankDetails(None, None, None, None, Some(BicSwiftCode("00000000000")))))
+        val dispose1: DisposeLiabilityReturn = DisposeLiabilityReturn(atedRefNo, formBundle1, formBundleResp, bankDetails = Some(bank1))
+        val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST",
+          uri = "",
+          headers = FakeHeaders(Seq("Content-type" -> "application/json")),
+          body = Json.toJson(true))
+
+        when(mockDisposeLiabilityReturnService
+          .updateDraftDisposeHasUkBankAccount(ArgumentMatchers.eq(atedRefNo),
+            ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(true))(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(dispose1)))
+
+        val result: Future[Result] = controller.updateHasUkBankAccount(atedRefNo, formBundle1).apply(fakeRequest)
+
+        status(result) must be(OK)
+        contentAsJson(result) must be(Json.toJson(dispose1))
+      }
+
+      "for unsuccessful save, return None with NOT_FOUND as response status" in new Setup {
+        val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST",
+          uri = "",
+          headers = FakeHeaders(Seq("Content-type" -> "application/json")),
+          body = Json.toJson(false))
+
+        when(mockDisposeLiabilityReturnService.updateDraftDisposeHasUkBankAccount(ArgumentMatchers.eq(atedRefNo),
+          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(false))(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(None))
+
+        val result: Future[Result] = controller.updateHasUkBankAccount(atedRefNo, formBundle1).apply(fakeRequest)
+
+        status(result) must be(NOT_FOUND)
+        contentAsJson(result) must be(Json.parse("""{}"""))
+      }
+    }
+
     "updateBankDetails" must {
       "for successful save, return DisposeLiabilityReturn model with OK as response status" in new Setup {
         lazy val formBundleResp: FormBundleReturn = ChangeLiabilityReturnBuilder.generateFormBundleResponse(periodKey)
         val bank1: BankDetails = BankDetails(None, None, None, None, Some(BicSwiftCode("00000000000")))
-        val dispose1: DisposeLiabilityReturn = DisposeLiabilityReturn(atedRefNo, formBundle1, formBundleResp, bankDetails = Some(BankDetailsModel(hasBankDetails = true, bankDetails = Some(bank1))))
-        val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(bank1))
+        val dispose1: DisposeLiabilityReturn = DisposeLiabilityReturn(atedRefNo,
+          formBundle1,
+          formBundleResp,
+          bankDetails = Some(BankDetailsModel(hasBankDetails = true, bankDetails = Some(bank1))))
+        val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST",
+          uri = "",
+          headers = FakeHeaders(Seq("Content-type" -> "application/json")),
+          body = Json.toJson(bank1))
         when(mockDisposeLiabilityReturnService.updateDraftDisposeBankDetails(ArgumentMatchers.eq(atedRefNo),
           ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(bank1))(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(dispose1)))
@@ -156,7 +215,10 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
 
       "for unsuccessful save, return None with NOT_FOUND as response status" in new Setup {
         val bank1: BankDetails = BankDetails(None, None, None, None, Some(BicSwiftCode("00000000000")))
-        val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(bank1))
+        val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST",
+          uri = "",
+          headers = FakeHeaders(Seq("Content-type" -> "application/json")),
+          body = Json.toJson(bank1))
         when(mockDisposeLiabilityReturnService.updateDraftDisposeBankDetails(ArgumentMatchers.eq(atedRefNo),
           ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(bank1))(ArgumentMatchers.any()))
           .thenReturn(Future.successful(None))
@@ -192,7 +254,9 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
 
     "submitDisposeLiabilityReturn" must {
       "for successful submit, return OK as response status" in new Setup {
-        val successResponse: EditLiabilityReturnsResponseModel = EditLiabilityReturnsResponseModel(ZonedDateTime.now(), liabilityReturnResponse = Seq(), accountBalance = BigDecimal(0.00))
+        val successResponse: EditLiabilityReturnsResponseModel = EditLiabilityReturnsResponseModel(ZonedDateTime.now(),
+          liabilityReturnResponse = Seq(),
+          accountBalance = BigDecimal(0.00))
         when(mockDisposeLiabilityReturnService.submitDisposeLiability(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))
             (ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, Json.toJson(successResponse), Map.empty[String, Seq[String]])))

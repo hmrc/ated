@@ -26,10 +26,9 @@ import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions, UpdateOptions}
 import play.api.Logging
 import uk.gov.hmrc.crypto.{ApplicationCrypto, Encrypter, Decrypter}
-import org.mongodb.scala._
 import uk.gov.hmrc.mongo._
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
-import uk.gov.hmrc.play.http.logging.Mdc.preservingMdc
+import uk.gov.hmrc.mdc.Mdc.preservingMdc
 import models.mongo.MongoDateTimeFormats
 
 import java.util.concurrent.TimeUnit

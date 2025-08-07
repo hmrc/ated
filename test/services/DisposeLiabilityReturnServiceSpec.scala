@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2025 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,12 +48,40 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
   val atedRefNo = "ated-ref-123"
-  val successResponseJson: JsValue = Json.parse("""{"safeId":"1111111111","organisationName":"Test Org","address":[{"name1":"name1","name2":"name2","addressDetails":{"addressType":"Correspondence","addressLine1":"address line 1","addressLine2":"address line 2","addressLine3":"address line 3","addressLine4":"address line 4","postalCode":"ZZ1 1ZZ","countryCode":"GB"},"contactDetails":{"phoneNumber":"01234567890","mobileNumber":"0712345678","emailAddress":"test@mail.com"}}]}""")
+  val successResponseJson: JsValue =
+    Json.parse(
+      """
+        {
+          "safeId": "1111111111",
+          "organisationName": "Test Org",
+          "address": [
+            {
+              "name1": "name1",
+              "name2": "name2",
+              "addressDetails": {
+                "addressType": "Correspondence",
+                "addressLine1": "address line 1",
+                "addressLine2": "address line 2",
+                "addressLine3": "address line 3",
+                "addressLine4": "address line 4",
+                "postalCode": "ZZ1 1ZZ",
+                "countryCode": "GB"
+              },
+              "contactDetails": {
+                "phoneNumber": "01234567890",
+                "mobileNumber": "0712345678",
+                "emailAddress": "test@mail.com"
+              }
+            }
+          ]
+        }""")
 
   val formBundle1 = "123456789012"
   val formBundle2 = "123456789000"
   val formBundle3 = "100000000000"
   val periodKey = 2015
+  val month: Int = 5
+  val date: Int = 1
   val formBundleReturn1: FormBundleReturn = generateFormBundleResponse(periodKey)
   val formBundleReturn2: FormBundleReturn = generateFormBundleResponse(periodKey)
 
@@ -138,7 +166,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
       "return DisposeLiabilityReturn, if not found in mongo, but found in ETMP call, also cache it in mongo for future calls" in new Setup {
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq()))
         when(mockEtmpConnector
-          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1.toString))(any(), any()))
+          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, Json.toJson(formBundleReturn1), Map.empty[String, Seq[String]])))
         when(mockDisposeLiabilityReturnRepository
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
@@ -151,7 +179,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq(disposeLiability2)))
         when(mockEtmpConnector
-          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1.toString))(any(), any()))
+          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(any(), any()))
           .thenReturn(Future.successful(HttpResponse(NOT_FOUND, "")))
         val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.retrieveAndCacheDisposeLiabilityReturn(atedRefNo, formBundle1))
         result must be(None)
@@ -160,26 +188,30 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
 
     "updateDraftDisposeLiabilityReturnDate" must {
       "update, cache and return DisposeLiabilityReturn with the dae of disposal, if found in cache" in new Setup {
-        lazy val inputDisposeLiability: DisposeLiability = DisposeLiability(dateOfDisposal = Some(LocalDate.of(2015, 5, 1)), periodKey = periodKey)
+        lazy val inputDisposeLiability: DisposeLiability = DisposeLiability(dateOfDisposal = Some(LocalDate.of(periodKey, month, date)), periodKey = periodKey)
         when(mockDisposeLiabilityReturnRepository
           .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq(disposeLiability1, disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
           .thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeLiabilityReturnDate(atedRefNo, formBundle1, inputDisposeLiability))
+        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeLiabilityReturnDate(atedRefNo,
+          formBundle1,
+          inputDisposeLiability))
         result must be(Some(disposeLiability1.copy(disposeLiability = Some(inputDisposeLiability))))
       }
 
       "return None, if not found in mongo cache" in new Setup {
-        lazy val inputDisposeLiability: DisposeLiability = DisposeLiability(dateOfDisposal = Some(LocalDate.of(2015, 5, 1)), periodKey = periodKey)
+        lazy val inputDisposeLiability: DisposeLiability = DisposeLiability(dateOfDisposal = Some(LocalDate.of(periodKey, month, date)), periodKey = periodKey)
         when(mockDisposeLiabilityReturnRepository
           .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq(disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
           .thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeLiabilityReturnDate(atedRefNo, formBundle1, inputDisposeLiability))
+        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeLiabilityReturnDate(atedRefNo,
+          formBundle1,
+          inputDisposeLiability))
         result must be(None)
       }
     }
@@ -195,7 +227,9 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         when(mockDisposeLiabilityReturnRepository
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
           .thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(atedRefNo, formBundle1, hasBankDetails = true))
+        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(atedRefNo,
+          formBundle1,
+          hasBankDetails = true))
         result.get.bankDetails.get.hasBankDetails must be(true)
         result.get.bankDetails.get.bankDetails.isDefined must be(false)
         result.get.bankDetails.get.protectedBankDetails.isDefined must be(false)
@@ -208,7 +242,9 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         when(mockDisposeLiabilityReturnRepository
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
           .thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(atedRefNo, formBundle1, hasBankDetails = true))
+        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(atedRefNo,
+          formBundle1,
+          hasBankDetails = true))
         result.get.bankDetails.get.hasBankDetails must be(true)
         result.get.bankDetails.get.bankDetails.isDefined must be(false)
         result.get.bankDetails.get.protectedBankDetails.isDefined must be(true)
@@ -221,7 +257,9 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         when(mockDisposeLiabilityReturnRepository
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
           .thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(atedRefNo, formBundle1, hasBankDetails = false))
+        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(atedRefNo,
+          formBundle1,
+          hasBankDetails = false))
         result.get.bankDetails.get.hasBankDetails must be(false)
         result.get.bankDetails.get.bankDetails.isDefined must be(false)
         result.get.bankDetails.get.protectedBankDetails.isDefined must be(false)
@@ -234,8 +272,98 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         when(mockDisposeLiabilityReturnRepository
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
           .thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(atedRefNo, formBundle1, hasBankDetails = true))
+        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasBankDetails(atedRefNo,
+          formBundle1,
+          hasBankDetails = true))
         result must be(None)
+      }
+    }
+
+    "updateDraftDisposeHasUkBankAccount" must {
+
+      lazy val baseBankDetails: BankDetails = BankDetails(
+        hasUKBankAccount = Some(true),
+        accountName = Some("Account Name"),
+        accountNumber = Some("12345678"),
+        sortCode = Some(SortCode("12", "34", "56")),
+        bicSwiftCode = Some(BicSwiftCode("12345678901")),
+        iban = Some(Iban("GB00IBAN123456789"))
+      )
+
+      lazy val bankDetailsModelWithAllFields: BankDetailsModel = BankDetailsModel(
+        bankDetails = Some(baseBankDetails),
+        protectedBankDetails = Some(ProtectedBankDetails(
+          Some(SensitiveHasUKBankAccount(Some(true))),
+          Some(SensitiveAccountName(Some("encrypted"))),
+          Some(SensitiveAccountNumber(Some("encrypted"))),
+          Some(SensitiveSortCode(Some(SortCode("11", "11", "11")))),
+          Some(SensitiveBicSwiftCode(Some(BicSwiftCode("12345678901")))),
+          Some(SensitiveIban(Some(Iban("encrypted"))))))
+      )
+
+      lazy val existingReturnWithDetails = disposeLiability1.copy(bankDetails = Some(bankDetailsModelWithAllFields))
+      "create bankDetails model if it does not exist" in new Setup {
+        val returnWithoutBankDetails: DisposeLiabilityReturn = disposeLiability1.copy(bankDetails = None)
+        when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
+          .thenReturn(Future.successful(Seq(returnWithoutBankDetails)))
+        when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any()))
+          .thenReturn(Future.successful(DisposeLiabilityReturnCached))
+        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasUkBankAccount(atedRefNo,
+          formBundle1,
+          hasUkBankAccount = true))
+        result mustBe defined
+        result.get.bankDetails.get.bankDetails.get.hasUKBankAccount mustBe Some(true)
+        result.get.bankDetails.get.bankDetails.get.accountName mustBe None
+        result.get.bankDetails.get.protectedBankDetails mustBe None
+      }
+
+      "keep details if hasUKBankAccount is unchanged" in new Setup {
+        when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
+          .thenReturn(Future.successful(Seq(existingReturnWithDetails)))
+        when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any()))
+          .thenReturn(Future.successful(DisposeLiabilityReturnCached))
+        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasUkBankAccount(atedRefNo,
+          formBundle1,
+          hasUkBankAccount = true))
+        result mustBe defined
+        val updated: BankDetails = result.get.bankDetails.get.bankDetails.get
+        updated.hasUKBankAccount mustBe Some(true)
+        updated.accountName mustBe Some("Account Name")
+        result.get.bankDetails.get.protectedBankDetails mustBe Some(ProtectedBankDetails(
+          Some(SensitiveHasUKBankAccount(Some(true))),
+          Some(SensitiveAccountName(Some("encrypted"))),
+          Some(SensitiveAccountNumber(Some("encrypted"))),
+          Some(SensitiveSortCode(Some(SortCode("11", "11", "11")))),
+          Some(SensitiveBicSwiftCode(Some(BicSwiftCode("12345678901")))),
+          Some(SensitiveIban(Some(Iban("encrypted"))))))
+      }
+
+      "clear other fields if hasUKBankAccount is changed" in new Setup {
+        when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
+          .thenReturn(Future.successful(Seq(existingReturnWithDetails)))
+        when(mockDisposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(any()))
+          .thenReturn(Future.successful(DisposeLiabilityReturnCached))
+        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasUkBankAccount(atedRefNo,
+          formBundle1,
+          hasUkBankAccount = false))
+        result mustBe defined
+        val updated: BankDetails = result.get.bankDetails.get.bankDetails.get
+        updated.hasUKBankAccount mustBe Some(false)
+        updated.accountName mustBe None
+        updated.accountNumber mustBe None
+        updated.sortCode mustBe None
+        updated.bicSwiftCode mustBe None
+        updated.iban mustBe None
+        result.get.bankDetails.get.protectedBankDetails mustBe None
+      }
+
+      "return None if form bundle not found" in new Setup {
+        when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
+          .thenReturn(Future.successful(Seq(disposeLiability2)))
+        val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.updateDraftDisposeHasUkBankAccount(atedRefNo,
+          formBundle1,
+          hasUkBankAccount = true))
+        result mustBe None
       }
     }
 
@@ -243,7 +371,8 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
       "create bankDetails if we have none" in new Setup {
         lazy val bankDetails: BankDetailsModel = generateLiabilityBankDetails
         val dL1: DisposeLiabilityReturn = disposeLiability1
-          .copy(disposeLiability = Some(DisposeLiability(dateOfDisposal = Some(LocalDate.of(2015, 5, 1)), periodKey = periodKey)), bankDetails = None)
+          .copy(disposeLiability = Some(DisposeLiability(dateOfDisposal = Some(LocalDate.of(periodKey, month, date)),
+            periodKey = periodKey)), bankDetails = None)
         when(mockDisposeLiabilityReturnRepository
           .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq(dL1, disposeLiability2)))
@@ -251,7 +380,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
           .thenReturn(Future.successful(DisposeLiabilityReturnCached))
         mockRetrievingNoAuthRef()
-        val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1.toString)
+        val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
         when(mockEtmpConnector
           .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
@@ -269,7 +398,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         lazy val bankDetails: BankDetailsModel = generateLiabilityBankDetails
         lazy val protectedBankDetails: BankDetailsModel = generateLiabilityProtectedBankDetails
         val dL1: DisposeLiabilityReturn = disposeLiability1.copy(disposeLiability = Some(
-          DisposeLiability(dateOfDisposal = Some(LocalDate.of(2015, 5, 1)), periodKey = periodKey)), bankDetails = Some(protectedBankDetails))
+          DisposeLiability(dateOfDisposal = Some(LocalDate.of(periodKey, month, date)), periodKey = periodKey)), bankDetails = Some(protectedBankDetails))
         when(mockDisposeLiabilityReturnRepository
           .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq(dL1, disposeLiability2)))
@@ -277,7 +406,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
           .thenReturn(Future.successful(DisposeLiabilityReturnCached))
         mockRetrievingNoAuthRef()
-        val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1.toString)
+        val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
 
         when(mockEtmpConnector
@@ -313,7 +442,9 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
       "update the pre calculated values and cache that into mongo" in new Setup {
         lazy val bankDetails: BankDetailsModel = generateLiabilityBankDetails
         lazy val protectedBankDetails: BankDetailsModel = generateLiabilityProtectedBankDetails
-        val dL1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(dateOfDisposal = Some(LocalDate.of(2015, 5, 1)), periodKey = periodKey)), bankDetails = Some(protectedBankDetails))
+        val dL1: DisposeLiabilityReturn = disposeLiability1.copy(
+          disposeLiability = Some(DisposeLiability(dateOfDisposal = Some(LocalDate.of(periodKey, month, date)), periodKey = periodKey)),
+          bankDetails = Some(protectedBankDetails))
         when(mockDisposeLiabilityReturnRepository
           .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq(dL1, disposeLiability2)))
@@ -321,7 +452,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
           .thenReturn(Future.successful(DisposeLiabilityReturnCached))
         mockRetrievingNoAuthRef()
-        val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1.toString)
+        val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
 
         when(mockEtmpConnector
@@ -371,19 +502,23 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
       "just in case, if returned oldFornBundleReturnNo is not equal to one being passed, return amounts as 0,0" in new Setup {
         val bank1: BankDetailsModel = generateLiabilityBankDetails
         val dL1: DisposeLiabilityReturn = disposeLiability1
-          .copy(disposeLiability = Some(DisposeLiability(dateOfDisposal = Some(LocalDate.of(2015, 5, 1)), periodKey = periodKey)), bankDetails = Some(bank1))
+          .copy(disposeLiability = Some(DisposeLiability(dateOfDisposal = Some(LocalDate.of(periodKey, month, date)),
+            periodKey = periodKey)), bankDetails = Some(bank1))
         when(mockDisposeLiabilityReturnRepository
           .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq(dL1, disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
           .thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1.toString)
+        val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
         when(mockEtmpConnector
           .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
-        val result: DisposeCalculated = await(testDisposeLiabilityReturnService.getPreCalculationAmounts(atedRefNo, formBundleReturn1,DisposeLiability(Some(LocalDate.of(2015, 5, 1)), periodKey), formBundle2))
+        val result: DisposeCalculated = await(testDisposeLiabilityReturnService.getPreCalculationAmounts(atedRefNo,
+          formBundleReturn1,
+          DisposeLiability(Some(LocalDate.of(periodKey, month, date)), periodKey),
+          formBundle2))
         result must be(DisposeCalculated(BigDecimal(0.00), BigDecimal(0.00)))
       }
     }
@@ -413,8 +548,12 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
       "return HttpResponse wit Status OK, when form-bundle is found in cache and successfully submitted to ETMP" must {
         "getEtmpBankDetails" must {
           "return BankDetails, if valid bank-details-model is passed" in new Setup {
-            lazy val disp1 = disposeLiability1.copy(disposeLiability = Some(
-              DisposeLiability(Some(LocalDate.of(2015, 5, 1)), periodKey)), bankDetails = Some(ChangeLiabilityReturnBuilder.generateLiabilityProtectedBankDetails), calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
+            lazy val disp1: DisposeLiabilityReturn = disposeLiability1.copy(disposeLiability = Some(
+              DisposeLiability(Some(LocalDate.of(periodKey,
+                month,
+                date)), periodKey)),
+              bankDetails = Some(ChangeLiabilityReturnBuilder.generateLiabilityProtectedBankDetails),
+              calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
 
             when(mockDisposeLiabilityReturnRepository
               .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
@@ -431,7 +570,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
             when(mockEmailConnector
               .sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
 
-            lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1.toString)
+            lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
             lazy val respJson: JsValue = Json.toJson(respModel)
             when(mockEtmpConnector
               .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
@@ -442,8 +581,8 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
             verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
           }
           "return None, if hasBankDetails is false passed" in new Setup {
-            lazy val disp1 = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(
-                Some(LocalDate.of(2015, 5, 1)), periodKey)), bankDetails = Some(ChangeLiabilityReturnBuilder
+            lazy val disp1: DisposeLiabilityReturn = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(
+                Some(LocalDate.of(periodKey, month, date)), periodKey)), bankDetails = Some(ChangeLiabilityReturnBuilder
               .generateLiabilityProtectedBankDetailsNoBankDetails), calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
 
             when(mockDisposeLiabilityReturnRepository
@@ -458,7 +597,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
             when(mockSubscriptionDataService
               .retrieveSubscriptionData(any())(any()))
               .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
-            val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1.toString)
+            val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
             val respJson: JsValue = Json.toJson(respModel)
             when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
               .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
@@ -471,7 +610,11 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           "return None, if accountNumber & accountName & sortCode is not found" in new Setup {
             lazy val disp1: DisposeLiabilityReturn = disposeLiability1
               .copy(disposeLiability = Some(
-                DisposeLiability(Some(LocalDate.of(2015, 5, 1)), periodKey)), bankDetails = Some(ChangeLiabilityReturnBuilder.generateLiabilityProtectedBankDetailsBlank), calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
+                DisposeLiability(Some(LocalDate.of(periodKey,
+                  month,
+                  date)), periodKey)),
+                bankDetails = Some(ChangeLiabilityReturnBuilder.generateLiabilityProtectedBankDetailsBlank),
+                calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
             when(mockDisposeLiabilityReturnRepository
               .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
               .thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
@@ -485,7 +628,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
               .retrieveSubscriptionData(any())(any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
             when(mockEmailConnector
               .sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
-            lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1.toString)
+            lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
             lazy val respJson: JsValue = Json.toJson(respModel)
             when(mockEtmpConnector
               .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
@@ -496,9 +639,11 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           }
 
           "return None, if None was passed as bank-details-model" in new Setup {
-            lazy val disp1 = disposeLiability1
+            lazy val disp1: DisposeLiabilityReturn = disposeLiability1
               .copy(disposeLiability = Some(
-                DisposeLiability(Some(LocalDate.of(2015, 5, 1)), periodKey)), calculated = Some( DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
+                DisposeLiability(Some(LocalDate.of(periodKey,
+                  month,
+                  date)), periodKey)), calculated = Some( DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
             when(mockDisposeLiabilityReturnRepository
               .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
             when(mockDisposeLiabilityReturnRepository
@@ -509,7 +654,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
               .retrieveSubscriptionData(any())(any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
             when(mockEmailConnector
               .sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
-            lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1.toString)
+            lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
             lazy val respJson: JsValue = Json.toJson(respModel)
             when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
               .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
@@ -538,7 +683,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         when(mockEmailConnector
           .sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
-        lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1.toString)
+        lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         lazy val respJson: JsValue = Json.toJson(respModel)
         when(mockEtmpConnector
           .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
@@ -563,7 +708,9 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         lazy val bank1: BankDetailsModel = generateLiabilityBankDetails
         lazy val disp1: DisposeLiabilityReturn = disposeLiability1
           .copy(disposeLiability = Some(DisposeLiability(Some(LocalDate
-            .of(2015, 5, 1)), periodKey)), bankDetails = Some(bank1), calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
+            .of(periodKey, month, date)), periodKey)),
+            bankDetails = Some(bank1),
+            calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
         when(mockDisposeLiabilityReturnRepository
           .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
         when(mockDisposeLiabilityReturnRepository

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2025 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ package controllers
 import javax.inject.{Inject, Singleton}
 import models._
 import play.api.Logging
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.{JsValue, Json, OFormat}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.PropertyDetailsService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, Encrypter, Decrypter}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, Decrypter, Encrypter}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
@@ -52,61 +52,57 @@ trait PropertyDetailsController extends BackendController with Logging {
     }
   }
 
-  def createDraftPropertyDetails(atedRefNo: String, periodKey: Int) = Action.async(parse.json) {
+  def createDraftPropertyDetails(atedRefNo: String, periodKey: Int): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       withJsonBody[PropertyDetailsAddress] { draftPropertyDetails =>
-        propertyDetailsService.createDraftPropertyDetails(atedRefNo, periodKey, draftPropertyDetails).map { updatedDraftPropertyDetails =>
-          updatedDraftPropertyDetails match {
-            case Some(x) => Ok(Json.toJson(x))
-            case None => BadRequest(Json.toJson(updatedDraftPropertyDetails))
-          }
+        propertyDetailsService.createDraftPropertyDetails(atedRefNo, periodKey, draftPropertyDetails).map {
+          case Some(draftPropertyDetails) => Ok(Json.toJson(draftPropertyDetails))
+          case None => BadRequest(Json.toJson( "message" -> "Failed to create draft property details"))
         }
       }
   }
 
-  def saveDraftPropertyDetailsAddress(atedRefNo: String, id: String) = Action.async(parse.json) {
+  def saveDraftPropertyDetailsAddress(atedRefNo: String, id: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       withJsonBody[PropertyDetailsAddress] { draftPropertyDetails =>
-        propertyDetailsService.cacheDraftPropertyDetailsAddress(atedRefNo, id, draftPropertyDetails).map { updatedDraftPropertyDetails =>
-          updatedDraftPropertyDetails match {
-            case Some(x) => Ok(Json.parse("""{}"""))
-            case None => BadRequest(Json.toJson(updatedDraftPropertyDetails))
-          }
+        propertyDetailsService.cacheDraftPropertyDetailsAddress(atedRefNo, id, draftPropertyDetails).map {
+          case Some(_) => Ok(Json.parse("""{}"""))
+          case updatedDraftPropertyDetails@None => BadRequest(Json.toJson(updatedDraftPropertyDetails))
         }
       }
   }
 
-  def saveDraftPropertyDetailsTitle(atedRefNo: String, id: String) = Action.async(parse.json) {
+  def saveDraftPropertyDetailsTitle(atedRefNo: String, id: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       withJsonBody[PropertyDetailsTitle] { draftPropertyDetails =>
         propertyDetailsService.cacheDraftPropertyDetailsTitle(atedRefNo, id, draftPropertyDetails).map {
-            case Some(x) => Ok(Json.parse("""{}"""))
+            case Some(_) => Ok(Json.parse("""{}"""))
             case None => BadRequest("Invalid Request")
         }
       }
   }
 
-  def saveDraftTaxAvoidance(atedRefNo: String, id: String) = Action.async(parse.json) {
+  def saveDraftTaxAvoidance(atedRefNo: String, id: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       withJsonBody[PropertyDetailsTaxAvoidance] { draftPropertyDetails =>
         propertyDetailsService.cacheDraftTaxAvoidance(atedRefNo, id, draftPropertyDetails).map {
-            case Some(x) => Ok("")
+            case Some(_) => Ok("")
             case None => BadRequest("Invalid Request")
         }
       }
   }
 
-  def saveDraftSupportingInfo(atedRefNo: String, id: String) = Action.async(parse.json) {
+  def saveDraftSupportingInfo(atedRefNo: String, id: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       withJsonBody[PropertyDetailsSupportingInfo] { draftPropertyDetails =>
         propertyDetailsService.cacheDraftSupportingInfo(atedRefNo, id, draftPropertyDetails).map {
-            case Some(x) => Ok("")
+            case Some(_) => Ok("")
             case None => BadRequest("Invalid Request")
         }
       }
   }
 
-  def updateDraftHasBankDetails(atedRef: String, oldFormBundleNo: String) = Action.async(parse.json) {
+  def updateDraftHasBankDetails(atedRef: String, oldFormBundleNo: String): Action[JsValue] = Action.async(parse.json) {
     implicit request => withJsonBody[Boolean] {
       updatedValue => propertyDetailsService.cacheDraftHasBankDetails(atedRef, oldFormBundleNo, updatedValue) map {
         case Some(x) => Ok(Json.toJson(x))
@@ -115,7 +111,16 @@ trait PropertyDetailsController extends BackendController with Logging {
     }
   }
 
-  def updateDraftBankDetails(atedRef: String, oldFormBundleNo: String) = Action.async(parse.json) {
+  def updateDraftHasUkBankAccount(atedRef: String, oldFormBundleNo: String): Action[JsValue] = Action.async(parse.json) {
+    implicit request => withJsonBody[Boolean] {
+      updatedValue => propertyDetailsService.cacheDraftHasUkBankAccount(atedRef, oldFormBundleNo, updatedValue) map {
+        case Some(x) => Ok(Json.toJson(x))
+        case None => NotFound(Json.parse("""{}"""))
+      }
+    }
+  }
+
+  def updateDraftBankDetails(atedRef: String, oldFormBundleNo: String): Action[JsValue] = Action.async(parse.json) {
     implicit request => withJsonBody[BankDetails] {
       updatedValue => propertyDetailsService.cacheDraftBankDetails(atedRef, oldFormBundleNo, updatedValue) map {
         case Some(x) => Ok(Json.toJson(x))
@@ -124,16 +129,14 @@ trait PropertyDetailsController extends BackendController with Logging {
     }
   }
 
-  def calculateDraftPropertyDetails(atedRefNo: String, id: String) = Action.async { implicit request =>
-    propertyDetailsService.calculateDraftPropertyDetails(atedRefNo, id).map { updateResponse =>
-      updateResponse match {
-        case Some(x) => Ok(Json.toJson(updateResponse))
-        case None => BadRequest(Json.toJson(updateResponse))
-      }
+  def calculateDraftPropertyDetails(atedRefNo: String, id: String): Action[AnyContent] = Action.async { implicit request =>
+    propertyDetailsService.calculateDraftPropertyDetails(atedRefNo, id).map {
+      case Some(draftPropertyDetails) => Ok(Json.toJson(draftPropertyDetails))
+      case None => BadRequest(Json.toJson( "message" -> "Failed to calculate draft property details"))
     }
   }
 
-  def submitDraftPropertyDetails(atedRefNo: String, id: String) = Action.async { implicit request =>
+  def submitDraftPropertyDetails(atedRefNo: String, id: String): Action[AnyContent] = Action.async { implicit request =>
     propertyDetailsService.submitDraftPropertyDetail(atedRefNo, id).map { updateResponse =>
       updateResponse.status match {
         case OK => Ok(updateResponse.body)
@@ -145,7 +148,7 @@ trait PropertyDetailsController extends BackendController with Logging {
     }
   }
 
-  def deleteDraftPropertyDetails(atedRefNo: String, id: String) = Action.async { _ =>
+  def deleteDraftPropertyDetails(atedRefNo: String, id: String): Action[AnyContent] = Action.async { _ =>
     propertyDetailsService.deleteChargeableDraft(atedRefNo, id).map {
       case Nil => Ok
       case a =>
