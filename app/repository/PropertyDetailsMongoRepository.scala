@@ -16,16 +16,19 @@
 
 package repository
 
+import crypto.MongoCryptoProvider
+
 import javax.inject.{Inject, Singleton}
 import metrics.{MetricsEnum, ServiceMetrics}
 import models.PropertyDetails
-import java.time.{ZonedDateTime, ZoneId}
+
+import java.time.{ZoneId, ZonedDateTime}
 import org.mongodb.scala.model.Filters.{and, equal, lte}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions, UpdateOptions}
 import play.api.Logging
-import uk.gov.hmrc.crypto.{ApplicationCrypto, Encrypter, Decrypter}
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.mongo._
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.mdc.Mdc.preservingMdc
@@ -54,16 +57,14 @@ trait PropertyDetailsMongoRepository extends PlayMongoRepository[PropertyDetails
 
 @Singleton
 class PropertyDetailsMongoWrapperImpl @Inject()(val mongo: MongoComponent,
-                                                val serviceMetrics: ServiceMetrics,
-                                                val crypto: ApplicationCrypto)(implicit val ec:ExecutionContext) extends PropertyDetailsMongoWrapper
+                                                val serviceMetrics: ServiceMetrics, val mongoCrypto: MongoCryptoProvider)(implicit val ec:ExecutionContext) extends PropertyDetailsMongoWrapper
 
 trait PropertyDetailsMongoWrapper {
   implicit val ec: ExecutionContext
   val mongo: MongoComponent
   val serviceMetrics: ServiceMetrics
-  val crypto: ApplicationCrypto
-  implicit val compositeCrypto: Encrypter with Decrypter = crypto.JsonCrypto
-
+  val mongoCrypto: MongoCryptoProvider
+  implicit val compositeCrypto: Encrypter with Decrypter = mongoCrypto.crypto
   private lazy val propertyDetailsRepository = new PropertyDetailsReactiveMongoRepository(mongo, serviceMetrics)
 
   def apply(): PropertyDetailsMongoRepository = propertyDetailsRepository

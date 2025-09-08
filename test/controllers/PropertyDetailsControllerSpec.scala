@@ -17,6 +17,7 @@
 package controllers
 
 import builders.{ChangeLiabilityReturnBuilder, PropertyDetailsBuilder}
+import crypto.MongoCryptoProvider
 import models._
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
@@ -29,7 +30,8 @@ import play.api.mvc.{AnyContentAsEmpty, ControllerComponents, Result}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.PropertyDetailsService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter, SymmetricCryptoFactory}
+import play.api.Configuration
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -41,8 +43,8 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
 
   val mockPropertyDetailsService: PropertyDetailsService = mock[PropertyDetailsService]
 
-  implicit lazy val compositeSymmetricCrypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
-  implicit lazy val crypto: Encrypter with Decrypter = compositeSymmetricCrypto.JsonCrypto
+  private val testMongoCrypto: MongoCryptoProvider = app.injector.instanceOf[MongoCryptoProvider]
+  implicit lazy val crypto: Encrypter with Decrypter = testMongoCrypto.crypto
   implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
   implicit val mockServicesConfig: ServicesConfig = mock[ServicesConfig]
 
@@ -52,7 +54,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
     val statusCode: Int = 999
     class TestPropertyDetailsController extends BackendController(cc) with PropertyDetailsController {
       val propertyDetailsService: PropertyDetailsService = mockPropertyDetailsService
-      override implicit val crypto: ApplicationCrypto = compositeSymmetricCrypto
+      val mongoCrypto: MongoCryptoProvider = testMongoCrypto
       implicit val ec: ExecutionContext = cc.executionContext
       implicit val servicesConfig: ServicesConfig = mockServicesConfig
     }

@@ -31,10 +31,11 @@ import play.api.mvc.{AnyContentAsEmpty, ControllerComponents, Result}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import services.ChangeLiabilityService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import crypto.MongoCryptoProvider
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -51,8 +52,8 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
   }
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
-  implicit lazy val compositeSymmetricCrypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
-  implicit lazy val crypto: Encrypter with Decrypter = compositeSymmetricCrypto.JsonCrypto
+  private val testMongoCrypto: MongoCryptoProvider = app.injector.instanceOf[MongoCryptoProvider]
+  implicit lazy val crypto: Encrypter with Decrypter = testMongoCrypto.crypto
   implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
   implicit val mockServicesConfig: ServicesConfig = mock[ServicesConfig]
 
@@ -60,10 +61,10 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
     val cc: ControllerComponents = app.injector.instanceOf[ControllerComponents]
     implicit val ec: ExecutionContext = cc.executionContext
     class TestChangeLiabilityReturnController extends BackendController(cc) with ChangeLiabilityReturnController {
-      override implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+      override implicit val ec: ExecutionContext = cc.executionContext
       override val changeLiabilityService: ChangeLiabilityService = mockChangeLiabilityReturnService
-      override val crypto: ApplicationCrypto = compositeSymmetricCrypto
       implicit val servicesConfig: ServicesConfig = mockServicesConfig
+      val mongoCrypto: MongoCryptoProvider = testMongoCrypto
     }
 
     val controller = new TestChangeLiabilityReturnController()

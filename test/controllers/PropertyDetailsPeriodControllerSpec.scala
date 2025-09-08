@@ -17,6 +17,7 @@
 package controllers
 
 import builders.PropertyDetailsBuilder
+import crypto.MongoCryptoProvider
 import models._
 
 import java.time.LocalDate
@@ -31,7 +32,7 @@ import play.api.mvc.{ControllerComponents, Result}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.PropertyDetailsPeriodService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -41,8 +42,8 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPe
 
   val mockPropertyDetailsService: PropertyDetailsPeriodService = mock[PropertyDetailsPeriodService]
 
-  implicit lazy val compositeSymmetricCrypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
-  implicit lazy val crypto: Encrypter with Decrypter = compositeSymmetricCrypto.JsonCrypto
+  private val testMongoCrypto: MongoCryptoProvider = app.injector.instanceOf[MongoCryptoProvider]
+  implicit lazy val crypto: Encrypter with Decrypter = testMongoCrypto.crypto
   implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
 
   trait Setup {
@@ -50,7 +51,7 @@ class PropertyDetailsPeriodControllerSpec extends PlaySpec with GuiceOneServerPe
     implicit val ec: ExecutionContext = cc.executionContext
     class TestPropertyDetailsController extends BackendController(cc) with PropertyDetailsPeriodController {
       val propertyDetailsService: PropertyDetailsPeriodService = mockPropertyDetailsService
-      override implicit val crypto: ApplicationCrypto = compositeSymmetricCrypto
+      val mongoCrypto: MongoCryptoProvider = testMongoCrypto
       implicit val ec: ExecutionContext = cc.executionContext
     }
 

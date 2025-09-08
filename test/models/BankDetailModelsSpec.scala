@@ -20,12 +20,16 @@ package models
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
+import play.api.Configuration
 import play.api.libs.json.{JsString, JsValue, Json}
-import uk.gov.hmrc.crypto.{ApplicationCrypto, Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
+import crypto.MongoCryptoProvider
 
 import scala.reflect.ClassManifestFactory.Nothing
 
 class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
+
+  private val mongoCrypto: MongoCryptoProvider = app.injector.instanceOf[MongoCryptoProvider]
 
   "BicSwiftCode" must {
 
@@ -82,8 +86,7 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
   "BankDetailsModel" must {
     "decrypt the elements" when {
       "when there are non-Null protected bank details" in {
-        val crypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
-        implicit val jsonCrypto: Encrypter with Decrypter = crypto.JsonCrypto
+        implicit val jsonCrypto: Encrypter with Decrypter = mongoCrypto.crypto
 
         val encryptedProtectedBankDetailsJson =
           s"""
@@ -113,8 +116,7 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
       }
 
       "when there are Null protected bank details for every field" in {
-        val crypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
-        implicit val jsonCrypto: Encrypter with Decrypter = crypto.JsonCrypto
+        implicit val jsonCrypto: Encrypter with Decrypter = mongoCrypto.crypto
 
         val encryptedProtectedBankDetailsJson =
           s"""
@@ -144,8 +146,7 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
       }
     }
     "encrypt/decrypt ProtectedBankDetails entity that are Non-Null" in {
-      val crypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
-      implicit val jsonCrypto: Encrypter with Decrypter = crypto.JsonCrypto
+      implicit val jsonCrypto: Encrypter with Decrypter = mongoCrypto.crypto
 
       val protectedBankDetails = ProtectedBankDetails(Some(SensitiveHasUKBankAccount(Some(true))),
         Some(SensitiveAccountName(Some("AcountName"))), Some(SensitiveAccountNumber(Some("1111111"))), Some(SensitiveSortCode(Some(SortCode.fromString("000102")))),
@@ -161,8 +162,7 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
       (json \ "iban").get shouldBe JsString("fT98XnPNxN88UtlRy/DiamnNU1JKYdD5nTfOSKSdBlU=")
     }
     "encrypt/decrypt ProtectedBankDetails entity that are all Null" in {
-      val crypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
-      implicit val jsonCrypto: Encrypter with Decrypter = crypto.JsonCrypto
+      implicit val jsonCrypto: Encrypter with Decrypter = mongoCrypto.crypto
 
       val protectedBankDetails = ProtectedBankDetails(Some(SensitiveHasUKBankAccount(None)),
         Some(SensitiveAccountName(None)), Some(SensitiveAccountNumber(None)), Some(SensitiveSortCode(None)),

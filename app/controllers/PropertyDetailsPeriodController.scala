@@ -18,29 +18,30 @@ package controllers
 
 import javax.inject.{Inject, Singleton}
 import models._
+
 import java.time.LocalDate
 import play.api.libs.json.Reads._
 import play.api.libs.json.{Json, OFormat}
 import play.api.mvc.ControllerComponents
 import services.PropertyDetailsPeriodService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, Encrypter, Decrypter}
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-
+import crypto.MongoCryptoProvider
 import scala.concurrent.ExecutionContext
 
 @Singleton
 class PropertyDetailsPeriodControllerImpl @Inject()(
                                                      val propertyDetailsService: PropertyDetailsPeriodService,
                                                      val cc: ControllerComponents,
-                                                     implicit val crypto: ApplicationCrypto
+                                                     val mongoCrypto: MongoCryptoProvider
                                                    ) extends BackendController(cc) with PropertyDetailsPeriodController {
   override implicit val ec: ExecutionContext = cc.executionContext
 }
 
 trait PropertyDetailsPeriodController extends BackendController {
   implicit val ec: ExecutionContext
-  val crypto: ApplicationCrypto
-  implicit lazy val compositeCrypto: Encrypter with Decrypter = crypto.JsonCrypto
+  val mongoCrypto: MongoCryptoProvider
+  implicit lazy val compositeCrypto: Encrypter with Decrypter = mongoCrypto.crypto
   implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
 
   def propertyDetailsService: PropertyDetailsPeriodService

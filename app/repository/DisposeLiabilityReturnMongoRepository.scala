@@ -16,19 +16,22 @@
 
 package repository
 
+import crypto.MongoCryptoProvider
 import metrics.{MetricsEnum, ServiceMetrics}
 import models.DisposeLiabilityReturn
-import java.time.{ZonedDateTime, ZoneId}
+
+import java.time.{ZoneId, ZonedDateTime}
 import org.mongodb.scala.model.Filters.{equal, _}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions, UpdateOptions}
 import play.api.Logging
-import uk.gov.hmrc.crypto.{ApplicationCrypto, Encrypter, Decrypter}
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.mdc.Mdc.preservingMdc
 import models.mongo.MongoDateTimeFormats
+
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -51,16 +54,15 @@ trait DisposeLiabilityReturnMongoRepository extends PlayMongoRepository[DisposeL
 
 @Singleton
 class DisposeLiabilityReturnMongoWrapperImpl @Inject()(val mongo: MongoComponent,
-                                                       val serviceMetrics: ServiceMetrics,
-                                                       val crypto: ApplicationCrypto)(
+                                                       val serviceMetrics: ServiceMetrics, val mongoCrypto: MongoCryptoProvider)(
   override implicit val ec: ExecutionContext) extends DisposeLiabilityReturnMongoWrapper
 
 trait DisposeLiabilityReturnMongoWrapper {
   implicit val ec: ExecutionContext
   val mongo: MongoComponent
   val serviceMetrics: ServiceMetrics
-  val crypto: ApplicationCrypto
-  implicit val compositeCrypto: Encrypter with Decrypter = crypto.JsonCrypto
+  val mongoCrypto: MongoCryptoProvider
+  implicit val compositeCrypto: Encrypter with Decrypter = mongoCrypto.crypto
 
   private lazy val disposeLiabilityReturnRepository = new DisposeLiabilityReturnRepository(mongo, serviceMetrics)
 

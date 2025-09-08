@@ -17,6 +17,7 @@
 package controllers
 
 import builders.ChangeLiabilityReturnBuilder
+import crypto.MongoCryptoProvider
 import models._
 
 import java.time.ZonedDateTime
@@ -31,7 +32,8 @@ import play.api.mvc.{AnyContentAsEmpty, ControllerComponents, Result}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.DisposeLiabilityReturnService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter, SymmetricCryptoFactory}
+import play.api.Configuration
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -49,8 +51,8 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
     reset(mockDisposeLiabilityReturnService)
   }
 
-  implicit lazy val compositeSymmetricCrypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
-  implicit lazy val crypto: Encrypter with Decrypter = compositeSymmetricCrypto.JsonCrypto
+  private val testMongoCrypto: MongoCryptoProvider = app.injector.instanceOf[MongoCryptoProvider]
+  implicit lazy val crypto: Encrypter with Decrypter = testMongoCrypto.crypto
   implicit lazy val format: OFormat[DisposeLiabilityReturn] = DisposeLiabilityReturn.formats
   implicit lazy val liabilityFormat: OFormat[DisposeLiability] = DisposeLiability.formats
 
@@ -61,7 +63,7 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
     class TestDisposeLiabilityReturnController extends BackendController(cc) with DisposeLiabilityReturnController {
       implicit val ec: ExecutionContext = cc.executionContext
       override val disposeLiabilityReturnService: DisposeLiabilityReturnService = mockDisposeLiabilityReturnService
-      override implicit val crypto: ApplicationCrypto = compositeSymmetricCrypto
+      val mongoCrypto: MongoCryptoProvider = testMongoCrypto
     }
 
     val controller = new TestDisposeLiabilityReturnController()
