@@ -16,8 +16,10 @@
 
 package test.service
 
+import crypto.MongoCryptoProvider
 import helpers.{AssertionHelpers, IntegrationSpec}
 import models.{BankDetailsModel, PropertyDetails, PropertyDetailsAddress}
+import play.api.Configuration
 import play.api.http.Status._
 import play.api.libs.json.Reads._
 import play.api.libs.json.{Format, JsValue, Json, OFormat}
@@ -25,14 +27,15 @@ import play.api.libs.ws.WSResponse
 import play.api.test.FutureAwaits
 import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
 import scheduler.DeletePropertyDetailsService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 
 import java.time.{ZoneId, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class DeletePropertyDetailsServiceISpec extends IntegrationSpec with AssertionHelpers with FutureAwaits {
-  implicit val crypto: Encrypter with Decrypter = app.injector.instanceOf[ApplicationCrypto].JsonCrypto
+  private val mongoCrypto: MongoCryptoProvider = app.injector.instanceOf[MongoCryptoProvider]
+  implicit val crypto: Encrypter with Decrypter = mongoCrypto.crypto
   implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
   implicit val formats: OFormat[PropertyDetails] = Json.format[PropertyDetails]
 

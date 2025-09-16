@@ -18,20 +18,24 @@ package test.service
 
 import helpers.{AssertionHelpers, IntegrationSpec}
 import models._
+import play.api.Configuration
 import play.api.http.Status._
 import play.api.libs.json.{Format, Json, OFormat}
 import play.api.libs.ws.WSResponse
 import play.api.test.FutureAwaits
 import repository.{DisposeLiabilityReturnMongoRepository, DisposeLiabilityReturnMongoWrapper}
 import scheduler.DeleteLiabilityReturnsService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
+import crypto.MongoCryptoProvider
 
 import java.time.{LocalDate, ZoneId, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionHelpers with FutureAwaits {
-  implicit val crypto: Encrypter with Decrypter = app.injector.instanceOf[ApplicationCrypto].JsonCrypto
+  private val mongoCrypto: MongoCryptoProvider = app.injector.instanceOf[MongoCryptoProvider]
+
+  implicit val crypto: Encrypter with Decrypter = mongoCrypto.crypto
   implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
   implicit val formats: OFormat[DisposeLiability] = DisposeLiability.formats
 
