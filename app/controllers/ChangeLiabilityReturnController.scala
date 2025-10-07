@@ -22,9 +22,10 @@ import play.api.Logging
 import play.api.libs.json.{Json, OFormat}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.{ChangeLiabilityService, NoLiabilityAmountException}
-import uk.gov.hmrc.crypto.{Encrypter, Decrypter, ApplicationCrypto}
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import crypto.MongoCryptoProvider
 
 import scala.concurrent.ExecutionContext
 
@@ -32,8 +33,8 @@ import scala.concurrent.ExecutionContext
 class ChangeLiabilityReturnControllerImpl @Inject()(
                                                      val changeLiabilityService: ChangeLiabilityService,
                                                      val cc: ControllerComponents,
-                                                     implicit val servicesConfig: ServicesConfig,
-                                                     implicit val crypto: ApplicationCrypto
+                                                     val servicesConfig: ServicesConfig,
+                                                     val mongoCrypto: MongoCryptoProvider,
                                                    ) extends BackendController(cc) with ChangeLiabilityReturnController {
   override implicit val ec: ExecutionContext = cc.executionContext
 }
@@ -41,8 +42,8 @@ class ChangeLiabilityReturnControllerImpl @Inject()(
 trait ChangeLiabilityReturnController extends BackendController with Logging {
   implicit val ec: ExecutionContext
   implicit val servicesConfig: ServicesConfig
-  val crypto: ApplicationCrypto
-  implicit lazy val compositeCrypto: Encrypter with Decrypter = crypto.JsonCrypto
+  val mongoCrypto: MongoCryptoProvider
+  implicit lazy val compositeCrypto: Encrypter with Decrypter = mongoCrypto.crypto
   implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
 
   def changeLiabilityService: ChangeLiabilityService

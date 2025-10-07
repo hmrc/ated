@@ -22,8 +22,10 @@ import play.api.Logging
 import play.api.libs.json.{JsValue, Json, OFormat}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.DisposeLiabilityReturnService
-import uk.gov.hmrc.crypto.{ApplicationCrypto, Encrypter, Decrypter}
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+import crypto.MongoCryptoProvider
+
 
 import scala.concurrent.ExecutionContext
 
@@ -31,15 +33,15 @@ import scala.concurrent.ExecutionContext
 class DisposeLiabilityReturnControllerImpl @Inject()(
                                                     val disposeLiabilityReturnService: DisposeLiabilityReturnService,
                                                     val cc: ControllerComponents,
-                                                    val crypto: ApplicationCrypto
+                                                    val mongoCrypto: MongoCryptoProvider
                                                     ) extends BackendController(cc) with DisposeLiabilityReturnController {
   override implicit val ec: ExecutionContext = cc.executionContext
 }
 
 trait DisposeLiabilityReturnController extends BackendController with Logging {
   implicit val ec: ExecutionContext
-  val crypto: ApplicationCrypto
-  implicit lazy val compositeCrypto: Encrypter with Decrypter = crypto.JsonCrypto
+  val mongoCrypto: MongoCryptoProvider
+  implicit lazy val compositeCrypto: Encrypter with Decrypter = mongoCrypto.crypto
   implicit lazy val format: OFormat[DisposeLiabilityReturn] = DisposeLiabilityReturn.formats
 
   def disposeLiabilityReturnService: DisposeLiabilityReturnService
