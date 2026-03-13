@@ -122,7 +122,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
         lazy val testPropertyDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
 
         when(mockChangeLiabilityReturnService.calculateDraftChangeLiability(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"))(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"))(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future(Some(testPropertyDetails)))
 
         val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
         val result: Future[Result] = controller.calculateDraftChangeLiability(testAccountRef, "1").apply(fakeRequest)
@@ -134,7 +134,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
         val testAccountRef = "ATED1223123"
 
         when(mockChangeLiabilityReturnService.calculateDraftChangeLiability(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"))(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"))(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
         val result: Future[Result] = controller.calculateDraftChangeLiability(testAccountRef, "1").apply(fakeRequest)

@@ -17,7 +17,6 @@
 package services
 
 import builders.PropertyDetailsBuilder
-import connectors.EtmpReturnsConnector
 import models._
 import java.time.LocalDate
 import org.mockito.ArgumentMatchers
@@ -28,7 +27,6 @@ import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.test.Helpers._
 import repository.{PropertyDetailsCached, PropertyDetailsMongoRepository}
-import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.{HeaderCarrier, SessionId}
 
 import java.util.UUID
@@ -37,16 +35,12 @@ import scala.concurrent.{ExecutionContext, Future}
 class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuite with MockitoSugar with BeforeAndAfterEach {
 
   val mockPropertyDetailsCache: PropertyDetailsMongoRepository = mock[PropertyDetailsMongoRepository]
-  val mockEtmpConnector: EtmpReturnsConnector = mock[EtmpReturnsConnector]
-  val mockAuthConnector: AuthConnector = mock[AuthConnector]
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   trait Setup {
     class TestPropertyDetailsService extends PropertyDetailsPeriodService {
       implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
       override val propertyDetailsCache: PropertyDetailsMongoRepository = mockPropertyDetailsCache
-      override val etmpConnector: EtmpReturnsConnector = mockEtmpConnector
-      override val authConnector: AuthConnector = mockAuthConnector
     }
 
     val testPropertyDetailsService = new TestPropertyDetailsService()
@@ -56,8 +50,6 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuit
 
   override def beforeEach(): Unit = {
     reset(mockPropertyDetailsCache)
-    reset(mockAuthConnector)
-    reset(mockEtmpConnector)
   }
 
   val jsonEtmpResponse: String =

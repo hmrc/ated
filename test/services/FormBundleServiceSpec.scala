@@ -16,7 +16,7 @@
 
 package services
 
-import connectors.EtmpReturnsConnector
+import connectors.{EtmpReturnsConnector, HipReturnsConnector}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
@@ -26,24 +26,36 @@ import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import utils.FeatureSwitch
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class FormBundleServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
+  implicit val mockServicesConfig: ServicesConfig = mock[ServicesConfig]
   val mockEtmpConnector: EtmpReturnsConnector = mock[EtmpReturnsConnector]
+  val mockHipConnector: HipReturnsConnector = mock[HipReturnsConnector]
   val atedRefNo = "ATED-123"
   val formBundle = "form-bundle-01"
   val successResponseJson: JsValue = Json.parse( """{"sapNumber":"1234567890", "safeId": "EX0012345678909", "agentReferenceNumber": "AARN1234567"}""")
 
   override def beforeEach(): Unit = {
     reset(mockEtmpConnector)
+    reset(mockHipConnector)
+    FeatureSwitch.disable(FeatureSwitch.apply("hipSwitch", false))
+  }
+
+  override def afterEach(): Unit = {
+    FeatureSwitch.disable(FeatureSwitch.apply("hipSwitch", false))
   }
 
   trait Setup {
     class TestFormBundleService extends FormBundleService {
       implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+      implicit val sc: ServicesConfig = mockServicesConfig
       override val etmpReturnsConnector: EtmpReturnsConnector = mockEtmpConnector
+      override val hipReturnsConnector: HipReturnsConnector = mockHipConnector
     }
     implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
     val testFormBundleService = new TestFormBundleService()
@@ -54,6 +66,16 @@ class FormBundleServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
       "return response from connector" in new Setup {
         implicit val hc: HeaderCarrier = HeaderCarrier()
         when(mockEtmpConnector
+          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
+        val response: Future[HttpResponse] = testFormBundleService.getFormBundleReturns(atedRefNo, formBundle)
+        await(response).status must be(OK)
+      }
+
+      "return response from connector (HIP)" in new Setup {
+        implicit val hc: HeaderCarrier = HeaderCarrier()
+        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
+        when(mockHipConnector
           .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle))(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         val response: Future[HttpResponse] = testFormBundleService.getFormBundleReturns(atedRefNo, formBundle)

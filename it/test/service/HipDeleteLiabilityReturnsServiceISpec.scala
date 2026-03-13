@@ -14,26 +14,29 @@
  * limitations under the License.
  */
 
-package test.service
+package service
 
+import crypto.MongoCryptoProvider
 import helpers.{AssertionHelpers, IntegrationSpec}
 import models._
 import play.api.http.Status._
-import play.api.libs.json.{Format, Json, OFormat}
+import play.api.libs.json.{Format, JsObject, Json, OFormat}
 import play.api.libs.ws.WSResponse
 import play.api.test.FutureAwaits
 import repository.{DisposeLiabilityReturnMongoRepository, DisposeLiabilityReturnMongoWrapper}
 import scheduler.DeleteLiabilityReturnsService
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
-import crypto.MongoCryptoProvider
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import utils.FeatureSwitch
 
 import java.time.{LocalDate, ZoneId, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionHelpers with FutureAwaits {
+class HipDeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionHelpers with FutureAwaits {
   private val mongoCrypto: MongoCryptoProvider = app.injector.instanceOf[MongoCryptoProvider]
 
+  implicit val servicesConfig: ServicesConfig = app.injector.instanceOf[ServicesConfig]
   implicit val crypto: Encrypter with Decrypter = mongoCrypto.crypto
   implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
   implicit val formats: OFormat[DisposeLiability] = DisposeLiability.formats
@@ -48,10 +51,20 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
   val periodKey = 2019
 
   override def additionalConfig(a: Map[String, Any]): Map[String, Any] = Map(
-    "microservice.services.etmp-hod.host" -> wireMockHost,
-    "microservice.services.etmp-hod.port" -> wireMockPort,
+    "microservice.services.hip.host" -> wireMockHost,
+    "microservice.services.hip.port" -> wireMockPort,
     "schedules.delete-liability-returns-job.cleardown.batchSize" -> 20
   )
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    FeatureSwitch.enable(FeatureSwitch("hipSwitch", true))
+  }
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    FeatureSwitch.disable(FeatureSwitch("hipSwitch", false))
+  }
 
   def generateFormBundleResponse(periodKey: Int): FormBundleReturn = {
     val formBundleAddress = FormBundleAddress("line1", "line2", None, None, None, "GB")
@@ -72,9 +85,11 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
       liabilityAmount = BigDecimal(123.23),
       paymentReference = "payment-ref-123",
       lineItem = Seq(lineItem1, lineItem2))
-  }
 
+  }
   val formBundle: FormBundleReturn = generateFormBundleResponse(periodKey)
+  val formBundleJson: JsObject = Json.obj("success" -> Json.toJson(formBundle))
+
   val liabilityReturn: DisposeLiabilityReturn = DisposeLiabilityReturn(atedRefNo = "ATE1234567XX", id = "101010", formBundle)
   val liabilityReturn2: DisposeLiabilityReturn = DisposeLiabilityReturn(atedRefNo = "ATE7654321XX", id = "010101", formBundle)
   val liabilityReturn3: DisposeLiabilityReturn = DisposeLiabilityReturn(atedRefNo = "ATE1234568XX", id = "101012", formBundle)
@@ -103,7 +118,7 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
 
     "not delete any drafts 60 days" when {
       "the draft has only just been added" in new Setup {
-        stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE1234567XX/form-bundle/101010", OK, Json.toJson(formBundle).toString)
+        stubbedGet("/etmp/RESTAdapter/ated/return/ATE1234567XX/form-bundle/101010", OK, formBundleJson.toString)
 
         val insert: WSResponse = await(createAndRetrieveLiabilityReturn)
         await(repo.updateTimeStamp(liabilityReturn, justAdded))
@@ -117,7 +132,7 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
       }
 
       "the draft has been stored for 59 days" in new Setup {
-        stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE1234567XX/form-bundle/101010", OK, Json.toJson(formBundle).toString)
+        stubbedGet("/etmp/RESTAdapter/ated/return/ATE1234567XX/form-bundle/101010", OK, formBundleJson.toString)
 
         val insert: WSResponse = await(createAndRetrieveLiabilityReturn)
         await(repo.updateTimeStamp(liabilityReturn, date59DaysAgo))
@@ -131,7 +146,7 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
       }
 
       "the draft has been stored for 60 days" in new Setup {
-        stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE1234567XX/form-bundle/101010", OK, Json.toJson(formBundle).toString)
+        stubbedGet("/etmp/RESTAdapter/ated/return/ATE1234567XX/form-bundle/101010", OK, formBundleJson.toString)
 
         await(createAndRetrieveLiabilityReturn)
         await(repo.updateTimeStamp(liabilityReturn, date60DaysAgo))
@@ -146,7 +161,7 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
       }
 
       "the draft has been stored for 60 days 23hr and 59mins" in new Setup {
-        stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE1234567XX/form-bundle/101010", OK, Json.toJson(formBundle).toString)
+        stubbedGet("/etmp/RESTAdapter/ated/return/ATE1234567XX/form-bundle/101010", OK, formBundleJson.toString)
 
         await(createAndRetrieveLiabilityReturn)
         await(repo.updateTimeStamp(liabilityReturn, date60DaysHrsMinsAgo))
@@ -163,7 +178,7 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
 
     "delete the liability return drafts" when {
       "the draft has been stored for 61 days" in new Setup {
-        stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE1234567XX/form-bundle/101010", OK, Json.toJson(formBundle).toString)
+        stubbedGet("/etmp/RESTAdapter/ated/return/ATE1234567XX/form-bundle/101010", OK, formBundleJson.toString)
 
         await(createAndRetrieveLiabilityReturn)
         await(repo.updateTimeStamp(liabilityReturn, date61DaysAgo))
@@ -178,7 +193,7 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
       }
 
       "the draft has been stored for 61 days and 1 min" in new Setup {
-        stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE1234567XX/form-bundle/101010", OK, Json.toJson(formBundle).toString)
+        stubbedGet("/etmp/RESTAdapter/ated/return/ATE1234567XX/form-bundle/101010", OK, formBundleJson.toString)
 
         await(createAndRetrieveLiabilityReturn)
         await(repo.updateTimeStamp(liabilityReturn, date61DaysMinsAgo))
@@ -194,8 +209,8 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
     }
 
     "only delete outdated reliefs when multiple reliefs exist for 60 days" in new Setup {
-      stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE1234567XX/form-bundle/101010", OK, Json.toJson(formBundle).toString)
-      stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE7654321XX/form-bundle/010101", OK, Json.toJson(formBundle).toString)
+      stubbedGet("/etmp/RESTAdapter/ated/return/ATE1234567XX/form-bundle/101010", OK, formBundleJson.toString)
+      stubbedGet("/etmp/RESTAdapter/ated/return/ATE7654321XX/form-bundle/010101", OK, formBundleJson.toString)
 
       await(createAndRetrieveLiabilityReturn)
       await(createAndRetrieveLiabilityReturn2)
@@ -214,9 +229,9 @@ class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionH
     }
 
     "delete multiple drafts when the batchSize is >1 for 60 days" in new Setup {
-      stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE1234567XX/form-bundle/101010", OK, Json.toJson(formBundle).toString)
-      stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE7654321XX/form-bundle/010101", OK, Json.toJson(formBundle).toString)
-      stubbedGet("/annual-tax-enveloped-dwellings/returns/ATE1234568XX/form-bundle/101012", OK, Json.toJson(formBundle).toString)
+      stubbedGet("/etmp/RESTAdapter/ated/return/ATE1234567XX/form-bundle/101010", OK, formBundleJson.toString)
+      stubbedGet("/etmp/RESTAdapter/ated/return/ATE7654321XX/form-bundle/010101", OK, formBundleJson.toString)
+      stubbedGet("/etmp/RESTAdapter/ated/return/ATE1234568XX/form-bundle/101012", OK, formBundleJson.toString)
 
       await(createAndRetrieveLiabilityReturn)
       await(createAndRetrieveLiabilityReturn2)

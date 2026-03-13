@@ -21,25 +21,29 @@ import models.{UpdateRegistrationDetailsRequest, UpdateSubscriptionDataRequest}
 import play.api.mvc.ControllerComponents
 import services.SubscriptionDataService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.ExecutionContext
 
 @Singleton
 class SubscriptionDataControllerImpl @Inject()(val cc: ControllerComponents,
-                                               val subscriptionDataService: SubscriptionDataService
+                                               val subscriptionDataService: SubscriptionDataService,
+                                               override implicit val sc: ServicesConfig
                                               ) extends BackendController(cc) with SubscriptionDataController {
   override implicit val ec: ExecutionContext = cc.executionContext
 }
 
 @Singleton
 class AgentRetrieveClientSubscriptionDataController @Inject()(val cc: ControllerComponents,
-                                                              val subscriptionDataService: SubscriptionDataService
+                                                              val subscriptionDataService: SubscriptionDataService,
+                                                              override implicit val sc: ServicesConfig
                                                              ) extends BackendController(cc) with SubscriptionDataController {
   override implicit val ec: ExecutionContext = cc.executionContext
 }
 
 trait SubscriptionDataController extends BackendController {
   implicit val ec: ExecutionContext
+  implicit val sc: ServicesConfig
 
   def subscriptionDataService: SubscriptionDataService
 

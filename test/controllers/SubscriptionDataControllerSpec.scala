@@ -30,11 +30,13 @@ import play.api.test.{FakeHeaders, FakeRequest}
 import services.SubscriptionDataService
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class SubscriptionDataControllerSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
+  val mockServicesConfig: ServicesConfig = mock[ServicesConfig]
   val mockSubscriptionDataService: SubscriptionDataService = mock[SubscriptionDataService]
   val callingUtr = "ATED-123"
   val agentCode = "AGENT-CODE"
@@ -48,11 +50,13 @@ class SubscriptionDataControllerSpec extends PlaySpec with GuiceOneServerPerSuit
 
     class TestSubscriptionDataController extends BackendController(cc) with SubscriptionDataController {
       implicit val ec: ExecutionContext = cc.executionContext
+      implicit val sc: ServicesConfig = mockServicesConfig
       val subscriptionDataService: SubscriptionDataService = mockSubscriptionDataService
     }
 
     class TestAgentRetrieveClientSubscriptionDataController extends BackendController(cc) with SubscriptionDataController {
       implicit val ec: ExecutionContext = cc.executionContext
+      implicit val sc: ServicesConfig = mockServicesConfig
       val subscriptionDataService: SubscriptionDataService = mockSubscriptionDataService
     }
 

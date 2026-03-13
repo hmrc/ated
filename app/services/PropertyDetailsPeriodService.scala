@@ -16,27 +16,22 @@
 
 package services
 
-import connectors.EtmpReturnsConnector
-
 import javax.inject.Inject
 import models._
+
 import java.time.LocalDate
 import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
-import uk.gov.hmrc.auth.core.AuthConnector
 import utils.ReliefConstants
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class PropertyDetailsPeriodServiceImpl @Inject()(val propertyDetailsMongoWrapper: PropertyDetailsMongoWrapper,
-                                                 val etmpConnector: EtmpReturnsConnector,
-                                                 val authConnector: AuthConnector) extends PropertyDetailsPeriodService {
+class PropertyDetailsPeriodServiceImpl @Inject()(val propertyDetailsMongoWrapper: PropertyDetailsMongoWrapper)
+  extends PropertyDetailsPeriodService {
   lazy val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetailsMongoWrapper()
 }
 
 trait PropertyDetailsPeriodService extends ReliefConstants {
 
-  def etmpConnector: EtmpReturnsConnector
-  def authConnector: AuthConnector
   def propertyDetailsCache: PropertyDetailsMongoRepository
 
   def cacheDraftFullTaxPeriod(atedRefNo: String, id: String, updatedDetails: IsFullTaxPeriod)(
