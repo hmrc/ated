@@ -16,25 +16,32 @@
 
 package services
 
-import connectors.EtmpReturnsConnector
+import connectors.{EtmpReturnsConnector, HipReturnsConnector}
 
 import javax.inject.Inject
 import models._
 import play.api.http.Status._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import utils.ATEDFeatureSwitches
 import utils.AtedConstants._
 import utils.ReliefUtils._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class ReturnSummaryServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnector,
+                                         val hipConnector: HipReturnsConnector,
                                          val propertyDetailsService: PropertyDetailsService,
                                          val reliefsService: ReliefsService,
-                                         val disposeLiabilityReturnService: DisposeLiabilityReturnService) extends ReturnSummaryService
+                                         val disposeLiabilityReturnService: DisposeLiabilityReturnService,
+                                         override implicit val sc: ServicesConfig) extends ReturnSummaryService
 
 trait ReturnSummaryService {
 
+  implicit val sc: ServicesConfig
+
   def etmpConnector: EtmpReturnsConnector
+  def hipConnector: HipReturnsConnector
   def propertyDetailsService: PropertyDetailsService
   def reliefsService: ReliefsService
   def disposeLiabilityReturnService: DisposeLiabilityReturnService
@@ -91,7 +98,13 @@ trait ReturnSummaryService {
   }
 
   def getFullSummaryReturns(atedRef: String)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[SummaryReturnsModel] = {
-    val etmpReturnsFuture = etmpConnector.getSummaryReturns(atedRef, years)
+    val etmpReturnsFuture = {
+      if (ATEDFeatureSwitches.hipSwitch().enabled) {
+        hipConnector.getSummaryReturns(atedRef, years)
+      } else {
+        etmpConnector.getSummaryReturns(atedRef, years)
+      }
+    }
     val reliefDraftsFuture = reliefsService.retrieveDraftReliefs(atedRef)
     val liabilityDraftsFuture = propertyDetailsService.retrieveDraftPropertyDetails(atedRef)
     val disposeLiabilityDraftsFuture = disposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(atedRef)

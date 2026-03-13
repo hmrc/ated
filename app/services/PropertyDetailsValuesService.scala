@@ -16,27 +16,21 @@
 
 package services
 
-import connectors.EtmpReturnsConnector
+
 
 import javax.inject.Inject
 import models._
 import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
-import uk.gov.hmrc.auth.core.AuthConnector
 import utils.ReliefConstants
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class PropertyDetailsValuesServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnector,
-                                                 val authConnector: AuthConnector,
-                                                 val propertyDetails: PropertyDetailsMongoWrapper) extends PropertyDetailsValuesService {
+class PropertyDetailsValuesServiceImpl @Inject()(val propertyDetails: PropertyDetailsMongoWrapper)
+  extends PropertyDetailsValuesService {
   lazy val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetails()
 }
 
 trait PropertyDetailsValuesService extends ReliefConstants {
-
-  def etmpConnector: EtmpReturnsConnector
-
-  def authConnector: AuthConnector
 
   def propertyDetailsCache: PropertyDetailsMongoRepository
 

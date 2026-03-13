@@ -10,7 +10,7 @@ import uk.gov.hmrc.versioning.SbtGitVersioning.autoImport.majorVersion
 val appName: String = "ated"
 
 ThisBuild / majorVersion := 3
-ThisBuild / scalaVersion := "2.13.17"
+ThisBuild / scalaVersion := "2.13.18"
 
 lazy val appDependencies : Seq[ModuleID] = AppDependencies()
 lazy val plugins : Seq[Plugins] = Seq(play.sbt.PlayScala, SbtDistributablesPlugin)
@@ -44,6 +44,6 @@ lazy val it = project
   .settings(DefaultBuildSettings.itSettings())
   .settings(libraryDependencies ++= AppDependencies.itDependencies)
 
-addCommandAlias("runAllChecks", ";clean;compile;coverage;test;coverageReport")
+addCommandAlias("runAllChecks", ";clean;compile;coverage;test;it/test;coverageReport")
 
 

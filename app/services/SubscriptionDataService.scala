@@ -16,26 +16,39 @@
 
 package services
 
-import connectors.EtmpDetailsConnector
+import connectors.{EtmpDetailsConnector, HipDetailsConnector}
 
 import javax.inject.Inject
 import models._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
-import utils.{AuthFunctionality, SessionUtils}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import utils.{ATEDFeatureSwitches, AuthFunctionality, SessionUtils}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class SubscriptionDataServiceImpl @Inject()(val etmpConnector: EtmpDetailsConnector,
-                                            val authConnector: AuthConnector) extends SubscriptionDataService
+                                            val hipConnector: HipDetailsConnector,
+                                            val authConnector: AuthConnector,
+                                            override implicit val sc: ServicesConfig) extends SubscriptionDataService
+
 trait SubscriptionDataService extends AuthFunctionality {
 
+  implicit val sc: ServicesConfig
+
   def etmpConnector: EtmpDetailsConnector
+
+  def hipConnector: HipDetailsConnector
 
   def authConnector: AuthConnector
 
   def retrieveSubscriptionData(atedReferenceNo: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    etmpConnector.getSubscriptionData(atedReferenceNo)
+
+    if (ATEDFeatureSwitches.hipSwitch().enabled) {
+      hipConnector.getSubscriptionData(atedReferenceNo)
+    } else {
+      etmpConnector.getSubscriptionData(atedReferenceNo)
+    }
   }
 
   def updateSubscriptionData(atedReferenceNo: String, updateData: UpdateSubscriptionDataRequest)
@@ -48,7 +61,11 @@ trait SubscriptionDataService extends AuthFunctionality {
         agentRefNo,
         updateData.address
       )
-      etmpConnector.updateSubscriptionData(atedReferenceNo, request)
+      if (ATEDFeatureSwitches.hipSwitch().enabled) {
+        hipConnector.updateSubscriptionData(atedReferenceNo, request)
+      }else {
+        etmpConnector.updateSubscriptionData(atedReferenceNo, request)
+      }
     }
   }
 

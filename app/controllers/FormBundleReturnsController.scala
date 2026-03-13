@@ -26,7 +26,7 @@ import scala.concurrent.ExecutionContext
 @Singleton
 class FormBundleReturnsControllerImpl @Inject()(
                                                  val cc: ControllerComponents,
-                                                 val formBundleService: FormBundleService
+                                                 val formBundleService: FormBundleService,
                                                ) extends BackendController(cc) with FormBundleReturnsController {
   override implicit val ec: ExecutionContext = cc.executionContext
 }

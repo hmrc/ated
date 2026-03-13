@@ -38,6 +38,8 @@ class ServiceBindings extends Module {
       playBind(classOf[EmailConnector]).to(classOf[EmailConnectorImpl]),
       playBind(classOf[EtmpDetailsConnector]).to(classOf[EtmpDetailsConnectorImpl]),
       playBind(classOf[EtmpReturnsConnector]).to(classOf[EtmpReturnsConnectorImpl]),
+      playBind(classOf[HipDetailsConnector]).to(classOf[HipDetailsConnectorImpl]),
+      playBind(classOf[HipReturnsConnector]).to(classOf[HipReturnsConnectorImpl]),
       playBind(classOf[ServiceMetrics]).to(classOf[ServiceMetricsImpl]),
       playBind(classOf[ChangeLiabilityService]).to(classOf[ChangeLiabilityServiceImpl]),
       playBind(classOf[DisposeLiabilityReturnService]).to(classOf[DisposeLiabilityReturnServiceImpl]),

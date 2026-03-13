@@ -20,7 +20,6 @@ package models
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
-import play.api.Configuration
 import play.api.libs.json.{JsString, JsValue, Json}
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import crypto.MongoCryptoProvider

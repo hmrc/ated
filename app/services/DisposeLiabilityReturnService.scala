@@ -16,7 +16,7 @@
 
 package services
 
-import connectors.{EmailConnector, EtmpReturnsConnector}
+import connectors.{EmailConnector, EtmpReturnsConnector, HipReturnsConnector}
 
 import javax.inject.Inject
 import models._
@@ -26,27 +26,34 @@ import play.api.libs.json.Json
 import repository.{DisposeLiabilityReturnMongoRepository, DisposeLiabilityReturnMongoWrapper}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import utils.ReliefUtils._
 import utils.SessionUtils._
-import utils.{AuthFunctionality, ChangeLiabilityUtils, PropertyDetailsUtils}
+import utils.{ATEDFeatureSwitches, AuthFunctionality, ChangeLiabilityUtils, PropertyDetailsUtils}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class DisposeLiabilityReturnServiceImpl @Inject()(val etmpReturnsConnector: EtmpReturnsConnector,
+                                                  val hipReturnsConnector: HipReturnsConnector,
                                                   val disposeLiabilityReturnMongoWrapper: DisposeLiabilityReturnMongoWrapper,
                                                   val authConnector: AuthConnector,
                                                   val subscriptionDataService: SubscriptionDataService,
                                                   val emailConnector: EmailConnector,
-                                                  override implicit val ec: ExecutionContext
+                                                  override implicit val ec: ExecutionContext,
+                                                  override implicit val sc: ServicesConfig
                                                  ) extends DisposeLiabilityReturnService {
   lazy val disposeLiabilityReturnRepository: DisposeLiabilityReturnMongoRepository = disposeLiabilityReturnMongoWrapper()
 }
 
 trait DisposeLiabilityReturnService extends NotificationService with AuthFunctionality with Logging {
 
+  implicit val sc: ServicesConfig
+
   def disposeLiabilityReturnRepository: DisposeLiabilityReturnMongoRepository
 
   def etmpReturnsConnector: EtmpReturnsConnector
+
+  def hipReturnsConnector: HipReturnsConnector
 
   def authConnector: AuthConnector
 
@@ -71,21 +78,40 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
           case Some(x) =>
             Future.successful(Option(convertBankDetails(x)))
           case None =>
-            etmpReturnsConnector.getFormBundleReturns(atedRefNo, oldFormBundleNo) flatMap {
-              response =>
-                response.status match {
-                  case OK =>
-                    val formBundleReturn = response.json.as[FormBundleReturn]
-                    val dispose = DisposeLiability(dateOfDisposal = None, periodKey = formBundleReturn.periodKey.trim.toInt)
-                    val disposeLiability = DisposeLiabilityReturn(atedRefNo = atedRefNo,
-                      id = oldFormBundleNo,
-                      formBundleReturn = formBundleReturn,
-                      disposeLiability = Some(dispose))
-                    disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(disposeLiability).flatMap { _ =>
-                      retrieveDraftDisposeLiabilityReturn(atedRefNo, oldFormBundleNo)
-                    }
-                  case _ => Future.successful(None)
-                }
+            if (ATEDFeatureSwitches.hipSwitch().enabled) {
+              hipReturnsConnector.getFormBundleReturns(atedRefNo, oldFormBundleNo) flatMap {
+                response =>
+                  response.status match {
+                    case OK =>
+                      val formBundleReturn = response.json.as[FormBundleReturn]
+                      val dispose = DisposeLiability(dateOfDisposal = None, periodKey = formBundleReturn.periodKey.trim.toInt)
+                      val disposeLiability = DisposeLiabilityReturn(atedRefNo = atedRefNo,
+                        id = oldFormBundleNo,
+                        formBundleReturn = formBundleReturn,
+                        disposeLiability = Some(dispose))
+                      disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(disposeLiability).flatMap { _ =>
+                        retrieveDraftDisposeLiabilityReturn(atedRefNo, oldFormBundleNo)
+                      }
+                    case _ => Future.successful(None)
+                  }
+              }
+            } else {
+              etmpReturnsConnector.getFormBundleReturns(atedRefNo, oldFormBundleNo) flatMap {
+                response =>
+                  response.status match {
+                    case OK =>
+                      val formBundleReturn = response.json.as[FormBundleReturn]
+                      val dispose = DisposeLiability(dateOfDisposal = None, periodKey = formBundleReturn.periodKey.trim.toInt)
+                      val disposeLiability = DisposeLiabilityReturn(atedRefNo = atedRefNo,
+                        id = oldFormBundleNo,
+                        formBundleReturn = formBundleReturn,
+                        disposeLiability = Some(dispose))
+                      disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(disposeLiability).flatMap { _ =>
+                        retrieveDraftDisposeLiabilityReturn(atedRefNo, oldFormBundleNo)
+                      }
+                    case _ => Future.successful(None)
+                  }
+              }
             }
         }
       }
@@ -179,23 +205,6 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
     }
   }
 
-  private def updateBankDetails(existingReturn: DisposeLiabilityReturn,
-                                 hasUkBankAccount: Boolean): DisposeLiabilityReturn = {
-    val currentModel = existingReturn.bankDetails.getOrElse(BankDetailsModel())
-    val currentDetails = currentModel.bankDetails.getOrElse(BankDetails())
-    val needsUpdate = !currentDetails.hasUKBankAccount.contains(hasUkBankAccount)
-    if (!needsUpdate) existingReturn else {
-
-      val updatedModel = BankDetailsModel(bankDetails = Some(BankDetails(hasUKBankAccount = Some(hasUkBankAccount))),
-        protectedBankDetails = None)
-
-      existingReturn.copy(
-        bankDetails = Some(updatedModel),
-        calculated = None
-      )
-    }
-  }
-
   def updateDraftDisposeBankDetails(atedRefNo: String, oldFormBundleNo: String, updatedValue: BankDetails)(
     implicit ec: ExecutionContext): Future[Option[DisposeLiabilityReturn]] = {
     import models.BankDetailsConversions._
@@ -263,18 +272,34 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
       EditLiabilityReturnsRequestModel(acknowledgmentReference = getUniqueAckNo, agentReferenceNumber = agentRefNo, liabilityReturn = Seq(liabilityReturn))
     }
 
-    etmpReturnsConnector.submitEditedLiabilityReturns(atedRefNo, editedLiabilityReturns = generateEditReturnRequest, disposal = true) map {
-      response =>
-        response.status match {
-          case OK =>
-            val responseData = response.json.as[EditLiabilityReturnsResponseModel]
-            responseData.liabilityReturnResponse.find(_.oldFormBundleNumber == oldFormBNo)
-              .fold(DisposeCalculated(BigDecimal(0), BigDecimal(0)))(a => DisposeCalculated(liabilityAmount = a.liabilityAmount,
-                amountDueOrRefund = a.amountDueOrRefund))
-          case status =>
-            logger.warn(s"[DisposeLiabilityReturnService][getPreCalculationAmounts] - response status = $status, response body = ${response.body}")
-            throw new RuntimeException("pre-calculation-request returned wrong status")
-        }
+    if (ATEDFeatureSwitches.hipSwitch().enabled) {
+      hipReturnsConnector.submitEditedLiabilityReturns(atedRefNo, editedLiabilityReturns = generateEditReturnRequest, disposal = true) map {
+        response =>
+          response.status match {
+            case OK =>
+              val responseData = response.json.as[EditLiabilityReturnsResponseModel]
+              responseData.liabilityReturnResponse.find(_.oldFormBundleNumber == oldFormBNo)
+                .fold(DisposeCalculated(BigDecimal(0), BigDecimal(0)))(a => DisposeCalculated(liabilityAmount = a.liabilityAmount,
+                  amountDueOrRefund = a.amountDueOrRefund))
+            case status =>
+              logger.warn(s"[DisposeLiabilityReturnService][getPreCalculationAmounts] - response status = $status, response body = ${response.body}")
+              throw new RuntimeException("pre-calculation-request returned wrong status")
+          }
+      }
+    } else {
+      etmpReturnsConnector.submitEditedLiabilityReturns(atedRefNo, editedLiabilityReturns = generateEditReturnRequest, disposal = true) map {
+        response =>
+          response.status match {
+            case OK =>
+              val responseData = response.json.as[EditLiabilityReturnsResponseModel]
+              responseData.liabilityReturnResponse.find(_.oldFormBundleNumber == oldFormBNo)
+                .fold(DisposeCalculated(BigDecimal(0), BigDecimal(0)))(a => DisposeCalculated(liabilityAmount = a.liabilityAmount,
+                  amountDueOrRefund = a.amountDueOrRefund))
+            case status =>
+              logger.warn(s"[DisposeLiabilityReturnService][getPreCalculationAmounts] - response status = $status, response body = ${response.body}")
+              throw new RuntimeException("pre-calculation-request returned wrong status")
+          }
+      }
     }
   }
 
@@ -331,7 +356,12 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
         disposeLiabilityReturnList <- disposeLiabilityReturnListFuture
         submitStatus: HttpResponse <- {
           disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
-            case Some(x) => etmpReturnsConnector.submitEditedLiabilityReturns(atedRefNo, generateEditReturnRequest(x, agentRefNo), disposal = true)
+            case Some(x) =>
+              if (ATEDFeatureSwitches.hipSwitch().enabled) {
+                hipReturnsConnector.submitEditedLiabilityReturns(atedRefNo, generateEditReturnRequest(x, agentRefNo), disposal = true)
+              } else {
+                etmpReturnsConnector.submitEditedLiabilityReturns(atedRefNo, generateEditReturnRequest(x, agentRefNo), disposal = true)
+              }
             case None => Future.successful(HttpResponse(NOT_FOUND, ""))
           }
         }
