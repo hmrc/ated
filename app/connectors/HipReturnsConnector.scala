@@ -416,6 +416,7 @@ trait HipReturnsConnector extends Auditable with Logging {
     }
   }
 
+
   private def auditLiabilityReturnsBankDetails(atedReferenceNo: String,
                                                editedLiabilityReturns: EditLiabilityReturnsRequestModel,
                                                eventType: String,
