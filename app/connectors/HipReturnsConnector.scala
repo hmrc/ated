@@ -41,8 +41,7 @@ class HipReturnsConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
                                         val http: HttpClientV2,
                                         val auditConnector: AuditConnector,
                                         val metrics: ServiceMetrics) extends HipReturnsConnector {
-  val serviceUrl: String = servicesConfig.baseUrl("hip")
-
+  override val serviceUrl: String = servicesConfig.baseUrl("hip")
   override val clientId: String = servicesConfig.getConfString("hip.clientId", "")
   override val clientSecret: String = servicesConfig.getConfString("hip.clientSecret", "")
   override val originatingSystem: String = servicesConfig.getConfString("hip.originatingSystem", "ATED")
@@ -61,17 +60,17 @@ trait HipReturnsConnector extends Auditable with Logging {
 
   def metrics: ServiceMetrics
   def http: HttpClientV2
+  def clientId: String
+  def clientSecret: String
+  def authorizationToken: String = Base64.getEncoder.encodeToString(s"$clientId:$clientSecret".getBytes("UTF-8"))
 
   val baseURI: String
   val submitReturnsURI: String
   val submitEditedLiabilityReturnsURI: String
   val getSummaryReturns: String
   val formBundleReturns: String
-
   val transmittingSystem: String = "HIP"
-  val clientId: String
-  val clientSecret: String
-  val authorizationToken: String = Base64.getEncoder.encodeToString(s"$clientId:$clientSecret".getBytes("UTF-8"))
+
   val originatingSystem: String
 
   def headers: Seq[(String, String)] = Seq(

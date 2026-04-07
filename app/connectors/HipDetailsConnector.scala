@@ -49,7 +49,6 @@ class HipDetailsConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
   override val originatingSystem: String = servicesConfig.getConfString("hip.originatingSystem", "ATED")
 
   val audit: Audit = new Audit("ated", auditConnector)
-
   val atedBaseURI: String = "etmp/RESTAdapter/ated"
   val retrieveSubscriptionData: String = "subscription"
   val saveSubscriptionData: String = "subscription"
@@ -60,15 +59,14 @@ trait HipDetailsConnector extends Auditable with Logging {
   def serviceUrl: String
   def http: HttpClientV2
   def metrics: ServiceMetrics
+  def clientId: String
+  def clientSecret: String
+  def authorizationToken: String = Base64.getEncoder.encodeToString(s"$clientId:$clientSecret".getBytes("UTF-8"))
 
   val atedBaseURI: String
   val retrieveSubscriptionData: String
   val saveSubscriptionData: String
-
   val transmittingSystem: String = "HIP"
-  val clientId: String
-  val clientSecret: String
-  val authorizationToken: String = Base64.getEncoder.encodeToString(s"$clientId:$clientSecret".getBytes("UTF-8"))
   val originatingSystem: String
 
   def headers: Seq[(String, String)] = Seq(
@@ -89,7 +87,7 @@ trait HipDetailsConnector extends Auditable with Logging {
 
     val hh = headers
 
-    logger.warn(s"GET $getUrl Headers being sent: ${hh.mkString(", ")}")
+    logger.warn(s"GET $getUrl Headers being sent: ${hh.mkString(", ")}, []")
 
     val timerContext = metrics.startTimer(MetricsEnum.EtmpGetSubscriptionData)
     http.get(url"$getUrl").setHeader(hh: _*).execute[HttpResponse].map{ response =>
