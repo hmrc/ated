@@ -90,14 +90,10 @@ trait HipReturnsConnector extends Auditable with Logging {
                    (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[HttpResponse] = {
     val postUrl = s"""$serviceUrl/$baseURI/$submitReturnsURI/$atedReferenceNo"""
 
-    val hh = headers
-
-    logger.warn(s"POST $postUrl Headers being sent: ${hh.mkString(", ")}")
-
     val jsonData = Json.toJson(submitReturns)
     val withAcknowledgementReferenceRemovedJson = HipUtilities.removeAcknowledgementReferenceField(jsonData)
     val timerContext = metrics.startTimer(MetricsEnum.EtmpSubmitReturns)
-    http.post(url"$postUrl").withBody(withAcknowledgementReferenceRemovedJson ).setHeader(hh: _*).execute[HttpResponse].map{ response =>
+    http.post(url"$postUrl").withBody(withAcknowledgementReferenceRemovedJson ).setHeader(headers: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
       auditSubmitReturns(atedReferenceNo, submitReturns, response)
       if (submitReturns.liabilityReturns.isDefined) {
@@ -152,12 +148,8 @@ trait HipReturnsConnector extends Auditable with Logging {
   def getSummaryReturns(atedReferenceNo: String, years: Int)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[HttpResponse] = {
     val getUrl = s"""$serviceUrl/$baseURI/$getSummaryReturns/summary/$atedReferenceNo?years=$years"""
 
-    val hh = headers
-
-    logger.warn(s"GET $getUrl Headers being sent: ${hh.mkString(", ")}")
-
     val timerContext = metrics.startTimer(MetricsEnum.EtmpGetSummaryReturns)
-    http.get(url"$getUrl").setHeader(hh: _*).execute[HttpResponse].map{ response =>
+    http.get(url"$getUrl").setHeader(headers: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
       response.status match {
         case OK =>
@@ -211,12 +203,8 @@ trait HipReturnsConnector extends Auditable with Logging {
   def getFormBundleReturns(atedReferenceNo: String, formBundleNumber: String)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[HttpResponse] = {
     val getUrl = s"""$serviceUrl/$baseURI/$getSummaryReturns/$atedReferenceNo/$formBundleReturns/$formBundleNumber"""
 
-    val hh = headers
-
-    logger.warn(s"GET $getUrl Headers being sent: ${hh.mkString(", ")}")
-
     val timerContext = metrics.startTimer(MetricsEnum.EtmpGetFormBundleReturns)
-    http.get(url"$getUrl").setHeader(hh: _*).execute[HttpResponse].map{ response =>
+    http.get(url"$getUrl").setHeader(headers: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
       response.status match {
         case OK =>
@@ -281,14 +269,10 @@ trait HipReturnsConnector extends Auditable with Logging {
                                    disposal: Boolean = false)(implicit ec: ExecutionContext, headerCarrier: HeaderCarrier): Future[HttpResponse] = {
     val putUrl = s"""$serviceUrl/$baseURI/$submitEditedLiabilityReturnsURI/$atedReferenceNo"""
 
-    val hh = headers
-
-    logger.warn(s"PUT $putUrl Headers being sent: ${hh.mkString(", ")}")
-
     val jsonData = Json.toJson(editedLiabilityReturns)
     val withAcknowledgementReferenceRemovedJson = HipUtilities.removeAcknowledgementReferenceField(jsonData)
     val timerContext = metrics.startTimer(MetricsEnum.EtmpSubmitEditedLiabilityReturns)
-    http.put(url"$putUrl").withBody(withAcknowledgementReferenceRemovedJson).setHeader(hh: _*).execute[HttpResponse].map{ response =>
+    http.put(url"$putUrl").withBody(withAcknowledgementReferenceRemovedJson).setHeader(headers: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
       auditSubmitEditedLiabilityReturns(atedReferenceNo, editedLiabilityReturns, response, disposal)
       response.status match {

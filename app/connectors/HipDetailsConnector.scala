@@ -85,12 +85,8 @@ trait HipDetailsConnector extends Auditable with Logging {
   def getSubscriptionData(atedReferenceNo: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     val getUrl = s"""$serviceUrl/$atedBaseURI/$retrieveSubscriptionData/$atedReferenceNo"""
 
-    val hh = headers
-
-    logger.warn(s"GET $getUrl Headers being sent: ${hh.mkString(", ")}, []")
-
     val timerContext = metrics.startTimer(MetricsEnum.EtmpGetSubscriptionData)
-    http.get(url"$getUrl").setHeader(hh: _*).execute[HttpResponse].map{ response =>
+    http.get(url"$getUrl").setHeader(headers: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
       response.status match {
         case OK =>
@@ -164,14 +160,10 @@ trait HipDetailsConnector extends Auditable with Logging {
                             (implicit hc: HeaderCarrier): Future[HttpResponse] = {
     val putUrl = s"""$serviceUrl/$atedBaseURI/$saveSubscriptionData/$atedReferenceNo"""
 
-    val hh = headers
-
-    logger.warn(s"PUT $putUrl Headers being sent: ${hh.mkString(", ")}")
-
     val timerContext = metrics.startTimer(MetricsEnum.EtmpUpdateSubscriptionData)
     val jsonData = Json.toJson(updatedData)
     val withAcknowledgementReferenceRemovedJson = HipUtilities.removeAcknowledgementReferenceField(jsonData)
-    http.put(url"$putUrl").withBody(withAcknowledgementReferenceRemovedJson).setHeader(hh: _*).execute[HttpResponse].map{ response =>
+    http.put(url"$putUrl").withBody(withAcknowledgementReferenceRemovedJson).setHeader(headers: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
       auditUpdateSubscriptionData(atedReferenceNo, updatedData, response)
       response.status match {
