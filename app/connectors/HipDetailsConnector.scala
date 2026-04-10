@@ -88,6 +88,9 @@ trait HipDetailsConnector extends Auditable with Logging {
     val timerContext = metrics.startTimer(MetricsEnum.EtmpGetSubscriptionData)
     http.get(url"$getUrl").setHeader(headers: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
+      // Log the Response Body
+      logger.warn(s"[getSubscriptionData] Response Status: ${response.status} | Response Body: ${response.body}")
+
       response.status match {
         case OK =>
           metrics.incrementSuccessCounter(MetricsEnum.EtmpGetSubscriptionData)
@@ -163,8 +166,14 @@ trait HipDetailsConnector extends Auditable with Logging {
     val timerContext = metrics.startTimer(MetricsEnum.EtmpUpdateSubscriptionData)
     val jsonData = Json.toJson(updatedData)
     val withAcknowledgementReferenceRemovedJson = HipUtilities.removeAcknowledgementReferenceField(jsonData)
+    // Log the Request Body
+    logger.warn(s"[updateSubscriptionData] Request Body for $atedReferenceNo: ${Json.stringify(withAcknowledgementReferenceRemovedJson)}")
+
     http.put(url"$putUrl").withBody(withAcknowledgementReferenceRemovedJson).setHeader(headers: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
+      // Log the Response Body
+      logger.warn(s"[updateSubscriptionData] Response Status: ${response.status} | Response Body: ${response.body}")
+
       auditUpdateSubscriptionData(atedReferenceNo, updatedData, response)
       response.status match {
         case OK =>

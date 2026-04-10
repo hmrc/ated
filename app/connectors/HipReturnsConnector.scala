@@ -93,8 +93,14 @@ trait HipReturnsConnector extends Auditable with Logging {
     val jsonData = Json.toJson(submitReturns)
     val withAcknowledgementReferenceRemovedJson = HipUtilities.removeAcknowledgementReferenceField(jsonData)
     val timerContext = metrics.startTimer(MetricsEnum.EtmpSubmitReturns)
+    // Log the Request Body
+    logger.warn(s"[submitReturns] Request Body for $atedReferenceNo: ${Json.stringify(withAcknowledgementReferenceRemovedJson)}")
+
     http.post(url"$postUrl").withBody(withAcknowledgementReferenceRemovedJson ).setHeader(headers: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
+      // Log the Response Body
+      logger.warn(s"[submitReturns] Response Status: ${response.status} | Response Body: ${response.body}")
+
       auditSubmitReturns(atedReferenceNo, submitReturns, response)
       if (submitReturns.liabilityReturns.isDefined) {
         auditAddress(submitReturns.liabilityReturns.get.head.propertyDetails)
@@ -151,6 +157,10 @@ trait HipReturnsConnector extends Auditable with Logging {
     val timerContext = metrics.startTimer(MetricsEnum.EtmpGetSummaryReturns)
     http.get(url"$getUrl").setHeader(headers: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
+
+      // Log the Response Body
+      logger.warn(s"[getReturns] Response Status: ${response.status} | Response Body: ${response.body}")
+
       response.status match {
         case OK =>
           metrics.incrementSuccessCounter(MetricsEnum.EtmpGetSummaryReturns)
@@ -206,6 +216,9 @@ trait HipReturnsConnector extends Auditable with Logging {
     val timerContext = metrics.startTimer(MetricsEnum.EtmpGetFormBundleReturns)
     http.get(url"$getUrl").setHeader(headers: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
+      // Log the Response Body
+      logger.warn(s"[getFormBundleReturns] Response Status: ${response.status} | Response Body: ${response.body}")
+
       response.status match {
         case OK =>
           metrics.incrementSuccessCounter(MetricsEnum.EtmpGetFormBundleReturns)
@@ -272,8 +285,14 @@ trait HipReturnsConnector extends Auditable with Logging {
     val jsonData = Json.toJson(editedLiabilityReturns)
     val withAcknowledgementReferenceRemovedJson = HipUtilities.removeAcknowledgementReferenceField(jsonData)
     val timerContext = metrics.startTimer(MetricsEnum.EtmpSubmitEditedLiabilityReturns)
+    // Log the Request Body
+    logger.warn(s"[submitEditedLiabilityReturns] Request Body for $atedReferenceNo: ${Json.stringify(withAcknowledgementReferenceRemovedJson)}")
+
     http.put(url"$putUrl").withBody(withAcknowledgementReferenceRemovedJson).setHeader(headers: _*).execute[HttpResponse].map{ response =>
       timerContext.stop()
+      // Log the Response Body
+      logger.warn(s"[submitEditedLiabilityReturns] Response Status: ${response.status} | Response Body: ${response.body}")
+
       auditSubmitEditedLiabilityReturns(atedReferenceNo, editedLiabilityReturns, response, disposal)
       response.status match {
         case OK =>
