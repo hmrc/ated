@@ -121,7 +121,7 @@ trait HipReturnsConnector extends Auditable with Logging {
           HipUtilities.extractHipErrorCode(response.body) match {
             case Some((code, text)) if badRequestErrorCodes.contains(code) =>
               metrics.incrementFailedCounter(MetricsEnum.EtmpSubmitReturns)
-              logger.warn(s"[EtmpDetailsConnector][submitReturns] - $text")
+              logger.warn(s"[HipReturnsConnector][submitReturns] - $text")
               doHeaderEvent("submitReturnsFailedHeaders", response.headers)
               doFailedAudit("submitReturnsFailed", postUrl, None, response.body)
               HttpResponse(
@@ -132,7 +132,7 @@ trait HipReturnsConnector extends Auditable with Logging {
 
             case status =>
               metrics.incrementFailedCounter(MetricsEnum.EtmpSubmitReturns)
-              logger.warn(s"[EtmpDetailsConnector][submitReturns] - Unsuccessful return of data. Status : $status")
+              logger.warn(s"[HipReturnsConnector][submitReturns] - Unsuccessful return of data. Status : $status")
               doHeaderEvent("submitReturnsFailedHeaders", response.headers)
               doFailedAudit("submitReturnsFailed", postUrl, None, response.body)
               HttpResponse(
@@ -143,7 +143,7 @@ trait HipReturnsConnector extends Auditable with Logging {
           }
         case status =>
           metrics.incrementFailedCounter(MetricsEnum.EtmpSubmitReturns)
-          logger.warn(s"[EtmpReturnsConnector][submitReturns] - status: $status")
+          logger.warn(s"[HipReturnsConnector][submitReturns] - status: $status")
           doHeaderEvent("submitReturnsFailedHeaders", response.headers)
           doFailedAudit("submitReturnsFailed", postUrl, Some(jsonData.toString), response.body)
           response
@@ -180,7 +180,7 @@ trait HipReturnsConnector extends Auditable with Logging {
           HipUtilities.extractHipErrorCode(response.body) match {
             case Some((code, text)) if badRequestErrorCodes.contains(code) =>
               metrics.incrementFailedCounter(MetricsEnum.EtmpGetSummaryReturns)
-              logger.warn(s"[EtmpDetailsConnector][getSummaryReturns] - $text")
+              logger.warn(s"[HipReturnsConnector][getSummaryReturns] - $text")
               doHeaderEvent("getSummaryReturnsFailedHeaders", response.headers)
               doFailedAudit("getSummaryReturnsFailed", getUrl, None, response.body)
               HttpResponse(
@@ -191,7 +191,7 @@ trait HipReturnsConnector extends Auditable with Logging {
 
             case status@_ =>
               metrics.incrementFailedCounter(MetricsEnum.EtmpGetSummaryReturns)
-              logger.warn(s"[EtmpDetailsConnector][getSummaryReturns] - Unsuccessful return of data. Status code: $status")
+              logger.warn(s"[HipReturnsConnector][getSummaryReturns] - Unsuccessful return of data. Status code: $status")
               doHeaderEvent("getSummaryReturnsFailedHeaders", response.headers)
               doFailedAudit("getSummaryReturnsFailed", getUrl, None, response.body)
               HttpResponse(
@@ -202,7 +202,7 @@ trait HipReturnsConnector extends Auditable with Logging {
           }
         case status =>
           metrics.incrementFailedCounter(MetricsEnum.EtmpGetSummaryReturns)
-          logger.warn(s"[EtmpReturnsConnector][getSummaryReturns] - status: $status")
+          logger.warn(s"[HipReturnsConnector][getSummaryReturns] - status: $status")
           doHeaderEvent("getSummaryReturnsFailedHeaders", response.headers)
           doFailedAudit("getSummaryReturnsFailed", getUrl, None, response.body)
           response
@@ -236,7 +236,7 @@ trait HipReturnsConnector extends Auditable with Logging {
 
             case Some(("002", text)) =>
               metrics.incrementFailedCounter(MetricsEnum.EtmpGetFormBundleReturns)
-              logger.warn(s"[EtmpDetailsConnector]getFormBundleReturns] - $text")
+              logger.warn(s"[HipReturnsConnector]getFormBundleReturns] - $text")
               doHeaderEvent("getFormBundleReturnsFailedHeaders", response.headers)
               doFailedAudit("getFormBundleReturnsailed", getUrl, None, response.body)
               HttpResponse(
@@ -247,7 +247,7 @@ trait HipReturnsConnector extends Auditable with Logging {
 
             case Some(("004", text)) =>
               metrics.incrementFailedCounter(MetricsEnum.EtmpGetFormBundleReturns)
-              logger.warn(s"[EtmpDetailsConnector][getFormBundleReturns] - $text")
+              logger.warn(s"[HipReturnsConnector][getFormBundleReturns] - $text")
               doHeaderEvent("getFormBundleReturnsFailedHeaders", response.headers)
               doFailedAudit("getFormBundleReturnsFailed", getUrl, None, response.body)
               HttpResponse(
@@ -258,7 +258,7 @@ trait HipReturnsConnector extends Auditable with Logging {
 
             case status =>
               metrics.incrementFailedCounter(MetricsEnum.EtmpGetFormBundleReturns)
-              logger.warn(s"[EtmpDetailsConnector][getFormBundleReturns] - Unsuccessful return of data. Status: $status")
+              logger.warn(s"[HipReturnsConnector][getFormBundleReturns] - Unsuccessful return of data. Status: $status")
               doHeaderEvent("getFormBundleReturnsFailedHeaders", response.headers)
               doFailedAudit("getFormBundleReturnsFailed", getUrl, None, response.body)
               HttpResponse(
@@ -269,7 +269,7 @@ trait HipReturnsConnector extends Auditable with Logging {
           }
         case status =>
           metrics.incrementFailedCounter(MetricsEnum.EtmpGetFormBundleReturns)
-          logger.warn(s"[EtmpReturnsConnector][getFormBundleReturns] - status: $status")
+          logger.warn(s"[HipReturnsConnector][getFormBundleReturns] - status: $status")
           doHeaderEvent("getFormBundleReturnsFailedHeaders", response.headers)
           doFailedAudit("getFormBundleReturnsFailed", getUrl, None, response.body)
           response
@@ -313,7 +313,7 @@ trait HipReturnsConnector extends Auditable with Logging {
           HipUtilities.extractHipErrorCode(response.body) match {
             case Some((code, text)) if  errorCodes.contains(code) =>
               metrics.incrementFailedCounter(MetricsEnum.EtmpSubmitEditedLiabilityReturns)
-              logger.warn(s"[EtmpDetailsConnector][submitEditedLiabilityReturns] - $text")
+              logger.warn(s"[HipReturnsConnector][submitEditedLiabilityReturns] - $text")
               doHeaderEvent("submitEditedLiabilityReturnsFailedHeaders", response.headers)
               doFailedAudit("submitEditedLiabilityReturnsFailed", putUrl, None, response.body)
               HttpResponse(
@@ -324,7 +324,7 @@ trait HipReturnsConnector extends Auditable with Logging {
               
             case status =>
               metrics.incrementFailedCounter(MetricsEnum.EtmpSubmitEditedLiabilityReturns)
-              logger.warn(s"[EtmpDetailsConnector][submitEditedLiabilityReturns] - Unsuccessful return of data. Status : $status")
+              logger.warn(s"[HipReturnsConnector][submitEditedLiabilityReturns] - Unsuccessful return of data. Status : $status")
               doHeaderEvent("submitEditedLiabilityReturnsFailedHeaders", response.headers)
               doFailedAudit("submitEditedLiabilityReturnsFailed", putUrl, None, response.body)
               HttpResponse(
@@ -335,7 +335,7 @@ trait HipReturnsConnector extends Auditable with Logging {
           }
         case status =>
           metrics.incrementFailedCounter(MetricsEnum.EtmpSubmitEditedLiabilityReturns)
-          logger.warn(s"[EtmpReturnsConnector][submitEditedLiabilityReturns] - status: $status, reason - ${response.json}")
+          logger.warn(s"[HipReturnsConnector][submitEditedLiabilityReturns] - status: $status, reason - ${response.json}")
           doHeaderEvent("getSummaryReturnsFailed", response.headers)
           doFailedAudit("submitEditedLiabilityReturnsFailed", putUrl, Some(jsonData.toString), response.body)
           response
