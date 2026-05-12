@@ -30,8 +30,7 @@ import play.api.mvc.{AnyContentAsEmpty, ControllerComponents, Result}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.PropertyDetailsService
-import uk.gov.hmrc.crypto.{Decrypter, Encrypter, SymmetricCryptoFactory}
-import play.api.Configuration
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -394,7 +393,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
         val testPropertyDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
 
         when(mockPropertyDetailsService.calculateDraftPropertyDetails(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"))(any(), any(), any())).thenReturn(Future(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"))(any(), any())).thenReturn(Future(Some(testPropertyDetails)))
 
         val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
         val result: Future[Result] = controller.calculateDraftPropertyDetails(testAccountRef, "1").apply(fakeRequest)
@@ -406,7 +405,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
         val testAccountRef = "ATED1223123"
 
         when(mockPropertyDetailsService.calculateDraftPropertyDetails(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"))(any(), any(), any())).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"))(any(), any())).thenReturn(Future.successful(None))
 
         val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
         val result: Future[Result] = controller.calculateDraftPropertyDetails(testAccountRef, "1").apply(fakeRequest)

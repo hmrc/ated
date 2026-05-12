@@ -16,21 +16,32 @@
 
 package services
 
-import connectors.EtmpReturnsConnector
+import connectors.{EtmpReturnsConnector, HipReturnsConnector}
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import utils.ATEDFeatureSwitches
 
-class FormBundleServiceImpl @Inject()(val etmpReturnsConnector: EtmpReturnsConnector)(
-  override implicit val ec: ExecutionContext) extends FormBundleService
+class FormBundleServiceImpl @Inject()(val etmpReturnsConnector: EtmpReturnsConnector,
+                                      val hipReturnsConnector: HipReturnsConnector)(
+  override implicit val ec: ExecutionContext, override implicit val sc: ServicesConfig) extends FormBundleService
 
 trait FormBundleService {
   implicit val ec: ExecutionContext
+  implicit val sc: ServicesConfig
 
   def etmpReturnsConnector: EtmpReturnsConnector
 
+  def hipReturnsConnector: HipReturnsConnector
+
   def getFormBundleReturns(atedReferenceNo: String, formBundleNumber: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    etmpReturnsConnector.getFormBundleReturns(atedReferenceNo, formBundleNumber)
+
+    if (ATEDFeatureSwitches.hipSwitch().enabled) {
+      hipReturnsConnector.getFormBundleReturns(atedReferenceNo, formBundleNumber)
+    } else {
+      etmpReturnsConnector.getFormBundleReturns(atedReferenceNo, formBundleNumber)
+    }
   }
 }

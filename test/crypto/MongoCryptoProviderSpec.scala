@@ -20,7 +20,7 @@ import org.scalatestplus.play.PlaySpec
 import play.api.Configuration
 import uk.gov.hmrc.crypto.PlainText   // note: only PlainText imported
 class MongoCryptoProviderSpec extends PlaySpec {
-  private def randomBase64Key(bytes: Int = 32): String = {
+  private def randomBase64Key(bytes: Int): String = {
     val b = new Array[Byte](bytes)
     new java.security.SecureRandom().nextBytes(b)
     java.util.Base64.getEncoder.encodeToString(b)

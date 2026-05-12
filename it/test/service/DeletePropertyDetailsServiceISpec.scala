@@ -19,7 +19,6 @@ package test.service
 import crypto.MongoCryptoProvider
 import helpers.{AssertionHelpers, IntegrationSpec}
 import models.{BankDetailsModel, PropertyDetails, PropertyDetailsAddress}
-import play.api.Configuration
 import play.api.http.Status._
 import play.api.libs.json.Reads._
 import play.api.libs.json.{Format, JsValue, Json, OFormat}

@@ -17,7 +17,7 @@
 package services
 
 
-import connectors.EtmpReturnsConnector
+import connectors.{EtmpReturnsConnector, HipReturnsConnector}
 import models._
 import repository.{PropertyDetailsDelete, PropertyDetailsMongoRepository}
 import uk.gov.hmrc.auth.core.AuthConnector
@@ -28,6 +28,7 @@ import scala.concurrent.{ExecutionContext, Future}
 trait PropertyDetailsBaseService extends ReliefConstants {
 
   def etmpConnector: EtmpReturnsConnector
+  def hipConnector: HipReturnsConnector
   def authConnector: AuthConnector
   def propertyDetailsCache: PropertyDetailsMongoRepository
 
