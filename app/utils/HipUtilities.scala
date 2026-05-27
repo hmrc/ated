@@ -52,7 +52,6 @@ object HipUtilities {
   }
 
   def stripSuccessWrapper(hipResponsePayload: JsValue): JsObject = {
-    logger.warn(s"stripSuccessWrapper - input JSON [${Json.stringify(hipResponsePayload)}]")
     val successNodeLookup: JsLookupResult = hipResponsePayload \ Success
     if (successNodeLookup.isDefined) {
       successNodeLookup.as[JsObject]
