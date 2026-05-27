@@ -55,7 +55,6 @@ object HipUtilities {
     logger.warn(s"stripSuccessWrapper - input JSON [${Json.stringify(hipResponsePayload)}]")
     val successNodeLookup: JsLookupResult = hipResponsePayload \ Success
     if (successNodeLookup.isDefined) {
-      logger.warn(s"stripSuccessWrapper - stripped JSON [${Json.stringify(successNodeLookup.as[JsObject])}]")
       successNodeLookup.as[JsObject]
     } else {
       logger.warn(s"Received response does not contain a '$Success' node.")
