@@ -27,7 +27,6 @@ import repository.{DisposeLiabilityReturnMongoRepository, DisposeLiabilityReturn
 import scheduler.DeleteLiabilityReturnsService
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import utils.FeatureSwitch
 
 import java.time.{LocalDate, ZoneId, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -58,12 +57,10 @@ class HipDeleteLiabilityReturnsServiceISpec extends IntegrationSpec with Asserti
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    FeatureSwitch.enable(FeatureSwitch("hipSwitch", true))
   }
 
   override def afterAll(): Unit = {
     super.afterAll()
-    FeatureSwitch.disable(FeatureSwitch("hipSwitch", false))
   }
 
   def generateFormBundleResponse(periodKey: Int): FormBundleReturn = {

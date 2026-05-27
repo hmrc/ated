@@ -18,7 +18,7 @@ package services
 
 
 import builders.{AuthFunctionalityHelper, ChangeLiabilityReturnBuilder, PropertyDetailsBuilder}
-import connectors.{EmailConnector, EmailSent, EtmpReturnsConnector, HipReturnsConnector}
+import connectors.{EmailConnector, EmailSent, HipReturnsConnector}
 import models._
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
@@ -36,7 +36,6 @@ import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse, Inter
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.Audit
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import utils.FeatureSwitch
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
@@ -44,7 +43,6 @@ import scala.concurrent.{ExecutionContext, Future}
 class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
 
   val mockPropertyDetailsCache: PropertyDetailsMongoRepository = mock[PropertyDetailsMongoRepository]
-  val mockEtmpConnector: EtmpReturnsConnector = mock[EtmpReturnsConnector]
   val mockHipConnector: HipReturnsConnector = mock[HipReturnsConnector]
   val mockAuthConnector: AuthConnector = mock[AuthConnector]
   val mockSubscriptionDataService: SubscriptionDataService = mock[SubscriptionDataService]
@@ -59,7 +57,6 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
       implicit val sc: ServicesConfig = mockServicesConfig
       override val propertyDetailsCache: PropertyDetailsMongoRepository = mockPropertyDetailsCache
-      override val etmpConnector: EtmpReturnsConnector = mockEtmpConnector
       override val hipConnector: HipReturnsConnector = mockHipConnector
       override val authConnector: AuthConnector = mockAuthConnector
       override val subscriptionDataService: SubscriptionDataService = mockSubscriptionDataService
@@ -80,15 +77,9 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
   override def beforeEach(): Unit = {
     reset(mockPropertyDetailsCache)
     reset(mockAuthConnector)
-    reset(mockEtmpConnector)
     reset(mockHipConnector)
     reset(mockSubscriptionDataService)
     reset(mockEmailConnector)
-    FeatureSwitch.disable(FeatureSwitch.apply("hipSwitch", false))
-  }
-
-  override def afterEach(): Unit = {
-    FeatureSwitch.disable(FeatureSwitch.apply("hipSwitch", false))
   }
 
   val jsonEtmpResponse: String =
@@ -367,7 +358,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       ).copy(calculated = None)
 
       val successResponse: JsValue = Json.parse(jsonEtmpResponse)
-      when(mockEtmpConnector.submitReturns(
+      when(mockHipConnector.submitReturns(
         ArgumentMatchers.eq(accountRef),
         ArgumentMatchers.any[SubmitEtmpReturnsRequest]
       )(ArgumentMatchers.any(), ArgumentMatchers.any())
@@ -895,24 +886,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
 
 
   "Retrieve the Liability Amount for the PropertyDetails" must {
-    "Get the Liability Amount " in new Setup {
-      lazy val propertyDetailsExample: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
-
-      val successResponse: JsValue = Json.parse(jsonEtmpResponse)
-      when(mockEtmpConnector.submitReturns(
-        ArgumentMatchers.eq(accountRef),
-        ArgumentMatchers.any[SubmitEtmpReturnsRequest]
-      )(ArgumentMatchers.any(), ArgumentMatchers.any())
-      ).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
-
-      val result: Future[Option[BigDecimal]] = testPropertyDetailsService.getLiabilityAmount(accountRef, "1", propertyDetailsExample)
-
-      val liabilityAmount: Option[BigDecimal] = await(result)
-      liabilityAmount must be(Some(999.99))
-    }
-
     "Get the Liability Amount (HIP)" in new Setup {
-      FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
       lazy val propertyDetailsExample: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
 
       val successResponse: JsValue = Json.parse(jsonEtmpResponse)
@@ -926,23 +900,9 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
 
       val liabilityAmount: Option[BigDecimal] = await(result)
       liabilityAmount must be(Some(999.99))
-    }
-
-    "Return None if we have no Liability Amount " in new Setup {
-      lazy val propertyDetailsExample: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
-
-      val successResponse: JsValue = Json.parse(jsonEtmpResponse)
-      when(mockEtmpConnector.submitReturns(
-        ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])(ArgumentMatchers.any(), ArgumentMatchers.any()))
-        .thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
-      val result: Future[Option[BigDecimal]] = testPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
-
-      val liabilityAmount: Option[BigDecimal] = await(result)
-      liabilityAmount.isDefined must be(false)
     }
 
     "Return None if we have no Liability Amount (HIP)" in new Setup {
-      FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
       lazy val propertyDetailsExample: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
 
       val successResponse: JsValue = Json.parse(jsonEtmpResponse)
@@ -955,24 +915,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       liabilityAmount.isDefined must be(false)
     }
 
-    "Fail if we have BAD_REQUEST" in new Setup {
-      lazy val propertyDetailsExample: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
-
-      val failureResponse: JsValue = Json.parse( """{ "reason": "Error"}""")
-      when(mockEtmpConnector.submitReturns(
-        ArgumentMatchers.eq(accountRef),
-        ArgumentMatchers.any[SubmitEtmpReturnsRequest]
-      )(ArgumentMatchers.any(), ArgumentMatchers.any())
-      ).thenReturn(Future.successful(HttpResponse(BAD_REQUEST, failureResponse, Map.empty[String, Seq[String]])))
-
-      val result: Future[Option[BigDecimal]] = testPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
-
-      val thrown: BadRequestException = the[BadRequestException] thrownBy await(result)
-      thrown.getMessage must include("Error")
-    }
-
     "Fail if we have BAD_REQUEST (HIP)" in new Setup {
-      FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
       lazy val propertyDetailsExample: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
 
       val failureResponse: JsValue = Json.parse( """{ "reason": "Error"}""")
@@ -986,23 +929,9 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
 
       val thrown: BadRequestException = the[BadRequestException] thrownBy await(result)
       thrown.getMessage must include("Error")
-    }
-
-    "Fail if we have dont find Liability Amount" in new Setup {
-      lazy val propertyDetailsExample: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
-
-      val failureResponse: JsValue = Json.parse( """{ "reason": "Error"}""")
-      when(mockEtmpConnector.submitReturns(
-        ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])(ArgumentMatchers.any(), ArgumentMatchers.any()))
-        .thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, failureResponse, Map.empty[String, Seq[String]])))
-      val result: Future[Option[BigDecimal]] = testPropertyDetailsService.getLiabilityAmount(accountRef, "3", propertyDetailsExample)
-
-      val thrown: InternalServerException = the[InternalServerException] thrownBy await(result)
-      thrown.getMessage must include("No Liability Amount Found")
     }
 
     "Fail if we have dont find Liability Amount (HIP)" in new Setup {
-      FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
       lazy val propertyDetailsExample: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
 
       val failureResponse: JsValue = Json.parse( """{ "reason": "Error"}""")
@@ -1015,22 +944,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       thrown.getMessage must include("No Liability Amount Found")
     }
 
-    "Fail if we have dont have valid details " in new Setup {
-      lazy val propertyDetailsPopulated: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
-      val propertyDetailsExample: PropertyDetails = propertyDetailsPopulated.copy(period = None, calculated = None)
-
-      val failureResponse: JsValue = Json.parse( """{ "reason": "Error"}""")
-      when(mockEtmpConnector.submitReturns(
-        ArgumentMatchers.eq(accountRef), ArgumentMatchers.any[SubmitEtmpReturnsRequest])(ArgumentMatchers.any(), ArgumentMatchers.any()))
-        .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, failureResponse, Map.empty[String, Seq[String]])))
-      val thrown: InternalServerException = the[InternalServerException]thrownBy testPropertyDetailsService
-        .getLiabilityAmount(accountRef, "3", propertyDetailsExample)
-
-      thrown.getMessage must include("Invalid Data for the request")
-    }
-
     "Fail if we have dont have valid details (HIP)" in new Setup {
-      FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
       lazy val propertyDetailsPopulated: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("something better"))
       val propertyDetailsExample: PropertyDetails = propertyDetailsPopulated.copy(period = None, calculated = None)
 
@@ -1046,42 +960,7 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
   }
 
   "Submit the Property Details from the Cache" must {
-    "Submit the property details and delete the item from the cache if it's a valid id" in new Setup {
-      lazy val propertyDetails1: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("something"), liabilityAmount = Some(BigDecimal(999.99)))
-      lazy val propertyDetails2: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("2", Some("something else"))
-      lazy val propertyDetails3: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("3", Some("something more"))
-
-      type Retrieval = Option[Name]
-      val testEnrolments: Set[Enrolment] = Set(Enrolment("HMRC-ATED-ORG", Seq(EnrolmentIdentifier("AgentRefNumber", "XN1200000100001")), "activated"))
-      val name: Name = Name(Some("gary"),Some("bloggs"))
-      val enrolmentsWithName: Retrieval = Some(name)
-
-      val successResponse: JsValue = Json.parse(jsonEtmpResponse)
-      when(mockAuthConnector.authorise[Any](any(), any())(any(), any()))
-        .thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
-      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
-        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.deletePropertyDetailsByfieldName(ArgumentMatchers.any(), ArgumentMatchers.any()))
-        .thenReturn(Future.successful(PropertyDetailsDeleted))
-      when(mockEtmpConnector.submitReturns(ArgumentMatchers.eq(accountRef),
-        ArgumentMatchers.any[SubmitEtmpReturnsRequest]())(ArgumentMatchers.any(), ArgumentMatchers.any())) thenReturn {
-        Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]]))
-      }
-      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
-        .thenReturn(Future.successful(PropertyDetailsCached))
-      when(mockSubscriptionDataService.retrieveSubscriptionData(
-        ArgumentMatchers.any())(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
-      when(mockEmailConnector.sendTemplatedEmail(
-        ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
-
-      val result: Future[HttpResponse] = testPropertyDetailsService.submitDraftPropertyDetail(accountRef, "1")
-      await(result).status must be(OK)
-      verify(mockEmailConnector, times(1)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
-    }
-
     "Submit the property details and delete the item from the cache if it's a valid id (HIP)" in new Setup {
-      FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
       lazy val propertyDetails1: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("something"), liabilityAmount = Some(BigDecimal(999.99)))
       lazy val propertyDetails2: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("2", Some("something else"))
       lazy val propertyDetails3: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("3", Some("something more"))
@@ -1150,5 +1029,4 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       verify(mockEmailConnector, times(0)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
     }
   }
-
 }

@@ -17,7 +17,7 @@
 package services
 
 import builders.{AuthFunctionalityHelper, ReliefBuilder}
-import connectors.{EmailConnector, EmailSent, EtmpReturnsConnector, HipReturnsConnector}
+import connectors.{EmailConnector, EmailSent, HipReturnsConnector}
 import models.{Reliefs, ReliefsTaxAvoidance, TaxAvoidance}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
@@ -33,7 +33,6 @@ import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import utils.FeatureSwitch
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -41,7 +40,6 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
 
   val mockReliefsCache: ReliefsMongoRepository = mock[ReliefsMongoRepository]
   implicit val mockServicesConfig: ServicesConfig = mock[ServicesConfig]
-  val mockEtmpConnector: EtmpReturnsConnector = mock[EtmpReturnsConnector]
   val mockHipConnector: HipReturnsConnector = mock[HipReturnsConnector]
   val mockAuthConnector: AuthConnector = mock[AuthConnector]
   val mockSubscriptionDataService: SubscriptionDataService = mock[SubscriptionDataService]
@@ -51,7 +49,6 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
   trait Setup {
     class TestReliefsService extends ReliefsService {
       override val reliefsCache: ReliefsMongoRepository = mockReliefsCache
-      override val etmpConnector: EtmpReturnsConnector = mockEtmpConnector
       override val hipConnector: HipReturnsConnector = mockHipConnector
       override val authConnector: AuthConnector = mockAuthConnector
       override val subscriptionDataService: SubscriptionDataService = mockSubscriptionDataService
@@ -69,16 +66,10 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
 
   override def beforeEach(): Unit = {
     reset(mockReliefsCache)
-    reset(mockEtmpConnector)
     reset(mockHipConnector)
     reset(mockAuthConnector)
     reset(mockEmailConnector)
     reset(mockSubscriptionDataService)
-    FeatureSwitch.disable(FeatureSwitch.apply("hipSwitch", false))
-  }
-
-  override def afterEach(): Unit = {
-    FeatureSwitch.disable(FeatureSwitch.apply("hipSwitch", false))
   }
 
   "ReliefsService" must {
@@ -111,29 +102,8 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
     }
 
     "submit cached Reliefs" must {
-
-      "work even if we have no reliefs found" in new Setup {
-        implicit val hc: HeaderCarrier = new HeaderCarrier()
-
-        when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq()))
-        when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(OK, "")))
-        when(mockAuthConnector.authorise[Option[String]](any(), any())(any(), any())).thenReturn(Future.successful(Some("Name")))
-
-        when(mockReliefsCache.deleteReliefs(ArgumentMatchers.anyString())).thenReturn(Future.successful(ReliefDeleted))
-        mockRetrievingNoAuthRef()
-
-        when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
-
-        val result: Future[HttpResponse] = testReliefsService.submitAndDeleteDraftReliefs("accountRef", periodKey)
-        await(result).status must be(NOT_FOUND)
-        verify(mockEmailConnector, times(0)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
-      }
-
       "work even if we have no reliefs found (HIP)" in new Setup {
         implicit val hc: HeaderCarrier = new HeaderCarrier()
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq()))
         when(mockHipConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, "")))
@@ -150,49 +120,8 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
         verify(mockEmailConnector, times(0)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
       }
 
-      "submit cached Reliefs and delete them if this submit works" in new Setup {
-        implicit val hc:HeaderCarrier = HeaderCarrier()
-
-        type Retrieval = Option[Name]
-        val testEnrolments: Set[Enrolment] = Set(Enrolment("HMRC-ATED-ORG", Seq(EnrolmentIdentifier("AgentRefNumber", "XN1200000100001")), "activated"))
-        val name: Name = Name(Some("gary"),Some("bloggs"))
-        val enrolmentsWithName: Retrieval = Some(name)
-
-        val reliefs = new Reliefs(periodKey = periodKey, rentalBusiness = true,
-          openToPublic = true,
-          propertyDeveloper = true,
-          propertyTrading = true,
-          lending = true,
-          employeeOccupation = true,
-          farmHouses = true,
-          socialHousing = true)
-
-        val taxAvoidance = new TaxAvoidance(rentalBusinessScheme = Some("Scheme123"),
-            socialHousingScheme = Some("Scheme789"))
-
-        val reliefsTaxAvoidance: ReliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(accountRef, periodKey, reliefs, taxAvoidance)
-        when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq(reliefsTaxAvoidance)))
-        when(mockReliefsCache.fetchReliefsByYear(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(Seq(reliefsTaxAvoidance)))
-        when(mockReliefsCache.cacheRelief(ArgumentMatchers.any())).thenReturn(Future.successful(ReliefCached))
-        when(mockAuthConnector.authorise[Any](any(), any())(any(), any()))
-          .thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
-        when(mockSubscriptionDataService.retrieveSubscriptionData(
-          ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
-        when(mockEmailConnector.sendTemplatedEmail(
-          ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
-        when(mockReliefsCache.deleteDraftReliefByYear(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(ReliefDeleted))
-
-        val submitSuccess: JsValue = Json.parse( """{"status" : "OK", "processingDate" :  "2014-12-17T09:30:47Z", "formBundleNumber" : "123456789012"}""")
-        when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(OK, submitSuccess, Map.empty[String, Seq[String]])))
-        val result: Future[HttpResponse] = testReliefsService.submitAndDeleteDraftReliefs("accountRef", periodKey)
-        await(result).status must be(OK)
-        verify(mockEmailConnector, times(1)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
-      }
-
       "submit cached Reliefs and delete them if this submit works (HIP)" in new Setup {
         implicit val hc:HeaderCarrier = HeaderCarrier()
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         type Retrieval = Option[Name]
         val testEnrolments: Set[Enrolment] = Set(Enrolment("HMRC-ATED-ORG", Seq(EnrolmentIdentifier("AgentRefNumber", "XN1200000100001")), "activated"))
         val name: Name = Name(Some("gary"),Some("bloggs"))
@@ -290,6 +219,5 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
 
       await(result) must be(Seq())
     }
-
   }
 }
