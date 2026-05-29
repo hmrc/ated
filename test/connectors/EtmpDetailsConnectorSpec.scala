@@ -24,13 +24,12 @@ import org.scalatest.BeforeAndAfter
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.Json
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.Audit
-import utils.SessionUtils
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -98,72 +97,6 @@ class EtmpDetailsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with
         val thrown = the[RuntimeException] thrownBy connector.getDetails(identifier = "AARN1234567", identifierType = "xyz")
         thrown.getMessage must include("unexpected identifier type supplied")
 
-      }
-    }
-
-
-    "get subscription data" must {
-      "Correctly return no data if there is none" in new Setup {
-        val notFoundResponse = Json.parse( """{}""")
-
-        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(NOT_FOUND, notFoundResponse, Map.empty[String, Seq[String]])))
-
-        val result = connector.getSubscriptionData("ATED-123")
-        val response = await(result)
-        response.status must be(NOT_FOUND)
-        response.json must be(notFoundResponse)
-      }
-
-      "Correctly return data if we have some" in new Setup {
-        val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
-
-        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
-
-        val result = connector.getSubscriptionData("ATED-123")
-        val response = await(result)
-        response.status must be(OK)
-        response.json must be(successResponse)
-      }
-    }
-
-    "update subscription data" must {
-      val addressDetails = AddressDetails("Correspondence", "line1", "line2", None, None, Some("postCode"), "GB")
-      val addressDetailsNoPostcode = AddressDetails("Correspondence", "line1", "line2", None, None, None, "GB")
-      val updatedData = new UpdateEtmpSubscriptionDataRequest(SessionUtils.getUniqueAckNo, emailConsent = true, ChangeIndicators(), None,
-        List(Address(addressDetails = addressDetails)))
-      val updatedDataNoPostcode = new UpdateEtmpSubscriptionDataRequest(SessionUtils.getUniqueAckNo, emailConsent = true, ChangeIndicators(), None,
-        List(Address(addressDetails = addressDetailsNoPostcode)))
-
-      "Correctly submit data if with a valid response" in new Setup {
-        val successResponse: JsValue = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
-
-        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
-
-        val result = connector.updateSubscriptionData("ATED-123", updatedData)
-        val response = await(result)
-        response.status must be(OK)
-        response.json must be(successResponse)
-      }
-
-      "Correctly submit data if with a valid response and no postcode" in new Setup {
-        val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
-
-        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
-
-        val result = connector.updateSubscriptionData("ATED-123", updatedDataNoPostcode)
-        val response = await(result)
-        response.status must be(OK)
-        response.json must be(successResponse)
-      }
-
-      "submit data  with an invalid response" in new Setup {
-        val notFoundResponse = Json.parse( """{}""")
-
-        when(requestBuilderExecute[HttpResponse]).thenReturn(Future.successful(HttpResponse(NOT_FOUND, notFoundResponse, Map.empty[String, Seq[String]])))
-
-        val result = connector.updateSubscriptionData("ATED-123", updatedData)
-        val response = await(result)
-        response.status must be(NOT_FOUND)
       }
     }
 
