@@ -17,7 +17,7 @@
 package services
 
 import audit.Auditable
-import connectors.{EmailConnector, EtmpReturnsConnector, HipReturnsConnector}
+import connectors.{EmailConnector, HipReturnsConnector}
 import models._
 import play.api.Logging
 import play.api.http.Status._
@@ -34,8 +34,7 @@ import utils._
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class PropertyDetailsServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnector,
-                                           val hipConnector: HipReturnsConnector,
+class PropertyDetailsServiceImpl @Inject()(val hipConnector: HipReturnsConnector,
                                            val authConnector: AuthConnector,
                                            val subscriptionDataService: SubscriptionDataService,
                                            val emailConnector: EmailConnector,
@@ -145,39 +144,20 @@ trait PropertyDetailsService
     val etmpSubmitReturnRequest = LiabilityUtils.createPreCalculationReturnsRequest(id, propertyDetails, agentRefNo)
     etmpSubmitReturnRequest match {
       case Some(returnRequest) =>
-        if (ATEDFeatureSwitches.hipSwitch().enabled) {
-          hipConnector.submitReturns(atedRefNo, returnRequest).map { response =>
-            response.status match {
-              case OK => getLiabilityAmount(response.json)
-              case BAD_REQUEST =>
-                sendDataEvent("getLiabilityAmountFailed",
-                  detail = Map("Id" -> s"""$id""",
-                    "Property Details" -> s"""$propertyDetails""",
-                    "agentRefNo" -> s"""$agentRefNo""",
-                    "returnRequest" -> s"""$returnRequest""",
-                    "Response" -> s"""$response"""))
-                logger.warn(
-                  s"""[PropertyDetailsService][getLiabilityAmount]: failed with status 400""")
-                throw new BadRequestException(response.body)
-              case _ => throw new InternalServerException("[PropertyDetailsService][getLiabilityAmount] No Liability Amount Found")
-            }
-          }
-        } else {
-          etmpConnector.submitReturns(atedRefNo, returnRequest).map { response =>
-            response.status match {
-              case OK => getLiabilityAmount(response.json)
-              case BAD_REQUEST =>
-                sendDataEvent("getLiabilityAmountFailed",
-                  detail = Map("Id" -> s"""$id""",
-                    "Property Details" -> s"""$propertyDetails""",
-                    "agentRefNo" -> s"""$agentRefNo""",
-                    "returnRequest" -> s"""$returnRequest""",
-                    "Response" -> s"""$response"""))
-                logger.warn(
-                  s"""[PropertyDetailsService][getLiabilityAmount]: failed with status 400""")
-                throw new BadRequestException(response.body)
-              case _ => throw new InternalServerException("[PropertyDetailsService][getLiabilityAmount] No Liability Amount Found")
-            }
+        hipConnector.submitReturns(atedRefNo, returnRequest).map { response =>
+          response.status match {
+            case OK => getLiabilityAmount(response.json)
+            case BAD_REQUEST =>
+              sendDataEvent("getLiabilityAmountFailed",
+                detail = Map("Id" -> s"""$id""",
+                  "Property Details" -> s"""$propertyDetails""",
+                  "agentRefNo" -> s"""$agentRefNo""",
+                  "returnRequest" -> s"""$returnRequest""",
+                  "Response" -> s"""$response"""))
+              logger.warn(
+                s"""[PropertyDetailsService][getLiabilityAmount]: failed with status 400""")
+              throw new BadRequestException(response.body)
+            case _ => throw new InternalServerException("[PropertyDetailsService][getLiabilityAmount] No Liability Amount Found")
           }
         }
       case None => throw new InternalServerException("[PropertyDetailsService][getLiabilityAmount] Invalid Data for the request")
@@ -336,12 +316,7 @@ trait PropertyDetailsService
             case Some(x) =>
               val etmpSubmitReturnRequest = LiabilityUtils.createPostReturnsRequest(id, x, agentRefNo)
               etmpSubmitReturnRequest match {
-                case Some(returnRequest) =>
-                  if (ATEDFeatureSwitches.hipSwitch().enabled) {
-                    hipConnector.submitReturns(atedRefNo, returnRequest)
-                  } else {
-                    etmpConnector.submitReturns(atedRefNo, returnRequest)
-                  }
+                case Some(returnRequest) => hipConnector.submitReturns(atedRefNo, returnRequest)
                 case None => Future.successful(HttpResponse(NOT_FOUND, ""))
               }
             case None => Future.successful(HttpResponse(NOT_FOUND, ""))
@@ -373,5 +348,4 @@ trait PropertyDetailsService
       reliefsList
     }
   }
-
 }

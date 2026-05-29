@@ -16,7 +16,7 @@
 
 package services
 
-import connectors.{EmailConnector, EtmpReturnsConnector, HipReturnsConnector}
+import connectors.{EmailConnector, HipReturnsConnector}
 
 import javax.inject.Inject
 import models.{ReliefsTaxAvoidance, SubmitEtmpReturnsRequest}
@@ -26,12 +26,11 @@ import repository.{ReliefsMongoRepository, ReliefsMongoWrapper}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import utils.{ATEDFeatureSwitches, AuthFunctionality, ReliefUtils}
+import utils.{AuthFunctionality, ReliefUtils}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class ReliefsServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnector,
-                                   val hipConnector: HipReturnsConnector,
+class ReliefsServiceImpl @Inject()(val hipConnector: HipReturnsConnector,
                                    val authConnector: AuthConnector,
                                    val subscriptionDataService: SubscriptionDataService,
                                    val emailConnector: EmailConnector,
@@ -47,7 +46,6 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
   implicit val sc: ServicesConfig
 
   def reliefsCache: ReliefsMongoRepository
-  def etmpConnector: EtmpReturnsConnector
   def hipConnector: HipReturnsConnector
   def authConnector: AuthConnector
   def subscriptionDataService: SubscriptionDataService
@@ -71,11 +69,7 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
         reliefRequest <- getSubmitReliefsRequest(atedRefNo, periodKey, agentRefNo)
         submitResponse <- reliefRequest match {
           case Some(x) =>
-            if (ATEDFeatureSwitches.hipSwitch().enabled) {
-              hipConnector.submitReturns(atedRefNo, x)
-            } else {
-              etmpConnector.submitReturns(atedRefNo, x)
-            }
+            hipConnector.submitReturns(atedRefNo, x)
           case _ =>
             val notFound = Json.parse("""{"reason" : "No Reliefs to submit"}""")
             Future.successful(HttpResponse(NOT_FOUND, notFound, Map.empty[String, Seq[String]]))
