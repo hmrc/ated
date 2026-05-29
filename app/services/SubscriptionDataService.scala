@@ -23,7 +23,7 @@ import models._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import utils.{ATEDFeatureSwitches, AuthFunctionality, SessionUtils}
+import utils.{AuthFunctionality, SessionUtils}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -43,12 +43,7 @@ trait SubscriptionDataService extends AuthFunctionality {
   def authConnector: AuthConnector
 
   def retrieveSubscriptionData(atedReferenceNo: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-
-    if (ATEDFeatureSwitches.hipSwitch().enabled) {
-      hipConnector.getSubscriptionData(atedReferenceNo)
-    } else {
-      etmpConnector.getSubscriptionData(atedReferenceNo)
-    }
+    hipConnector.getSubscriptionData(atedReferenceNo)
   }
 
   def updateSubscriptionData(atedReferenceNo: String, updateData: UpdateSubscriptionDataRequest)
@@ -61,11 +56,8 @@ trait SubscriptionDataService extends AuthFunctionality {
         agentRefNo,
         updateData.address
       )
-      if (ATEDFeatureSwitches.hipSwitch().enabled) {
-        hipConnector.updateSubscriptionData(atedReferenceNo, request)
-      }else {
-        etmpConnector.updateSubscriptionData(atedReferenceNo, request)
-      }
+
+      hipConnector.updateSubscriptionData(atedReferenceNo, request)
     }
   }
 

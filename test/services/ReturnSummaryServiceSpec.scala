@@ -18,7 +18,7 @@ package services
 
 import builders.ChangeLiabilityReturnBuilder._
 import builders._
-import connectors.{EtmpReturnsConnector, HipReturnsConnector}
+import connectors.HipReturnsConnector
 import models._
 
 import java.time.LocalDate
@@ -32,14 +32,12 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import utils.FeatureSwitch
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
   implicit val mockServicesConfig: ServicesConfig = mock[ServicesConfig]
-  val mockEtmpConnector: EtmpReturnsConnector = mock[EtmpReturnsConnector]
   val mockHipConnector: HipReturnsConnector = mock[HipReturnsConnector]
   val mockPropertyDetailsService: PropertyDetailsService = mock[PropertyDetailsService]
   val mockReliefsService: ReliefsService = mock[ReliefsService]
@@ -59,21 +57,14 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
   val disposeCalculated2: DisposeCalculated = DisposeCalculated(1000, 200)
 
   override def beforeEach(): Unit = {
-    reset(mockEtmpConnector)
     reset(mockHipConnector)
     reset(mockPropertyDetailsService)
     reset(mockReliefsService)
     reset(mockDisposeLiabilityReturnService)
-    FeatureSwitch.disable(FeatureSwitch.apply("hipSwitch", false))
-  }
-
-  override def afterEach(): Unit = {
-    FeatureSwitch.disable(FeatureSwitch.apply("hipSwitch", false))
   }
 
   trait Setup {
     class TestReturnSummaryService extends ReturnSummaryService {
-      override val etmpConnector: EtmpReturnsConnector = mockEtmpConnector
       override val hipConnector: HipReturnsConnector = mockHipConnector
       override val propertyDetailsService: PropertyDetailsService = mockPropertyDetailsService
       override val reliefsService: ReliefsService = mockReliefsService
@@ -128,46 +119,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
     }
 
     "getFullSummaryReturn" must {
-
-      "return SummaryReturnModel with drafts and submitted return when we only have new  - from Mongo DB and ETMP" in new Setup {
-
-        //TODO: if etmp reverts back to numeric, uncomment next line and comment next-to-next
-        //val etmpReturnJson = Json.toJson(etmpReturn)
-        val etmpReturnJson: JsValue =
-          Json.parse(
-            """ {"safeId":"123Safe","organisationName":"ACNE LTD.","periodData":[{"periodKey":"2014",
-              |"returnData":{"reliefReturnSummary":[{"formBundleNumber":"12345","dateOfSubmission":"2014-05-05","relief":"Farmhouses","reliefStartDate":"2014-09-05","reliefEndDate":"2014-10-05"}],
-              |"liabilityReturnSummary":[{"propertySummary":[{"contractObject":"abc","addressLine1":"line1","addressLine2":"line2",
-              |"return":[
-              |{"formBundleNumber":"12345","dateOfSubmission":"2014-05-05","dateFrom":"2014-09-05","dateTo":"2014-10-05","liabilityAmount":"1000","paymentReference":"pay-123","changeAllowed":true}
-              |]}]}]}}],"atedBalance":"10000"} """.stripMargin)
-        val relDraft: ReliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
-        val reliefDrafts: Seq[ReliefsTaxAvoidance] = Seq(relDraft)
-        val propDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1")
-        val propDetailsSeq: Seq[PropertyDetails] = Seq(propDetails)
-        val dispLiab: Seq[DisposeLiabilityReturn] = Seq(disposeLiability1)
-
-        val years = 6
-
-        val expected = SummaryReturnsModel(Some(10000), List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", None, "Liability")), None),
-          PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")),
-            Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5), None, None)),
-              List(SubmittedLiabilityReturns("12345", "line1 line2", 1000, LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5),
-                changeAllowed = true, paymentReference = "pay-123")))))))
-
-        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
-        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
-        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
-          .thenReturn(Future.successful(dispLiab))
-
-        val result: Future[SummaryReturnsModel] = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
-        await(result) must be(expected)
-      }
-
       "return SummaryReturnModel with drafts and submitted return when we only have new  - from Mongo DB and ETMP (HIP)" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         //TODO: if etmp reverts back to numeric, uncomment next line and comment next-to-next
         //val etmpReturnJson = Json.toJson(etmpReturn)
         val etmpReturnJson: JsValue =
@@ -203,57 +155,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
         await(result) must be(expected)
       }
 
-      "return SummaryReturnModel with drafts and submitted return when we have new and old returns  - from Mongo DB and ETMP" in new Setup {
-
-        //TODO: if etmp reverts back to numeric, uncomment next line and comment next-to-next
-        //val etmpReturnJson = Json.toJson(etmpReturn)
-        val etmpReturnJson: JsValue =
-          Json.parse(
-            """ {"safeId":"123Safe","organisationName":"ACNE LTD.","periodData":[{"periodKey":"2014",
-              |"returnData":{"reliefReturnSummary":[{"formBundleNumber":"12345","dateOfSubmission":"2014-05-05","relief":"Farmhouses","reliefStartDate":"2014-09-05","reliefEndDate":"2014-10-05"}],
-              |"liabilityReturnSummary":[{"propertySummary":[{"contractObject":"abc","addressLine1":"line1","addressLine2":"line2",
-              |"return":[
-              |{"formBundleNumber":"12346","dateOfSubmission":"2014-05-05","dateFrom":"2014-09-05","dateTo":"2014-10-05","liabilityAmount":"1000","paymentReference":"pay-123","changeAllowed":true},
-              |{"formBundleNumber":"12345","dateOfSubmission":"2014-01-01","dateFrom":"2014-09-05","dateTo":"2014-10-05","liabilityAmount":"1000","paymentReference":"pay-123","changeAllowed":false}
-              |]}]}]}}],"atedBalance":"10000"} """.stripMargin)
-        val relDraft: ReliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
-        val reliefDrafts: Seq[ReliefsTaxAvoidance] = Seq(relDraft)
-        val propDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1")
-        val propDetailsSeq: Seq[PropertyDetails] = Seq(propDetails)
-        val dispLiab: Seq[DisposeLiabilityReturn] = Seq(disposeLiability1)
-
-        val years = 6
-
-        val expected = SummaryReturnsModel(Some(10000),
-          List(
-            PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", None, "Liability")), None),
-            PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")),
-              Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5), None, None)),
-                  List(
-                    SubmittedLiabilityReturns("12346", "line1 line2", 1000, LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5), changeAllowed = true, paymentReference = "pay-123")
-                  ),
-                  List(
-                    SubmittedLiabilityReturns("12345", "line1 line2", 1000, LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 1, 1), changeAllowed = false, paymentReference = "pay-123")
-                  )
-                )
-              )
-            )
-          )
-        )
-
-        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
-        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
-        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
-          .thenReturn(Future.successful(dispLiab))
-
-        val result: Future[SummaryReturnsModel] = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
-        await(result) must be(expected)
-      }
-
       "return SummaryReturnModel with drafts and submitted return when we have new and old returns  - from Mongo DB and ETMP (HIP)" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         //TODO: if etmp reverts back to numeric, uncomment next line and comment next-to-next
         //val etmpReturnJson = Json.toJson(etmpReturn)
         val etmpReturnJson: JsValue =
@@ -301,34 +203,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
         await(result) must be(expected)
       }
 
-      "return SummaryReturnModel with drafts and submitted return - from Mongo DB and ETMP - no liability or draft" in new Setup {
-
-        val etmpReturnJson: JsValue = Json.parse("""{"safeId":"123Safe","organisationName":"organisationName","periodData":[{"periodKey":"2014","returnData":{}}],"atedBalance":"0"}""")
-        val relDraft: ReliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
-        val reliefDrafts: Seq[ReliefsTaxAvoidance] = Seq(relDraft)
-        val propDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1")
-        val propDetailsSeq: Seq[PropertyDetails] = Seq(propDetails)
-        val dispLiab: Seq[DisposeLiabilityReturn] = Seq(disposeLiability1)
-
-        val years = 6
-
-        val expected: SummaryReturnsModel = SummaryReturnsModel(Some(0), List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", None, "Liability")), None),
-          PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")),
-            Some(SubmittedReturns(periodKey, List(), List())))))
-
-        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
-        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
-        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
-          .thenReturn(Future.successful(dispLiab))
-
-        val result: Future[SummaryReturnsModel] = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
-        await(result) must be(expected)
-      }
-
       "return SummaryReturnModel with drafts and submitted return - from Mongo DB and ETMP - no liability or draft (HIP)" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         val etmpReturnJson: JsValue = Json.parse("""{"safeId":"123Safe","organisationName":"organisationName","periodData":[{"periodKey":"2014","returnData":{}}],"atedBalance":"0"}""")
         val relDraft: ReliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
         val reliefDrafts: Seq[ReliefsTaxAvoidance] = Seq(relDraft)
@@ -343,33 +218,6 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
             Some(SubmittedReturns(periodKey, List(), List())))))
 
         when(mockHipConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
-        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
-        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
-          .thenReturn(Future.successful(dispLiab))
-
-        val result: Future[SummaryReturnsModel] = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
-        await(result) must be(expected)
-      }
-
-      "return SummaryReturnModel with drafts and submitted return - from Mongo DB and ETMP - no liabliity amount in liabilty return" in new Setup {
-
-        val etmpReturnJson: JsValue = Json.parse("""{"safeId":"123Safe","organisationName":"organisationName","periodData":[{"periodKey":"2014","returnData":{"reliefReturnSummary":[{"formBundleNumber":"12345","dateOfSubmission":"2014-05-05","relief":"Farmhouses","reliefStartDate":"2014-09-05","reliefEndDate":"2014-10-05"}],"liabilityReturnSummary":[{}]}}],"atedBalance":"0"}""")
-        val relDraft: ReliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
-        val reliefDrafts: Seq[ReliefsTaxAvoidance] = Seq(relDraft)
-        val propDetails: PropertyDetails = PropertyDetails(atedRefNo = "ated-ref-1", "123456789099", periodKey, addressProperty = PropertyDetailsBuilder.getPropertyDetailsAddress(None), calculated = None, formBundleReturn = Some(ChangeLiabilityReturnBuilder.generateFormBundleResponse(periodKey)))
-        val propDetailsSeq: Seq[PropertyDetails] = Seq(propDetails)
-        val dispLiab: Seq[DisposeLiabilityReturn] = Seq(disposeLiability2)
-
-        val years = 6
-
-        val expected: SummaryReturnsModel = SummaryReturnsModel(Some(0), List(PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789099", "addr1 addr2", None, "Change_Liability"),
-          DraftReturns(periodKey, "123456789012", "line1 line2", Some(1000), "Dispose_Liability")),
-          Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5),
-            LocalDate.of(2014, 5, 5), None, None)), List())))))
-
-        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
@@ -381,7 +229,6 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
       }
 
       "return SummaryReturnModel with drafts and submitted return - from Mongo DB and ETMP - no liabliity amount in liabilty return (HIP)" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         val etmpReturnJson: JsValue = Json.parse("""{"safeId":"123Safe","organisationName":"organisationName","periodData":[{"periodKey":"2014","returnData":{"reliefReturnSummary":[{"formBundleNumber":"12345","dateOfSubmission":"2014-05-05","relief":"Farmhouses","reliefStartDate":"2014-09-05","reliefEndDate":"2014-10-05"}],"liabilityReturnSummary":[{}]}}],"atedBalance":"0"}""")
         val relDraft: ReliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey)
         val reliefDrafts: Seq[ReliefsTaxAvoidance] = Seq(relDraft)
@@ -407,32 +254,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
         await(result) must be(expected)
       }
 
-      "return SummaryReturnModel with drafts but no ETMP data found - from Mongo DB " in new Setup {
-
-        val relDraft: ReliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey, Reliefs(periodKey, rentalBusiness = true))
-        val reliefDrafts: Seq[ReliefsTaxAvoidance] = Seq(relDraft)
-        val propDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", liabilityAmount = Some(1000))
-        val propDetailsSeq: Seq[PropertyDetails] = Seq(propDetails)
-        val dispLiab: Seq[DisposeLiabilityReturn] = Seq(disposeLiability1)
-        val years = 6
-
-        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(NOT_FOUND, "")))
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
-        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
-        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
-          .thenReturn(Future.successful(dispLiab))
-
-        val expected: SummaryReturnsModel = SummaryReturnsModel(None, List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", Some(1000), "Liability")), None),
-          PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "", "Rental businesses", None, "Relief"),
-            DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")), None)))
-
-        val result: Future[SummaryReturnsModel] = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
-        await(result) must be(expected)
-      }
-
       "return SummaryReturnModel with drafts but no ETMP data found - from Mongo DB (HIP)" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         val relDraft: ReliefsTaxAvoidance = ReliefBuilder.reliefTaxAvoidance(atedRefNo, periodKey, Reliefs(periodKey, rentalBusiness = true))
         val reliefDrafts: Seq[ReliefsTaxAvoidance] = Seq(relDraft)
         val propDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", liabilityAmount = Some(1000))
@@ -450,32 +272,12 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
         val expected: SummaryReturnsModel = SummaryReturnsModel(None, List(PeriodSummaryReturns(2015, List(DraftReturns(2015, "1", "addr1 addr2", Some(1000), "Liability")), None),
           PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "", "Rental businesses", None, "Relief"),
             DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")), None)))
-
-        val result: Future[SummaryReturnsModel] = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
-        await(result) must be(expected)
-      }
-
-      "return blank SummaryReturnModel no drafts and NO submitted ETMP return found, - for no matching period keys" in new Setup {
-        val reliefDrafts: Seq[Nothing] = Nil
-        val propDetailsSeq: Seq[Nothing] = Nil
-        val dispLiab: Seq[Nothing] = Nil
-        val years = 6
-
-        val expected: SummaryReturnsModel = SummaryReturnsModel(None, Nil)
-
-        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(NOT_FOUND, "")))
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
-        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
-        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
-          .thenReturn(Future.successful(dispLiab))
 
         val result: Future[SummaryReturnsModel] = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
         await(result) must be(expected)
       }
 
       "return blank SummaryReturnModel no drafts and NO submitted ETMP return found, - for no matching period keys (HIP)" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         val reliefDrafts: Seq[Nothing] = Nil
         val propDetailsSeq: Seq[Nothing] = Nil
         val dispLiab: Seq[Nothing] = Nil
@@ -485,25 +287,6 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
 
         when(mockHipConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(NOT_FOUND, "")))
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
-        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
-        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
-          .thenReturn(Future.successful(dispLiab))
-
-        val result: Future[SummaryReturnsModel] = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
-        await(result) must be(expected)
-      }
-
-      "return blank SummaryReturnModel no ETMP Return - internal server error" in new Setup {
-        val reliefDrafts: Seq[Nothing] = Nil
-        val propDetailsSeq: Seq[Nothing] = Nil
-        val dispLiab: Seq[Nothing] = Nil
-        val years = 6
-
-        val expected: SummaryReturnsModel = SummaryReturnsModel(None, Nil)
-
-        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, "")))
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
         when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
@@ -514,7 +297,6 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
       }
 
       "return blank SummaryReturnModel no ETMP Return - internal server error (HIP)" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         val reliefDrafts: Seq[Nothing] = Nil
         val propDetailsSeq: Seq[Nothing] = Nil
         val dispLiab: Seq[Nothing] = Nil
@@ -533,29 +315,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
         await(result) must be(expected)
       }
 
-      "return blank SummaryReturnModel for no drafts but no matching period key" in new Setup {
-        val etmpReturnJson: JsValue = Json.parse("""{"safeId":"123Safe","organisationName":"organisationName","periodData":[],"atedBalance":"0"}""")
-        val reliefDrafts: Seq[Nothing] = Nil
-        val propDetailsSeq: Seq[Nothing] = Nil
-        val dispLiab: Seq[Nothing] = Nil
-        val years = 6
-
-        val expected: SummaryReturnsModel = SummaryReturnsModel(None, Nil)
-
-        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
-        when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
-        when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
-
-        when(mockDisposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
-          .thenReturn(Future.successful(dispLiab))
-
-        val result: Future[SummaryReturnsModel] = testReturnSummaryService.getFullSummaryReturns(atedRefNo)
-        await(result) must be(expected)
-      }
-
       "return blank SummaryReturnModel for no drafts but no matching period key (HIP)" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         val etmpReturnJson: JsValue = Json.parse("""{"safeId":"123Safe","organisationName":"organisationName","periodData":[],"atedBalance":"0"}""")
         val reliefDrafts: Seq[Nothing] = Nil
         val propDetailsSeq: Seq[Nothing] = Nil
