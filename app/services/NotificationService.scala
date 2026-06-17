@@ -20,37 +20,30 @@ import connectors.{EmailConnector, EmailNotSent, EmailStatus}
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import play.api.libs.json.JsValue
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.http.HeaderCarrier
-import utils.AuthFunctionality
-
 import scala.concurrent.{ExecutionContext, Future}
-import utils.AtedUtils._
 
-trait NotificationService extends AuthFunctionality with Retrievals {
+trait NotificationService  {
 
   implicit val ec: ExecutionContext
   def emailConnector: EmailConnector
 
   def sendMail(subscriptionData: JsValue, template: String, reference: Map[String, String] = Map.empty)(implicit hc: HeaderCarrier): Future[EmailStatus] = {
-    val emailAddressJson = (subscriptionData \\ "emailAddress").headOption
-    authorised().retrieve(Retrievals.name) {
-      fullName =>
-        emailAddressJson match {
-          case Some(x) =>
-            val emailAddress = x.as[String]
-            val recipientFirstName = extractName(fullName)
-            val recipientLastName = extractLastName(fullName)
-            val companyName = (subscriptionData \ "organisationName").as[String]
-            val params = Map(
-              "first_name" -> recipientFirstName,
-              "last_name" -> recipientLastName,
-              "company_name" -> companyName,
-              "date" -> LocalDate.now().format(DateTimeFormatter.ofPattern("d LLLL yyyy")))
-            emailConnector.sendTemplatedEmail(emailAddress, template, params = params ++ reference)
-          case _ =>
-            Future.successful(EmailNotSent)
-        }
-    }
+
+    (subscriptionData \\ "emailAddress").headOption.map {
+      emailAddressJson =>
+        val emailAddress = emailAddressJson.as[String]
+        val companyName = (subscriptionData \ "organisationName").as[String]
+        val params = Map(
+          "first_name" -> "",
+          "last_name" -> "customer",
+          "company_name" -> companyName,
+          "date" -> LocalDate.now().format(DateTimeFormatter.ofPattern("d LLLL yyyy")))
+        emailConnector.sendTemplatedEmail(
+          emailAddress = emailAddress,
+          templateName = template,
+          params = params ++ reference
+        )
+    }.getOrElse(Future.successful(EmailNotSent))
   }
 }

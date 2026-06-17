@@ -32,7 +32,6 @@ import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import repository.{DisposeLiabilityReturnCached, DisposeLiabilityReturnMongoRepository}
-import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -89,10 +88,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
   val formBundleReturn1: FormBundleReturn = generateFormBundleResponse(periodKey)
   val formBundleReturn2: FormBundleReturn = generateFormBundleResponse(periodKey)
 
-  type Retrieval = Option[Name]
   val testEnrolments: Set[Enrolment] = Set(Enrolment("HMRC-ATED-ORG", Seq(EnrolmentIdentifier("AgentRefNumber", "XN1200000100001")), "activated"))
-  val name: Name = Name(Some("gary"),Some("bloggs"))
-  val enrolmentsWithName: Retrieval = Some(name)
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   override def beforeEach(): Unit = {
@@ -754,7 +750,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
               .thenReturn(Future.successful(DisposeLiabilityReturnCached))
             when(mockAuthConnector
               .authorise[Any](any(), any())(any(), any()))
-              .thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
+              .thenReturn(Future.successful(Enrolments(testEnrolments)))
             when(mockSubscriptionDataService
               .retrieveSubscriptionData(any())(any()))
               .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
@@ -789,7 +785,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
               .thenReturn(Future.successful(DisposeLiabilityReturnCached))
             when(mockAuthConnector
               .authorise[Any](any(), any())(any(), any()))
-              .thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
+              .thenReturn(Future.successful(Enrolments(testEnrolments)))
             when(mockSubscriptionDataService
               .retrieveSubscriptionData(any())(any()))
               .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
@@ -821,7 +817,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
               .thenReturn(Future.successful(DisposeLiabilityReturnCached))
             when(mockAuthConnector
               .authorise[Any](any(), any())(any(), any()))
-              .thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
+              .thenReturn(Future.successful(Enrolments(testEnrolments)))
             when(mockSubscriptionDataService
               .retrieveSubscriptionData(any())(any()))
               .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
@@ -849,7 +845,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
               .thenReturn(Future.successful(DisposeLiabilityReturnCached))
             when(mockAuthConnector
               .authorise[Any](any(), any())(any(), any()))
-              .thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
+              .thenReturn(Future.successful(Enrolments(testEnrolments)))
             when(mockSubscriptionDataService
               .retrieveSubscriptionData(any())(any()))
               .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
@@ -879,7 +875,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
               .thenReturn(Future.successful(DisposeLiabilityReturnCached))
             when(mockAuthConnector
               .authorise[Any](any(), any())(any(), any()))
-              .thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
+              .thenReturn(Future.successful(Enrolments(testEnrolments)))
             when(mockSubscriptionDataService
               .retrieveSubscriptionData(any())(any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
             when(mockEmailConnector
@@ -911,7 +907,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
               .thenReturn(Future.successful(DisposeLiabilityReturnCached))
             when(mockAuthConnector
               .authorise[Any](any(), any())(any(), any()))
-              .thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
+              .thenReturn(Future.successful(Enrolments(testEnrolments)))
             when(mockSubscriptionDataService
               .retrieveSubscriptionData(any())(any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
             when(mockEmailConnector
@@ -937,7 +933,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
             when(mockDisposeLiabilityReturnRepository
               .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
             when(mockAuthConnector
-              .authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
+              .authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)))
             when(mockSubscriptionDataService
               .retrieveSubscriptionData(any())(any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
             when(mockEmailConnector
@@ -963,7 +959,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
             when(mockDisposeLiabilityReturnRepository
               .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
             when(mockAuthConnector
-              .authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
+              .authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)))
             when(mockSubscriptionDataService
               .retrieveSubscriptionData(any())(any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
             when(mockEmailConnector
@@ -992,7 +988,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           .thenReturn(Future.successful(DisposeLiabilityReturnCached))
         when(mockAuthConnector
           .authorise[Any](any(), any())(any(), any()))
-          .thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
+          .thenReturn(Future.successful(Enrolments(testEnrolments)))
         when(mockSubscriptionDataService
           .retrieveSubscriptionData(any())(any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
@@ -1022,7 +1018,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           .thenReturn(Future.successful(DisposeLiabilityReturnCached))
         when(mockAuthConnector
           .authorise[Any](any(), any())(any(), any()))
-          .thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
+          .thenReturn(Future.successful(Enrolments(testEnrolments)))
         when(mockSubscriptionDataService
           .retrieveSubscriptionData(any())(any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))

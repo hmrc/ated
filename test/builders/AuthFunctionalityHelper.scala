@@ -29,11 +29,6 @@ trait AuthFunctionalityHelper {
   val mockAuthConnector: AuthConnector
   val enrolment: Enrolment = Enrolment("HMRC-AGENT-AGENT", Seq(EnrolmentIdentifier("test", "test")), "Activated")
 
-  def mockRetrievingAuthRef(): Unit = {
-    when(mockAuthConnector.authorise[Enrolments](ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
-      .thenReturn(Future.successful(Enrolments(Set(enrolment))))
-  }
-
   def mockRetrievingNoAuthRef(): Unit = {
     when(mockAuthConnector.authorise[Enrolments](ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
       .thenReturn(Future.successful(Enrolments(Set())))

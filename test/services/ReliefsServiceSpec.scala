@@ -29,7 +29,6 @@ import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import repository.{ReliefCached, ReliefDeleted, ReliefsMongoRepository}
-import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -153,10 +152,7 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
       "submit cached Reliefs and delete them if this submit works" in new Setup {
         implicit val hc:HeaderCarrier = HeaderCarrier()
 
-        type Retrieval = Option[Name]
         val testEnrolments: Set[Enrolment] = Set(Enrolment("HMRC-ATED-ORG", Seq(EnrolmentIdentifier("AgentRefNumber", "XN1200000100001")), "activated"))
-        val name: Name = Name(Some("gary"),Some("bloggs"))
-        val enrolmentsWithName: Retrieval = Some(name)
 
         val reliefs = new Reliefs(periodKey = periodKey, rentalBusiness = true,
           openToPublic = true,
@@ -175,7 +171,7 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
         when(mockReliefsCache.fetchReliefsByYear(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(Seq(reliefsTaxAvoidance)))
         when(mockReliefsCache.cacheRelief(ArgumentMatchers.any())).thenReturn(Future.successful(ReliefCached))
         when(mockAuthConnector.authorise[Any](any(), any())(any(), any()))
-          .thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
+          .thenReturn(Future.successful(Enrolments(testEnrolments)))
         when(mockSubscriptionDataService.retrieveSubscriptionData(
           ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         when(mockEmailConnector.sendTemplatedEmail(
@@ -193,10 +189,7 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
       "submit cached Reliefs and delete them if this submit works (HIP)" in new Setup {
         implicit val hc:HeaderCarrier = HeaderCarrier()
         FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
-        type Retrieval = Option[Name]
         val testEnrolments: Set[Enrolment] = Set(Enrolment("HMRC-ATED-ORG", Seq(EnrolmentIdentifier("AgentRefNumber", "XN1200000100001")), "activated"))
-        val name: Name = Name(Some("gary"),Some("bloggs"))
-        val enrolmentsWithName: Retrieval = Some(name)
 
         val reliefs = new Reliefs(periodKey = periodKey, rentalBusiness = true,
           openToPublic = true,
@@ -215,7 +208,7 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
         when(mockReliefsCache.fetchReliefsByYear(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(Seq(reliefsTaxAvoidance)))
         when(mockReliefsCache.cacheRelief(ArgumentMatchers.any())).thenReturn(Future.successful(ReliefCached))
         when(mockAuthConnector.authorise[Any](any(), any())(any(), any()))
-          .thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
+          .thenReturn(Future.successful(Enrolments(testEnrolments)))
         when(mockSubscriptionDataService.retrieveSubscriptionData(
           ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         when(mockEmailConnector.sendTemplatedEmail(

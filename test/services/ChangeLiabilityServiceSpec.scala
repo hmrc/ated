@@ -32,7 +32,6 @@ import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import repository.{PropertyDetailsCached, PropertyDetailsDeleted, PropertyDetailsMongoRepository}
-import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -332,15 +331,12 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         val calc1: PropertyDetailsCalculated = generateCalculated
         val changeLiability1Changed: PropertyDetails = changeLiability1.copy(calculated = Some(calc1))
 
-        type Retrieval = Option[Name]
         val testEnrolments: Set[Enrolment] = Set(Enrolment("HMRC-ATED-ORG", Seq(EnrolmentIdentifier("AgentRefNumber", "XN1200000100001")), "activated"))
-        val name: Name = Name(Some("gary"),Some("bloggs"))
-        val enrolmentsWithName: Retrieval = Some(name)
 
         when(mockPropertyDetailsCache
           .fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(changeLiability1Changed, changeLiability2)))
         when(mockAuthConnector
-          .authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
+          .authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)))
         when(mockPropertyDetailsCache
           .cachePropertyDetails(any[PropertyDetails]()))
           .thenReturn(Future.successful(PropertyDetailsCached))
@@ -365,15 +361,12 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         val calc1: PropertyDetailsCalculated = generateCalculated
         val changeLiability1Changed: PropertyDetails = changeLiability1.copy(calculated = Some(calc1))
 
-        type Retrieval = Option[Name]
         val testEnrolments: Set[Enrolment] = Set(Enrolment("HMRC-ATED-ORG", Seq(EnrolmentIdentifier("AgentRefNumber", "XN1200000100001")), "activated"))
-        val name: Name = Name(Some("gary"),Some("bloggs"))
-        val enrolmentsWithName: Retrieval = Some(name)
 
         when(mockPropertyDetailsCache
           .fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(changeLiability1Changed, changeLiability2)))
         when(mockAuthConnector
-          .authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
+          .authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)))
         when(mockPropertyDetailsCache
           .cachePropertyDetails(any[PropertyDetails]()))
           .thenReturn(Future.successful(PropertyDetailsCached))

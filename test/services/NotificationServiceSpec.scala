@@ -18,16 +18,13 @@ package services
 
 import connectors.mocks.MockAuthConnector
 import connectors.{EmailConnector, EmailNotSent, EmailSent}
-import org.mockito.ArgumentMatchers
+import org.mockito.{ArgumentCaptor, ArgumentMatchers}
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
-import uk.gov.hmrc.auth.core.retrieve.Name
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -40,30 +37,25 @@ class NotificationServiceSpec extends PlaySpec with GuiceOneServerPerSuite with 
     reset(mockEmailConnector)
   }
 
-  val name: Option[Name] = Some(Name(Some("gary"),Some("bloggs")))
-  val noName:Option[Name] = None
-
   trait Setup {
-    class TestNotificationService extends NotificationService with AuthorisedFunctions {
+    class TestNotificationService extends NotificationService {
       implicit val ec: ExecutionContext = app.injector.instanceOf[ExecutionContext]
       override val emailConnector: EmailConnector = mockEmailConnector
-      override val authConnector: AuthConnector = mockAuthConnector
     }
 
     val testNotificationService = new TestNotificationService()
   }
 
-  "sendMail" must {
+  "sendMail method" must {
 
     implicit val hc: HeaderCarrier = HeaderCarrier()
 
-    "send email when email address present and name is present" in new Setup {
-      when(mockEmailConnector
-        .sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(
-          ArgumentMatchers.any()))thenReturn Future.successful(EmailSent)
-      mockAuthorise(retrievals = Retrievals.name)(Future.successful(name))
+    "send email when all data is present" in new Setup {
 
-      val json: JsValue = Json
+      when(mockEmailConnector.sendTemplatedEmail(
+        ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
+      ) thenReturn Future.successful(EmailSent)
+      val subscriptionJson: JsValue = Json
         .parse(
           """{
             |"safeId":"1111111111",
@@ -78,37 +70,22 @@ class NotificationServiceSpec extends PlaySpec with GuiceOneServerPerSuite with 
             |"mobileNumber":"0712345678",
             |"emailAddress":"test@mail.com"}}]}"""
             .stripMargin)
-      await(testNotificationService.sendMail(json, "")) must be(EmailSent)
-      verify(mockEmailConnector, times(1)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
+
+      val referencesMapCaptor = ArgumentCaptor.forClass(classOf[Map[String, String]])
+      await(testNotificationService.sendMail(subscriptionJson, "any_template")) must be(EmailSent)
+      verify(mockEmailConnector, times(1)).sendTemplatedEmail(
+        ArgumentMatchers.any(),
+        ArgumentMatchers.any(),
+        referencesMapCaptor.capture)(ArgumentMatchers.any()
+      )
+
+      referencesMapCaptor.getValue.get("first_name") mustBe Some("")
+      referencesMapCaptor.getValue.get("last_name") mustBe Some("customer")
     }
 
-    "send email when email address present and name is not present" in new Setup {
-      when(mockEmailConnector
-        .sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(
-          ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
-      mockAuthorise(retrievals = Retrievals.name)(Future.successful(noName))
+    "handle missing email address by not sending an email" in new Setup {
 
-      val json: JsValue = Json.parse(
-        """{
-          |"safeId":"1111111111",
-          |"organisationName":"Test Org",
-          |"address":[{"name1":"name1","name2":"name2",
-          |"addressDetails":{"addressType":"Correspondence",
-          |"addressLine1":"address line 1",
-          |"addressLine2":"address line 2",
-          |"addressLine3":"address line 3",
-          |"addressLine4":"address line 4",
-          |"postalCode":"ZZ1 1ZZ",
-          |"countryCode":"GB"},
-          |"contactDetails":{"phoneNumber":"01234567890",
-          |"mobileNumber":"0712345678",
-          |"emailAddress":"test@mail.com"}}]}"""
-          .stripMargin)
-      await(testNotificationService.sendMail(json, "")) must be(EmailSent)
-    }
-
-    "handle missing email address" in new Setup {
-      val json: JsValue = Json.parse(
+      val subscriptionJson: JsValue = Json.parse(
         """{
           |"safeId":"1111111111",
           |"organisationName":"Test Org",
@@ -122,7 +99,8 @@ class NotificationServiceSpec extends PlaySpec with GuiceOneServerPerSuite with 
           |"contactDetails":{"phoneNumber":"01234567890",
           |"mobileNumber":"0712345678"}}]}"""
           .stripMargin)
-      await(testNotificationService.sendMail(json, "")) must be(EmailNotSent)
+
+      await(testNotificationService.sendMail(subscriptionJson, "")) must be(EmailNotSent)
     }
   }
 }
