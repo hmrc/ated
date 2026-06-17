@@ -18,7 +18,6 @@ package utils
 
 import models.{ClientsAgent, RelationshipDetails}
 import java.time.LocalDate
-import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.http.{HeaderCarrier, SessionId}
 import utils.AtedConstants._
 
@@ -56,9 +55,5 @@ object AtedUtils {
 
     LocalDate.of(year, 4, 1)
   }
-
-  def extractName(authName: Option[Name]): String = authName.flatMap(_.name).getOrElse("No first name present")
-
-  def extractLastName(authName: Option[Name]): String = authName.flatMap(_.lastName).getOrElse("No last name present")
 
 }

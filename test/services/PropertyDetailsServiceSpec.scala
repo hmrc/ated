@@ -30,7 +30,6 @@ import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import repository._
-import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse, InternalServerException, SessionId}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -1051,14 +1050,11 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       lazy val propertyDetails2: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("2", Some("something else"))
       lazy val propertyDetails3: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("3", Some("something more"))
 
-      type Retrieval = Option[Name]
       val testEnrolments: Set[Enrolment] = Set(Enrolment("HMRC-ATED-ORG", Seq(EnrolmentIdentifier("AgentRefNumber", "XN1200000100001")), "activated"))
-      val name: Name = Name(Some("gary"),Some("bloggs"))
-      val enrolmentsWithName: Retrieval = Some(name)
 
       val successResponse: JsValue = Json.parse(jsonEtmpResponse)
       when(mockAuthConnector.authorise[Any](any(), any())(any(), any()))
-        .thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
+        .thenReturn(Future.successful(Enrolments(testEnrolments)))
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
       when(mockPropertyDetailsCache.deletePropertyDetailsByfieldName(ArgumentMatchers.any(), ArgumentMatchers.any()))
@@ -1086,14 +1082,11 @@ class PropertyDetailsServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       lazy val propertyDetails2: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("2", Some("something else"))
       lazy val propertyDetails3: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("3", Some("something more"))
 
-      type Retrieval = Option[Name]
       val testEnrolments: Set[Enrolment] = Set(Enrolment("HMRC-ATED-ORG", Seq(EnrolmentIdentifier("AgentRefNumber", "XN1200000100001")), "activated"))
-      val name: Name = Name(Some("gary"),Some("bloggs"))
-      val enrolmentsWithName: Retrieval = Some(name)
 
       val successResponse: JsValue = Json.parse(jsonEtmpResponse)
       when(mockAuthConnector.authorise[Any](any(), any())(any(), any()))
-        .thenReturn(Future.successful(Enrolments(testEnrolments)), Future.successful(enrolmentsWithName))
+        .thenReturn(Future.successful(Enrolments(testEnrolments)))
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
       when(mockPropertyDetailsCache.deletePropertyDetailsByfieldName(ArgumentMatchers.any(), ArgumentMatchers.any()))
