@@ -70,10 +70,10 @@ class MongoCryptoProviderSpec extends PlaySpec {
       provider.crypto.decrypt(existing).value mustBe "legacy-record"
     }
 
-    "write new values in legacy ECB format during stage 1" in {
-      val cfg    = cfgWith(gcmKeyA, ecbKeyA)
-      val cipher = new MongoCryptoProvider(cfg).crypto.encrypt(PlainText("new-record"))
-      legacyEcbCrypto(cfg).decrypt(cipher).value mustBe "new-record"
+    "write new values as AES-GCM, not legacy ECB" in {
+      val cfg       = cfgWith(gcmKeyA, ecbKeyA)
+      val gcmCipher = new MongoCryptoProvider(cfg).crypto.encrypt(PlainText("new-record"))
+      an [SecurityException] must be thrownBy legacyEcbCrypto(cfg).decrypt(gcmCipher)
     }
 
     "decrypt GCM-encrypted values via the fallback (stage 2 readiness)" in {
