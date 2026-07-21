@@ -578,36 +578,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
             verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
           }
 
-
-          "return None, if hasBankDetails is false passed" in new Setup {
-            lazy val disp1: DisposeLiabilityReturn = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(
-                Some(LocalDate.of(periodKey, month, date)), periodKey)), bankDetails = Some(ChangeLiabilityReturnBuilder
-              .generateLiabilityProtectedBankDetailsNoBankDetails), calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
-
-            when(mockDisposeLiabilityReturnRepository
-              .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
-              .thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
-            when(mockDisposeLiabilityReturnRepository
-              .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
-              .thenReturn(Future.successful(DisposeLiabilityReturnCached))
-            when(mockAuthConnector
-              .authorise[Any](any(), any())(any(), any()))
-              .thenReturn(Future.successful(Enrolments(testEnrolments)))
-            when(mockSubscriptionDataService
-              .retrieveSubscriptionData(any())(any()))
-              .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
-            val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
-            val respJson: JsValue = Json.toJson(respModel)
-            when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
-              .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
-            when(mockEmailConnector.sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
-            val result: HttpResponse = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
-            result.status must be(OK)
-            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
-          }
-
           "return None, if hasBankDetails is false passed (HIP)" in new Setup {
-            FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
             lazy val disp1: DisposeLiabilityReturn = disposeLiability1.copy(disposeLiability = Some(DisposeLiability(
               Some(LocalDate.of(periodKey, month, date)), periodKey)), bankDetails = Some(ChangeLiabilityReturnBuilder
               .generateLiabilityProtectedBankDetailsNoBankDetails), calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
@@ -634,39 +605,8 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
             verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
           }
 
-          "return None, if accountNumber & accountName & sortCode is not found" in new Setup {
-            lazy val disp1: DisposeLiabilityReturn = disposeLiability1
-              .copy(disposeLiability = Some(
-                DisposeLiability(Some(LocalDate.of(periodKey,
-                  month,
-                  date)), periodKey)),
-                bankDetails = Some(ChangeLiabilityReturnBuilder.generateLiabilityProtectedBankDetailsBlank),
-                calculated = Some(DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
-            when(mockDisposeLiabilityReturnRepository
-              .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
-              .thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
-            when(mockDisposeLiabilityReturnRepository
-              .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
-              .thenReturn(Future.successful(DisposeLiabilityReturnCached))
-            when(mockAuthConnector
-              .authorise[Any](any(), any())(any(), any()))
-              .thenReturn(Future.successful(Enrolments(testEnrolments)))
-            when(mockSubscriptionDataService
-              .retrieveSubscriptionData(any())(any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
-            when(mockEmailConnector
-              .sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
-            lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
-            lazy val respJson: JsValue = Json.toJson(respModel)
-            when(mockEtmpConnector
-              .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
-              .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
-            val result: HttpResponse = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
-            result.status must be(OK)
-            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
-          }
-
           "return None, if accountNumber & accountName & sortCode is not found (HIP)" in new Setup {
-            FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
+
             lazy val disp1: DisposeLiabilityReturn = disposeLiability1
               .copy(disposeLiability = Some(
                 DisposeLiability(Some(LocalDate.of(periodKey,
@@ -697,33 +637,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
             verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
           }
 
-          "return None, if None was passed as bank-details-model" in new Setup {
-            lazy val disp1: DisposeLiabilityReturn = disposeLiability1
-              .copy(disposeLiability = Some(
-                DisposeLiability(Some(LocalDate.of(periodKey,
-                  month,
-                  date)), periodKey)), calculated = Some( DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
-            when(mockDisposeLiabilityReturnRepository
-              .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
-            when(mockDisposeLiabilityReturnRepository
-              .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
-            when(mockAuthConnector
-              .authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)))
-            when(mockSubscriptionDataService
-              .retrieveSubscriptionData(any())(any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
-            when(mockEmailConnector
-              .sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
-            lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
-            lazy val respJson: JsValue = Json.toJson(respModel)
-            when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
-              .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
-            val result: HttpResponse = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
-            result.status must be(OK)
-            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
-          }
-
           "return None, if None was passed as bank-details-model (HIP)" in new Setup {
-            FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
             lazy val disp1: DisposeLiabilityReturn = disposeLiability1
               .copy(disposeLiability = Some(
                 DisposeLiability(Some(LocalDate.of(periodKey,
@@ -750,37 +664,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         }
       }
 
-      "generateEditReturnRequest - if dateOfDisposal is not found, use oldFormbundleReturn 'date from' value" in new Setup {
-        lazy val bank1: BankDetailsModel = generateLiabilityBankDetails
-        lazy val disp1: DisposeLiabilityReturn = disposeLiability1
-          .copy(disposeLiability = Some(DisposeLiability(None, periodKey)), bankDetails = Some(bank1), calculated = Some(
-            DisposeCalculated(BigDecimal(2500.00), BigDecimal(-500.00))))
-        when(mockDisposeLiabilityReturnRepository
-          .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
-          .thenReturn(Future.successful(Seq(disp1, disposeLiability2)))
-        when(mockDisposeLiabilityReturnRepository
-          .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
-          .thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        when(mockAuthConnector
-          .authorise[Any](any(), any())(any(), any()))
-          .thenReturn(Future.successful(Enrolments(testEnrolments)))
-        when(mockSubscriptionDataService
-          .retrieveSubscriptionData(any())(any()))
-          .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
-        when(mockEmailConnector
-          .sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
-        lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
-        lazy val respJson: JsValue = Json.toJson(respModel)
-        when(mockEtmpConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
-          .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
-        val result: HttpResponse = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
-        result.status must be(OK)
-        verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
-      }
-
       "generateEditReturnRequest - if dateOfDisposal is not found, use oldFormbundleReturn 'date from' value (HIP)" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         lazy val bank1: BankDetailsModel = generateLiabilityBankDetails
         lazy val disp1: DisposeLiabilityReturn = disposeLiability1
           .copy(disposeLiability = Some(DisposeLiability(None, periodKey)), bankDetails = Some(bank1), calculated = Some(

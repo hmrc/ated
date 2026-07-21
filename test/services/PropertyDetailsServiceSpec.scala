@@ -30,7 +30,6 @@ import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import repository._
-import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse, InternalServerException, SessionId}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
