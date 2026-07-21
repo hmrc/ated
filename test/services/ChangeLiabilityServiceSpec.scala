@@ -18,7 +18,7 @@ package services
 
 import builders.AuthFunctionalityHelper
 import builders.ChangeLiabilityReturnBuilder._
-import connectors.{EmailConnector, EmailSent, EtmpReturnsConnector, HipReturnsConnector}
+import connectors.{EmailConnector, EmailSent, HipReturnsConnector}
 import models._
 
 import java.time.{ZoneId, ZonedDateTime}
@@ -35,7 +35,6 @@ import repository.{PropertyDetailsCached, PropertyDetailsDeleted, PropertyDetail
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import utils.FeatureSwitch
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -45,7 +44,6 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
   val mockPropertyDetailsCache: PropertyDetailsMongoRepository = mock[PropertyDetailsMongoRepository]
 
   val mockHipConnector: HipReturnsConnector = mock[HipReturnsConnector]
-  val mockEtmpConnector: EtmpReturnsConnector = mock[EtmpReturnsConnector]
   val mockAuthConnector: AuthConnector = mock[AuthConnector]
   val mockSubscriptionDataService: SubscriptionDataService = mock[SubscriptionDataService]
   val mockEmailConnector: EmailConnector = mock[EmailConnector]
@@ -57,7 +55,6 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       override implicit val ec: ExecutionContext = app.injector.instanceOf[ExecutionContext]
       override implicit val sc: ServicesConfig = mockServicesConfig
       override val propertyDetailsCache: PropertyDetailsMongoRepository = mockPropertyDetailsCache
-      override val etmpConnector: EtmpReturnsConnector = mockEtmpConnector
       override val hipConnector: HipReturnsConnector = mockHipConnector
       override val authConnector: AuthConnector = mockAuthConnector
       override val subscriptionDataService: SubscriptionDataService = mockSubscriptionDataService
@@ -80,15 +77,9 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
   override def beforeEach(): Unit = {
     reset(mockPropertyDetailsCache)
     reset(mockAuthConnector)
-    reset(mockEtmpConnector)
     reset(mockHipConnector)
     reset(mockSubscriptionDataService)
     reset(mockEmailConnector)
-    FeatureSwitch.disable(FeatureSwitch.apply("hipSwitch", false))
-  }
-
-  override def afterEach(): Unit = {
-    FeatureSwitch.disable(FeatureSwitch.apply("hipSwitch", false))
   }
 
   "ChangeLiabilityService" must {
@@ -115,25 +106,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         result must be(Some(updateChangeLiabilityReturnWithBankDetails(2015, formBundle3, generateLiabilityBankDetails).copy(timeStamp = ZonedDateTime.of(2005, 3, 26, 12, 0, 0, 0, ZoneId.of("UTC")))))
       }
 
-      "return Some(ChangeLiabilityReturn) if form-bundle not-found in cache, but found in ETMP - also cache it in mongo - based on previous return" in new Setup {
-        when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo)))
-          .thenReturn(Future.successful(Seq()))
-        when(mockEtmpConnector.getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(OK, Json.toJson(formBundleResponse1), Map.empty[String, Seq[String]])))
-        val result: Option[PropertyDetails] = await(testChangeLiabilityReturnService.convertSubmittedReturnToCachedDraft(atedRefNo, formBundle1, Some(true), Some(2016)))
-
-        result.get.title.isDefined must be(true)
-        result.get.calculated.isDefined must be(false)
-        result.get.formBundleReturn.isDefined must be(true)
-        result.get.value.isDefined must be(true)
-        result.get.period.isDefined must be(false)
-        result.get.bankDetails.isDefined must be(false)
-        result.get.periodKey must be(2016)
-        result.get.id mustNot be(formBundle1)
-      }
-
       "return Some(ChangeLiabilityReturn) if form-bundle not-found in cache, but found in ETMP (HIP) - also cache it in mongo - based on previous return" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq()))
         when(mockHipConnector.getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any(), ArgumentMatchers.any()))
@@ -150,29 +123,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         result.get.id mustNot be(formBundle1)
       }
 
-
-      "return Some(ChangeLiabilityReturn) if form-bundle not-found in cache, but found in ETMP - also cache it in mongo" in new Setup {
-        when(mockPropertyDetailsCache
-          .fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo)))
-          .thenReturn(Future.successful(Seq()))
-        when(mockEtmpConnector
-          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(OK, Json.toJson(formBundleResponse1), Map.empty[String, Seq[String]])))
-        val result: Option[PropertyDetails] = await(testChangeLiabilityReturnService.convertSubmittedReturnToCachedDraft(atedRefNo, formBundle1))
-
-        result.get.title.isDefined must be(true)
-        result.get.calculated.isDefined must be(false)
-        result.get.formBundleReturn.isDefined must be(true)
-        result.get.value.isDefined must be(true)
-        result.get.period.isDefined must be(true)
-        result.get.bankDetails.isDefined must be(false)
-        result.get.periodKey must be(2015)
-        result.get.id must be(formBundle1)
-
-      }
-
       "return Some(ChangeLiabilityReturn) if form-bundle not-found in cache, but found in ETMP (HIP) - also cache it in mongo" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         when(mockPropertyDetailsCache
           .fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq()))
@@ -192,19 +143,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
 
       }
 
-      "return None if form-bundle not-found in cache as well as in ETMP" in new Setup {
-        when(mockPropertyDetailsCache
-          .fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo)))
-          .thenReturn(Future.successful(Seq()))
-        when(mockEtmpConnector
-          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(NOT_FOUND, "")))
-        val result: Option[PropertyDetails] = await(testChangeLiabilityReturnService.convertSubmittedReturnToCachedDraft(atedRefNo, formBundle1))
-        result must be(None)
-      }
-
       "return None if form-bundle not-found in cache as well as in ETMP (HIP)" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         when(mockPropertyDetailsCache
           .fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq()))
@@ -217,25 +156,8 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
     }
 
     "calculateDraftChangeLiability" must {
-      "throw an exception, when there is no calculated object" in new Setup {
-        when(mockPropertyDetailsCache
-          .fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo)))
-          .thenReturn(Future.successful(Seq(changeLiability1)))
-         when(mockPropertyDetailsCache
-           .cachePropertyDetails(any[PropertyDetails]()))
-           .thenReturn(Future.successful(PropertyDetailsCached))
-        val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
-        val respJson: JsValue = Json.toJson(respModel)
-        when(mockEtmpConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(
-            ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])) )
-        mockRetrievingNoAuthRef()
-        val thrown: NoLiabilityAmountException = the[NoLiabilityAmountException] thrownBy await(testChangeLiabilityReturnService.calculateDraftChangeLiability(atedRefNo, formBundle1))
-        thrown.message must include("[ChangeLiabilityService][getAmountDueOrRefund] Invalid Data for the request")
-      }
 
       "throw an exception, when there is no calculated object (HIP)" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         when(mockPropertyDetailsCache
           .fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq(changeLiability1)))
@@ -252,31 +174,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         thrown.message must include("[ChangeLiabilityService][getAmountDueOrRefund] Invalid Data for the request")
       }
 
-      "calculate the change liabilty details, when calculated object is present" in new Setup {
-        mockRetrievingNoAuthRef()
-
-        when(mockPropertyDetailsCache
-          .fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo)))
-          .thenReturn(Future.successful(Seq(changeLiability3)))
-        when(mockPropertyDetailsCache
-          .cachePropertyDetails(any[PropertyDetails]()))
-          .thenReturn(Future.successful(PropertyDetailsCached))
-        val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
-        val respJson: JsValue = Json.toJson(respModel)
-        when(mockEtmpConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(
-            ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
-
-        val result: Option[PropertyDetails] = await(testChangeLiabilityReturnService.calculateDraftChangeLiability(atedRefNo, formBundle1))
-        result.isDefined must be(true)
-        result.get.title must be(Some(PropertyDetailsTitle("12345678")))
-        result.get.calculated.isDefined must be(true)
-        result.get.calculated.get.liabilityAmount must be(Some(BigDecimal(2000.00)))
-        result.get.calculated.get.amountDueOrRefund must be(Some(-500.0))
-      }
-
       "calculate the change liabilty details, when calculated object is present (HIP)" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
 
         mockRetrievingNoAuthRef()
 
@@ -327,37 +225,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
     }
 
     "submitChangeLiability" must {
-      "return status OK, if return found in cache and submitted correctly and then deleted from cache" in new Setup {
-        val calc1: PropertyDetailsCalculated = generateCalculated
-        val changeLiability1Changed: PropertyDetails = changeLiability1.copy(calculated = Some(calc1))
-
-        val testEnrolments: Set[Enrolment] = Set(Enrolment("HMRC-ATED-ORG", Seq(EnrolmentIdentifier("AgentRefNumber", "XN1200000100001")), "activated"))
-
-        when(mockPropertyDetailsCache
-          .fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(changeLiability1Changed, changeLiability2)))
-        when(mockAuthConnector
-          .authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)))
-        when(mockPropertyDetailsCache
-          .cachePropertyDetails(any[PropertyDetails]()))
-          .thenReturn(Future.successful(PropertyDetailsCached))
-        when(mockPropertyDetailsCache.deletePropertyDetailsByfieldName(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(PropertyDetailsDeleted))
-        val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
-        val respJson: JsValue = Json.toJson(respModel)
-        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
-        when(mockSubscriptionDataService
-          .retrieveSubscriptionData(any())(any()))
-          .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
-        when(mockEmailConnector.sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
-
-        val result: HttpResponse = await(testChangeLiabilityReturnService.submitChangeLiability(atedRefNo, formBundle1))
-        result.status must be(OK)
-        verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
-      }
-
       "return status OK, if return found in cache and submitted correctly and then deleted from cache (HIP)" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         val calc1: PropertyDetailsCalculated = generateCalculated
         val changeLiability1Changed: PropertyDetails = changeLiability1.copy(calculated = Some(calc1))
 
@@ -409,31 +277,9 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         result.status must be(NOT_FOUND)
         verify(mockEmailConnector, times(0)).sendTemplatedEmail(any(), any(), any())(any())
       }
-
-      "return status returned by connector, if return found in cache and but submission failed and hence draft return is not-deleted from cache" in new Setup {
-        val calc1: PropertyDetailsCalculated = generateCalculated
-        val changeLiability1Changed: PropertyDetails = changeLiability1.copy(calculated = Some(calc1))
-        when(mockPropertyDetailsCache
-          .fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo)))
-          .thenReturn(Future.successful(Seq(changeLiability1Changed, changeLiability2)))
-
-        mockRetrievingNoAuthRef()
-        val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
-        val respJson: JsValue = Json.toJson(respModel)
-        when(mockEtmpConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, respJson, Map.empty[String, Seq[String]])))
-        when(mockSubscriptionDataService
-          .retrieveSubscriptionData(any())(any()))
-          .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
-        val result: HttpResponse = await(testChangeLiabilityReturnService.submitChangeLiability(atedRefNo, formBundle1))
-        result.status must be(BAD_REQUEST)
-        verify(mockEmailConnector, times(0)).sendTemplatedEmail(any(), any(), any())(any())
-      }
     }
 
     "return status returned by connector, if return found in cache and but submission failed and hence draft return is not-deleted from cache (HIP)" in new Setup {
-      FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
       val calc1: PropertyDetailsCalculated = generateCalculated
       val changeLiability1Changed: PropertyDetails = changeLiability1.copy(calculated = Some(calc1))
       when(mockPropertyDetailsCache
@@ -455,19 +301,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
     }
 
     "getAmountDueOrRefund" must {
-      "throw an NoLiabilityAmountException if due to some issue, the API call returned BAD_REQUEST (invalid data)" in new Setup {
-        val calc1: PropertyDetailsCalculated = generateCalculated
-        val changeLiability1WithCalc: PropertyDetails = changeLiability1.copy(calculated = Some(calc1))
-        val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
-        val respJson: JsValue = Json.toJson(respModel)
-        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, respJson, Map.empty[String, Seq[String]])))
-        val thrown: NoLiabilityAmountException = the[NoLiabilityAmountException] thrownBy await(testChangeLiabilityReturnService.getAmountDueOrRefund(atedRefNo, "1", changeLiability1WithCalc))
-        thrown.message must include("No Liability Amount Found")
-      }
-
       "throw an NoLiabilityAmountException if due to some issue, the API call returned BAD_REQUEST (invalid data) (HIP)" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         val calc1: PropertyDetailsCalculated = generateCalculated
         val changeLiability1WithCalc: PropertyDetails = changeLiability1.copy(calculated = Some(calc1))
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
@@ -478,15 +312,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         thrown.message must include("No Liability Amount Found")
       }
 
-      "throw an InternalServerException if due to some issue, the API call didn't return OK as status" in new Setup {
-        val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
-        val respJson: JsValue = Json.toJson(respModel)
-        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, respJson, Map.empty[String, Seq[String]])))
-      }
-
       "throw an InternalServerException if due to some issue, the API call didn't return OK as status (HIP)" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
         when(mockHipConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
@@ -498,19 +324,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         thrown.message must include("[ChangeLiabilityService][getAmountDueOrRefund] Invalid Data for the request")
       }
 
-      "liability and amount due or refund is returned, if ETMP returns OK but " in new Setup {
-        val calc1: PropertyDetailsCalculated = generateCalculated
-        val changeLiability1WithCalc: PropertyDetails = changeLiability1.copy(calculated = Some(calc1))
-        val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
-        val respJson: JsValue = Json.toJson(respModel)
-        when(mockEtmpConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
-        val result: (Option[BigDecimal], Option[BigDecimal]) = await(testChangeLiabilityReturnService.getAmountDueOrRefund(atedRefNo, formBundle1, changeLiability1WithCalc))
-        result must be((Some(2000.0), Some(-500.0)))
-      }
-
       "liability and amount due or refund is returned, if ETMP returns OK but (HIP)" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         val calc1: PropertyDetailsCalculated = generateCalculated
         val changeLiability1WithCalc: PropertyDetails = changeLiability1.copy(calculated = Some(calc1))
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
@@ -521,7 +335,5 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         result must be((Some(2000.0), Some(-500.0)))
       }
     }
-
   }
-
 }

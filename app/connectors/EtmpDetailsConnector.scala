@@ -95,50 +95,6 @@ trait EtmpDetailsConnector extends Auditable with Logging {
     }
   }
 
-
-  def getSubscriptionData(atedReferenceNo: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    val getUrl = s"""$serviceUrl/$atedBaseURI/$retrieveSubscriptionData/$atedReferenceNo"""
-
-    val timerContext = metrics.startTimer(MetricsEnum.EtmpGetSubscriptionData)
-    http.get(url"$getUrl").setHeader(createHeaders: _*).execute[HttpResponse].map{ response =>
-      timerContext.stop()
-      response.status match {
-        case OK =>
-          metrics.incrementSuccessCounter(MetricsEnum.EtmpGetSubscriptionData)
-          response
-        case status =>
-          metrics.incrementFailedCounter(MetricsEnum.EtmpGetSubscriptionData)
-          logger.warn(s"[EtmpDetailsConnector][getSummaryReturns] - status: $status")
-          doHeaderEvent("getSubscriptionDataFailedHeaders", response.headers)
-          doFailedAudit("getSubscriptionDataFailed", getUrl, None, response.body)
-          response
-      }
-    }
-  }
-
-  def updateSubscriptionData(atedReferenceNo: String, updatedData: UpdateEtmpSubscriptionDataRequest)
-                            (implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    val putUrl = s"""$serviceUrl/$atedBaseURI/$saveSubscriptionData/$atedReferenceNo"""
-
-    val timerContext = metrics.startTimer(MetricsEnum.EtmpUpdateSubscriptionData)
-    val jsonData = Json.toJson(updatedData)
-    http.put(url"$putUrl").withBody(jsonData).setHeader(createHeaders: _*).execute[HttpResponse].map{ response =>
-      timerContext.stop()
-      auditUpdateSubscriptionData(atedReferenceNo, updatedData, response)
-      response.status match {
-        case OK =>
-          metrics.incrementSuccessCounter(MetricsEnum.EtmpUpdateSubscriptionData)
-          response
-        case status =>
-          metrics.incrementFailedCounter(MetricsEnum.EtmpUpdateSubscriptionData)
-          logger.warn(s"[EtmpDetailsConnector][updateSubscriptionData] - status: $status")
-          doHeaderEvent("updateSubscriptionDataFailedHeaders", response.headers)
-          doFailedAudit("updateSubscriptionDataFailed", putUrl, Some(jsonData.toString), response.body)
-          response
-      }
-    }
-  }
-
   def updateRegistrationDetails(atedReferenceNo: String, safeId: String, updatedData: UpdateRegistrationDetailsRequest)
                                (implicit hc: HeaderCarrier): Future[HttpResponse] = {
     val putUrl = s"""$serviceUrl/$saveRegistrationDetails/$safeId"""
@@ -167,24 +123,6 @@ trait EtmpDetailsConnector extends Auditable with Logging {
       "Authorization" -> urlHeaderAuthorization
     )
   }
-
-  private def auditUpdateSubscriptionData(atedReferenceNo: String,
-                                          updateData: UpdateEtmpSubscriptionDataRequest,
-                                          response: HttpResponse)(implicit hc: HeaderCarrier): Unit = {
-    val eventType = response.status match {
-      case OK => EventTypes.Succeeded
-      case _ => EventTypes.Failed
-    }
-    sendDataEvent(transactionName = "etmpUpdateSubscription",
-      detail = Map("txName" -> "etmpUpdateSubscription",
-        "atedReferenceNo" -> s"$atedReferenceNo",
-        "agentReferenceNumber" -> s"${updateData.agentReferenceNumber}",
-        "requestData" -> s"${Json.toJson(updateData)}",
-        "responseStatus" -> s"${response.status}",
-        "responseBody" -> s"${response.body}",
-        "status" -> s"$eventType"))
-  }
-
 
   private def auditUpdateRegistrationDetails(atedReferenceNo: String,
                                              safeId: String,

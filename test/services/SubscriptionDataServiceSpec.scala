@@ -30,7 +30,6 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import utils.FeatureSwitch
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -60,30 +59,11 @@ class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite w
     reset(mockEtmpConnector)
     reset(mockHipConnector)
     reset(mockAuthConnector)
-    FeatureSwitch.disable(FeatureSwitch.apply("hipSwitch", false))
-  }
-
-  override def afterEach(): Unit = {
-    FeatureSwitch.disable(FeatureSwitch.apply("hipSwitch", false))
   }
 
   "SubscriptionDataService" must {
-
-    "retrieve Subscription Data" in new Setup {
-      implicit val hc: HeaderCarrier = HeaderCarrier()
-      when(mockEtmpConnector.getSubscriptionData(ArgumentMatchers.any())(
-        ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
-
-      val result: Future[HttpResponse] = testSubscriptionDataService.retrieveSubscriptionData(accountRef)
-
-      val response: HttpResponse = await(result)
-      response.status must be(OK)
-      response.json must be(successResponse)
-    }
-
     "retrieve Subscription Data (HIP)" in new Setup {
       implicit val hc: HeaderCarrier = HeaderCarrier()
-      FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
       when(mockHipConnector.getSubscriptionData(ArgumentMatchers.any())(
         ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
 
@@ -97,25 +77,7 @@ class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite w
     "save account details" must {
       val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
 
-      "work if we have valid data" in new Setup {
-        val addressDetails: AddressDetails = AddressDetails("Correspondence", "line1", "line2", None, None, Some("postCode"), "GB")
-        val updatedData: UpdateSubscriptionDataRequest = UpdateSubscriptionDataRequest(
-          emailConsent = true, ChangeIndicators(), List(Address(addressDetails = addressDetails))
-        )
-        implicit val hc:HeaderCarrier = HeaderCarrier()
-
-        when(mockEtmpConnector.updateSubscriptionData(
-          ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
-        mockRetrievingNoAuthRef()
-        val result: Future[HttpResponse] = testSubscriptionDataService.updateSubscriptionData(accountRef, updatedData)
-        val response: HttpResponse = await(result)
-        response.status must be(OK)
-        response.json must be(successResponse)
-      }
-
       "work if we have valid data (HIP)" in new Setup {
-        FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         val addressDetails: AddressDetails = AddressDetails("Correspondence", "line1", "line2", None, None, Some("postCode"), "GB")
         val updatedData: UpdateSubscriptionDataRequest = UpdateSubscriptionDataRequest(
           emailConsent = true, ChangeIndicators(), List(Address(addressDetails = addressDetails))
