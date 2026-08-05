@@ -19,12 +19,12 @@ package services
 import connectors.mocks.MockAuthConnector
 import connectors.{EmailConnector, EmailNotSent, EmailSent}
 import org.mockito.{ArgumentCaptor, ArgumentMatchers}
-import org.mockito.Mockito._
+import org.mockito.Mockito.*
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -53,7 +53,7 @@ class NotificationServiceSpec extends PlaySpec with GuiceOneServerPerSuite with 
     "send email when all data is present" in new Setup {
 
       when(mockEmailConnector.sendTemplatedEmail(
-        ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
+        ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any())
       ) thenReturn Future.successful(EmailSent)
       val subscriptionJson: JsValue = Json
         .parse(
@@ -76,7 +76,7 @@ class NotificationServiceSpec extends PlaySpec with GuiceOneServerPerSuite with 
       verify(mockEmailConnector, times(1)).sendTemplatedEmail(
         ArgumentMatchers.any(),
         ArgumentMatchers.any(),
-        referencesMapCaptor.capture)(ArgumentMatchers.any()
+        referencesMapCaptor.capture)(using ArgumentMatchers.any()
       )
 
       referencesMapCaptor.getValue.get("first_name") mustBe Some("")

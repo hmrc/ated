@@ -27,23 +27,23 @@ import scala.concurrent.ExecutionContext
 
 @Singleton
 class SubscriptionDataControllerImpl @Inject()(val cc: ControllerComponents,
-                                               val subscriptionDataService: SubscriptionDataService,
-                                               override implicit val sc: ServicesConfig
+                                               val subscriptionDataService: SubscriptionDataService)(
+                                               using override val sc: ServicesConfig
                                               ) extends BackendController(cc) with SubscriptionDataController {
-  override implicit val ec: ExecutionContext = cc.executionContext
+  given ec: ExecutionContext = cc.executionContext
 }
 
 @Singleton
 class AgentRetrieveClientSubscriptionDataController @Inject()(val cc: ControllerComponents,
-                                                              val subscriptionDataService: SubscriptionDataService,
-                                                              override implicit val sc: ServicesConfig
+                                                              val subscriptionDataService: SubscriptionDataService)(
+                                                              using override val sc: ServicesConfig
                                                              ) extends BackendController(cc) with SubscriptionDataController {
-  override implicit val ec: ExecutionContext = cc.executionContext
+  given ec: ExecutionContext = cc.executionContext
 }
 
 trait SubscriptionDataController extends BackendController {
-  implicit val ec: ExecutionContext
-  implicit val sc: ServicesConfig
+  given ec: ExecutionContext
+  given sc: ServicesConfig
 
   def subscriptionDataService: SubscriptionDataService
 
@@ -73,7 +73,7 @@ trait SubscriptionDataController extends BackendController {
     }
   }
 
-  def retrieveSubscriptionDataByAgent(accountRef: String, agentCode: String) = Action.async { implicit request =>
+  def retrieveSubscriptionDataByAgent(accountRef: String, @annotation.unused agentCode: String) = Action.async { implicit request =>
     subscriptionDataService.retrieveSubscriptionData(accountRef) map { responseReceived =>
       responseReceived.status match {
         case OK => Ok(responseReceived.body)

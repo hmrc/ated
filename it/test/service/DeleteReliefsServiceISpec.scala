@@ -19,7 +19,9 @@ package test.service
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import helpers.{AssertionHelpers, IntegrationSpec}
 import models.{Reliefs, ReliefsTaxAvoidance, TaxAvoidance}
-import play.api.http.Status._
+import org.mongodb.scala.SingleObservableFuture
+import play.api.http.Status.*
+import play.api.libs.ws.writeableOf_JsValue
 import play.api.libs.json.Json
 import play.api.libs.ws.WSResponse
 import play.api.test.FutureAwaits

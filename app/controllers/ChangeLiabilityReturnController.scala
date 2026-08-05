@@ -36,15 +36,15 @@ class ChangeLiabilityReturnControllerImpl @Inject()(
                                                      val servicesConfig: ServicesConfig,
                                                      val mongoCrypto: MongoCryptoProvider,
                                                    ) extends BackendController(cc) with ChangeLiabilityReturnController {
-  override implicit val ec: ExecutionContext = cc.executionContext
+  given ec: ExecutionContext = cc.executionContext
 }
 
 trait ChangeLiabilityReturnController extends BackendController with Logging {
-  implicit val ec: ExecutionContext
-  implicit val servicesConfig: ServicesConfig
+  given ec: ExecutionContext
+  given servicesConfig: ServicesConfig
   val mongoCrypto: MongoCryptoProvider
-  implicit lazy val compositeCrypto: Encrypter with Decrypter = mongoCrypto.crypto
-  implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
+  given compositeCrypto: (Encrypter & Decrypter) = mongoCrypto.crypto
+  given format: OFormat[PropertyDetails] = PropertyDetails.formats
 
   def changeLiabilityService: ChangeLiabilityService
 

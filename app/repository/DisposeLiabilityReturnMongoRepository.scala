@@ -55,14 +55,14 @@ trait DisposeLiabilityReturnMongoRepository extends PlayMongoRepository[DisposeL
 @Singleton
 class DisposeLiabilityReturnMongoWrapperImpl @Inject()(val mongo: MongoComponent,
                                                        val serviceMetrics: ServiceMetrics, val mongoCrypto: MongoCryptoProvider)(
-  override implicit val ec: ExecutionContext) extends DisposeLiabilityReturnMongoWrapper
+  using val ec: ExecutionContext) extends DisposeLiabilityReturnMongoWrapper
 
 trait DisposeLiabilityReturnMongoWrapper {
-  implicit val ec: ExecutionContext
+  given ec: ExecutionContext
   val mongo: MongoComponent
   val serviceMetrics: ServiceMetrics
   val mongoCrypto: MongoCryptoProvider
-  implicit val compositeCrypto: Encrypter with Decrypter = mongoCrypto.crypto
+  given compositeCrypto: (Encrypter & Decrypter) = mongoCrypto.crypto
 
   private lazy val disposeLiabilityReturnRepository = new DisposeLiabilityReturnRepository(mongo, serviceMetrics)
 
@@ -70,7 +70,7 @@ trait DisposeLiabilityReturnMongoWrapper {
 }
 
 class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: ServiceMetrics)
-                                                   (implicit crypto: Encrypter with Decrypter, ec: ExecutionContext)
+                                                   (using crypto: Encrypter with Decrypter, ec: ExecutionContext)
   extends PlayMongoRepository[DisposeLiabilityReturn](
     collectionName = "disposeLiabilityReturns",
     mongoComponent = mongo,

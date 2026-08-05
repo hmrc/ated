@@ -17,7 +17,7 @@
 package utils
 
 import builders.PropertyDetailsBuilder
-import models._
+import models.*
 import java.time.LocalDate
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{reset, when}
@@ -34,7 +34,7 @@ class PropertyDetailsUtilsSpec extends PlaySpec with ReliefConstants with Mockit
   val periodEndDate = LocalDate.of(2016, 1, 10)
   val periodKey = 2015
 
-  implicit val mockServicesConfig: ServicesConfig = mock[ServicesConfig]
+  given mockServicesConfig: ServicesConfig = mock[ServicesConfig]
   override def beforeEach(): Unit = {
     reset(mockServicesConfig)
   }

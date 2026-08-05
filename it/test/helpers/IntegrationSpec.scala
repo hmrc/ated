@@ -18,7 +18,7 @@ package helpers
 
 import helpers.application.IntegrationApplication
 import helpers.wiremock.WireMockSetup
-import org.scalatest._
+import org.scalatest.*
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.ws.WSRequest
 import uk.gov.hmrc.http.HeaderCarrier
@@ -33,7 +33,7 @@ trait IntegrationSpec
     with AssertionHelpers
 		with StubbedBasicHttpCalls {
 
-  implicit val hc: HeaderCarrier = HeaderCarrier()
+  given hc: HeaderCarrier = HeaderCarrier()
   val SessionId: String = "mock-sessionid"
   val BearerToken: String = "mock-bearer-token"
 

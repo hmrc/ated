@@ -18,10 +18,10 @@ package services
 
 
 import connectors.{EtmpReturnsConnector, HipReturnsConnector}
-import models._
+import models.*
 import repository.{PropertyDetailsDelete, PropertyDetailsMongoRepository}
 import uk.gov.hmrc.auth.core.AuthConnector
-import utils._
+import utils.*
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -37,7 +37,7 @@ trait PropertyDetailsBaseService extends ReliefConstants {
   }
 
   def retrieveDraftPropertyDetail(atedRefNo: String, id: String)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
     propertyDetailsCache.fetchPropertyDetails(atedRefNo).map {
       propertyDetailsList =>
         PropertyDetailsUtils.populateBankDetails(propertyDetailsList.find(_.id == id))
@@ -48,7 +48,7 @@ trait PropertyDetailsBaseService extends ReliefConstants {
     propertyDetailsCache.deletePropertyDetailsByfieldName(atedRefNo, id)
 
   protected def cacheDraftPropertyDetails(atedRefNo: String, updatePropertyDetails: Seq[PropertyDetails] => Future[Option[PropertyDetails]])(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
     for {
       propertyDetailsList <- propertyDetailsCache.fetchPropertyDetails(atedRefNo)
       newPropertyDetails <- updatePropertyDetails(propertyDetailsList)

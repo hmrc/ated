@@ -18,9 +18,9 @@ package services
 
 import audit.Auditable
 import connectors.{EmailConnector, EtmpReturnsConnector, HipReturnsConnector}
-import models._
+import models.*
 import play.api.Logging
-import play.api.http.Status._
+import play.api.http.Status.*
 import play.api.libs.json.{JsValue, Json}
 import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
 import uk.gov.hmrc.auth.core.AuthConnector
@@ -28,8 +28,8 @@ import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse, Inter
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.Audit
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import utils.AtedUtils._
-import utils._
+import utils.AtedUtils.*
+import utils.*
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
@@ -40,9 +40,9 @@ class PropertyDetailsServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnect
                                            val subscriptionDataService: SubscriptionDataService,
                                            val emailConnector: EmailConnector,
                                            val propertyDetailsMongoWrapper: PropertyDetailsMongoWrapper,
-                                           val auditConnector: AuditConnector,
-                                           override implicit val ec: ExecutionContext,
-                                           override implicit val sc: ServicesConfig
+                                           val auditConnector: AuditConnector)(
+                                           using override val ec: ExecutionContext,
+                                           override val sc: ServicesConfig
                                           ) extends PropertyDetailsService {
   val audit: Audit = new Audit("ated", auditConnector)
   lazy val propertyDetailsCache: PropertyDetailsMongoRepository = propertyDetailsMongoWrapper()
@@ -51,13 +51,13 @@ class PropertyDetailsServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnect
 trait PropertyDetailsService
   extends PropertyDetailsBaseService with ReliefConstants with NotificationService with AuthFunctionality with Logging with Auditable {
 
-  implicit val ec: ExecutionContext
+  given ec: ExecutionContext
 
-  implicit val sc: ServicesConfig
+  given sc: ServicesConfig
 
   def subscriptionDataService: SubscriptionDataService
 
-  def retrievePeriodDraftPropertyDetails(atedRefNo: String, periodKey: Int)(implicit ec: ExecutionContext): Future[Seq[PropertyDetails]] = {
+  def retrievePeriodDraftPropertyDetails(atedRefNo: String, periodKey: Int)(using ec: ExecutionContext): Future[Seq[PropertyDetails]] = {
 
     propertyDetailsCache.fetchPropertyDetails(atedRefNo).map {
       propertyDetailsList =>
@@ -66,9 +66,9 @@ trait PropertyDetailsService
   }
 
   def createDraftPropertyDetails(atedRefNo: String, periodKey: Int, updatedAddress: PropertyDetailsAddress)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
-    def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
+    def updatePropertyDetails(@annotation.unused propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       Future.successful(Some(PropertyDetails(atedRefNo = atedRefNo, periodKey = periodKey, id = createPropertyKey, addressProperty = updatedAddress)))
     }
 
@@ -76,7 +76,7 @@ trait PropertyDetailsService
   }
 
   def cacheDraftPropertyDetailsAddress(atedRefNo: String, id: String, updatedAddress: PropertyDetailsAddress)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -90,7 +90,7 @@ trait PropertyDetailsService
   }
 
   def cacheDraftPropertyDetailsTitle(atedRefNo: String, id: String, updatedTitle: PropertyDetailsTitle)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -105,7 +105,7 @@ trait PropertyDetailsService
 
 
   def calculateDraftPropertyDetails(atedRefNo: String, id: String)(
-    implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using hc: HeaderCarrier, ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     retrieveAgentRefNumberFor { agentRefNo =>
       def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
@@ -132,7 +132,7 @@ trait PropertyDetailsService
 
   def getLiabilityAmount(atedRefNo: String, id: String,
                          propertyDetails: PropertyDetails, agentRefNo: Option[String] = None)
-                        (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[BigDecimal]] = {
+                        (using ec: ExecutionContext, hc: HeaderCarrier): Future[Option[BigDecimal]] = {
 
     def getLiabilityAmount(response: JsValue): Option[BigDecimal] = {
       val liabilityResponses = response.as[SubmitEtmpReturnsResponse]
@@ -185,7 +185,7 @@ trait PropertyDetailsService
   }
 
   def cacheDraftTaxAvoidance(atedRefNo: String, id: String, updatedDetails: PropertyDetailsTaxAvoidance)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -231,7 +231,7 @@ trait PropertyDetailsService
   }
 
   def cacheDraftSupportingInfo(atedRefNo: String, id: String, updatedDetails: PropertyDetailsSupportingInfo)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -254,7 +254,7 @@ trait PropertyDetailsService
   }
 
   def cacheDraftHasBankDetails(atedRefNo: String, id: String, hasBankDetails: Boolean)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -276,7 +276,7 @@ trait PropertyDetailsService
   }
 
   def cacheDraftHasUkBankAccount(atedRefNo: String, id: String, hasUKBankAccount: Boolean)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -309,10 +309,10 @@ trait PropertyDetailsService
   }
 
   def cacheDraftBankDetails(atedRefNo: String, id: String, newBankDetails: BankDetails)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
-      import models.BankDetailsConversions._
+      import models.BankDetailsConversions.given
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
         foundPropertyDetails =>
           val oldBankDetails = foundPropertyDetails.bankDetails.getOrElse(BankDetailsModel(hasBankDetails = true))
@@ -326,7 +326,7 @@ trait PropertyDetailsService
   }
 
   def submitDraftPropertyDetail(atedRefNo: String, id: String)(
-    implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
+    using hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
     retrieveAgentRefNumberFor { agentRefNo =>
       val propertyDetailsFuture = retrieveDraftPropertyDetail(atedRefNo, id)
       (for {
@@ -365,7 +365,7 @@ trait PropertyDetailsService
     }
   }
 
-  def deleteChargeableDraft(atedRefNo: String, id: String)(implicit ec: ExecutionContext): Future[Seq[PropertyDetails]] = {
+  def deleteChargeableDraft(atedRefNo: String, id: String)(using ec: ExecutionContext): Future[Seq[PropertyDetails]] = {
     for {
       _ <- propertyDetailsCache.deletePropertyDetailsByfieldName(atedRefNo, id)
       reliefsList <- propertyDetailsCache.fetchPropertyDetailsById(atedRefNo, id)

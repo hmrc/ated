@@ -17,7 +17,7 @@
 package connectors
 
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
-import play.api.libs.json._
+import play.api.libs.json.*
 import uk.gov.hmrc.http.client.{RequestBuilder, HttpClientV2}
 import uk.gov.hmrc.http.HeaderCarrier
 import org.scalatestplus.mockito.MockitoSugar

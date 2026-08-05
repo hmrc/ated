@@ -21,7 +21,7 @@ import models.{EditLiabilityReturnsResponseModel, PropertyDetails}
 
 import java.time.ZonedDateTime
 import org.mockito.ArgumentMatchers
-import org.mockito.Mockito._
+import org.mockito.Mockito.*
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
@@ -29,7 +29,7 @@ import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json, OFormat}
 import play.api.mvc.{AnyContentAsEmpty, ControllerComponents, Result}
 import play.api.test.FakeRequest
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import services.ChangeLiabilityService
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
@@ -51,19 +51,19 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
     reset(mockChangeLiabilityReturnService)
   }
 
-  implicit val hc: HeaderCarrier = HeaderCarrier()
+  given hc: HeaderCarrier = HeaderCarrier()
   private val testMongoCrypto: MongoCryptoProvider = app.injector.instanceOf[MongoCryptoProvider]
-  implicit lazy val crypto: Encrypter with Decrypter = testMongoCrypto.crypto
-  implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
-  implicit val mockServicesConfig: ServicesConfig = mock[ServicesConfig]
+  given crypto: (Encrypter & Decrypter) = testMongoCrypto.crypto
+  given format: OFormat[PropertyDetails] = PropertyDetails.formats
+  given mockServicesConfig: ServicesConfig = mock[ServicesConfig]
 
   trait Setup {
     val cc: ControllerComponents = app.injector.instanceOf[ControllerComponents]
-    implicit val ec: ExecutionContext = cc.executionContext
+    given ec: ExecutionContext = cc.executionContext
     class TestChangeLiabilityReturnController extends BackendController(cc) with ChangeLiabilityReturnController {
-      override implicit val ec: ExecutionContext = cc.executionContext
+      given ec: ExecutionContext = cc.executionContext
       override val changeLiabilityService: ChangeLiabilityService = mockChangeLiabilityReturnService
-      implicit val servicesConfig: ServicesConfig = mockServicesConfig
+      given servicesConfig: ServicesConfig = mockServicesConfig
       val mongoCrypto: MongoCryptoProvider = testMongoCrypto
     }
 
@@ -76,7 +76,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
       "return ChangeLiabilityReturn model, if found in cache or ETMP" in new Setup {
         lazy val changeLiabilityReturn: PropertyDetails = PropertyDetailsBuilder.getFullPropertyDetails(formBundle1)
         when(mockChangeLiabilityReturnService.convertSubmittedReturnToCachedDraft(ArgumentMatchers.eq(atedRefNo),
-          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(changeLiabilityReturn)))
         val result: Future[Result] = controller.convertSubmittedReturnToCachedDraft(atedRefNo, formBundle1).apply(FakeRequest())
         status(result) must be(OK)
@@ -85,7 +85,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
 
       "return ChangeLiabilityReturn model, if NOT-found in cache or ETMP" in new Setup {
         when(mockChangeLiabilityReturnService.convertSubmittedReturnToCachedDraft(ArgumentMatchers.eq(atedRefNo),
-          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(None))
         val result: Future[Result] = controller.convertSubmittedReturnToCachedDraft(atedRefNo, formBundle1).apply(FakeRequest())
         status(result) must be(NOT_FOUND)
@@ -97,7 +97,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
       "return ChangeLiabilityReturn model, if found in cache or ETMP" in new Setup {
         lazy val changeLiabilityReturn: PropertyDetails = PropertyDetailsBuilder.getFullPropertyDetails(formBundle1)
         when(mockChangeLiabilityReturnService.convertSubmittedReturnToCachedDraft(ArgumentMatchers.eq(atedRefNo),
-          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(changeLiabilityReturn)))
         val result: Future[Result] = controller.convertPreviousSubmittedReturnToCachedDraft(atedRefNo, formBundle1, periodKey).apply(FakeRequest())
         status(result) must be(OK)
@@ -106,7 +106,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
 
       "return ChangeLiabilityReturn model, if NOT-found in cache or ETMP" in new Setup {
         when(mockChangeLiabilityReturnService.convertSubmittedReturnToCachedDraft(ArgumentMatchers.eq(atedRefNo),
-          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(None))
         val result: Future[Result] = controller.convertPreviousSubmittedReturnToCachedDraft(atedRefNo, formBundle1, periodKey).apply(FakeRequest())
         status(result) must be(NOT_FOUND)
@@ -122,7 +122,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
         lazy val testPropertyDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
 
         when(mockChangeLiabilityReturnService.calculateDraftChangeLiability(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"))(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"))(using ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future(Some(testPropertyDetails)))
 
         val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
         val result: Future[Result] = controller.calculateDraftChangeLiability(testAccountRef, "1").apply(fakeRequest)
@@ -134,7 +134,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
         val testAccountRef = "ATED1223123"
 
         when(mockChangeLiabilityReturnService.calculateDraftChangeLiability(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"))(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"))(using ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(None))
 
         val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
         val result: Future[Result] = controller.calculateDraftChangeLiability(testAccountRef, "1").apply(fakeRequest)
@@ -149,7 +149,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
         val successResponse: EditLiabilityReturnsResponseModel = EditLiabilityReturnsResponseModel(
           ZonedDateTime.now(), liabilityReturnResponse = Seq(), accountBalance = BigDecimal(0.00))
         when(mockChangeLiabilityReturnService
-          .submitChangeLiability(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .submitChangeLiability(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, Json.toJson(successResponse), Map.empty[String, Seq[String]])))
         val result: Future[Result] = controller.submitChangeLiabilityReturn(atedRefNo, formBundle1).apply(FakeRequest())
         status(result) must be(OK)
@@ -158,7 +158,7 @@ class ChangeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerPe
       "for unsuccessful submit, return internal server error response" in new Setup {
         val errorResponse: JsValue = Json.parse( """{"reason": "Some error"}""")
         when(mockChangeLiabilityReturnService
-          .submitChangeLiability(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .submitChangeLiability(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, Json.toJson(errorResponse), Map.empty[String, Seq[String]])))
         val result: Future[Result] = controller.submitChangeLiabilityReturn(atedRefNo, formBundle1).apply(FakeRequest())
         status(result) must be(INTERNAL_SERVER_ERROR)

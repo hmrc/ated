@@ -16,21 +16,21 @@
 
 package services
 
-import builders.ChangeLiabilityReturnBuilder._
+import builders.ChangeLiabilityReturnBuilder.*
 import builders.{AuthFunctionalityHelper, ChangeLiabilityReturnBuilder}
 import connectors.{EmailConnector, EmailSent, EtmpReturnsConnector, HipReturnsConnector}
-import models._
+import models.*
 
 import java.time.LocalDate
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito._
+import org.mockito.Mockito.*
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import repository.{DisposeLiabilityReturnCached, DisposeLiabilityReturnMongoRepository}
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
@@ -174,7 +174,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
       "return DisposeLiabilityReturn, if not found in mongo, but found in ETMP call, also cache it in mongo for future calls" in new Setup {
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq()))
         when(mockEtmpConnector
-          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(any(), any()))
+          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(using any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, Json.toJson(formBundleReturn1), Map.empty[String, Seq[String]])))
         when(mockDisposeLiabilityReturnRepository
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
@@ -187,7 +187,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         when(mockDisposeLiabilityReturnRepository.fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq()))
         when(mockHipConnector
-          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(any(), any()))
+          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(using any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, Json.toJson(formBundleReturn1), Map.empty[String, Seq[String]])))
         when(mockDisposeLiabilityReturnRepository
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
@@ -201,7 +201,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq(disposeLiability2)))
         when(mockEtmpConnector
-          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(any(), any()))
+          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(using any(), any()))
           .thenReturn(Future.successful(HttpResponse(NOT_FOUND, "")))
         val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.retrieveAndCacheDisposeLiabilityReturn(atedRefNo, formBundle1))
         result must be(None)
@@ -213,7 +213,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq(disposeLiability2)))
         when(mockHipConnector
-          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(any(), any()))
+          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(using any(), any()))
           .thenReturn(Future.successful(HttpResponse(NOT_FOUND, "")))
         val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.retrieveAndCacheDisposeLiabilityReturn(atedRefNo, formBundle1))
         result must be(None)
@@ -417,7 +417,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
         when(mockEtmpConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         val result: Option[DisposeLiabilityReturn] = await(
           testDisposeLiabilityReturnService.updateDraftDisposeBankDetails(atedRefNo, formBundle1, bankDetails.bankDetails.get))
@@ -443,7 +443,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
         when(mockHipConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         val result: Option[DisposeLiabilityReturn] = await(
           testDisposeLiabilityReturnService.updateDraftDisposeBankDetails(atedRefNo, formBundle1, bankDetails.bankDetails.get))
@@ -469,7 +469,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         val respJson: JsValue = Json.toJson(respModel)
 
         when(mockEtmpConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         val result: Option[DisposeLiabilityReturn] = await(
           testDisposeLiabilityReturnService.updateDraftDisposeBankDetails(atedRefNo, formBundle1, bankDetails.bankDetails.get)
@@ -496,7 +496,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         val respJson: JsValue = Json.toJson(respModel)
 
         when(mockHipConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         val result: Option[DisposeLiabilityReturn] = await(
           testDisposeLiabilityReturnService.updateDraftDisposeBankDetails(atedRefNo, formBundle1, bankDetails.bankDetails.get)
@@ -519,7 +519,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           testDisposeLiabilityReturnService.updateDraftDisposeBankDetails(atedRefNo, formBundle1, bank1.bankDetails.get)
         )
         result must be(None)
-        verify(mockEtmpConnector, times(0)).submitEditedLiabilityReturns(any(), any(), any())(any(), any())
+        verify(mockEtmpConnector, times(0)).submitEditedLiabilityReturns(any(), any(), any())(using any(), any())
       }
 
       "return None, if form-bundle-no is not found in cache, in such case don't do pre-calculation call (HIP)" in new Setup {
@@ -536,7 +536,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           testDisposeLiabilityReturnService.updateDraftDisposeBankDetails(atedRefNo, formBundle1, bank1.bankDetails.get)
         )
         result must be(None)
-        verify(mockHipConnector, times(0)).submitEditedLiabilityReturns(any(), any(), any())(any(), any())
+        verify(mockHipConnector, times(0)).submitEditedLiabilityReturns(any(), any(), any())(using any(), any())
       }
     }
 
@@ -559,7 +559,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         val respJson: JsValue = Json.toJson(respModel)
 
         when(mockEtmpConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.calculateDraftDispose(atedRefNo, formBundle1))
 
@@ -586,7 +586,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         val respJson: JsValue = Json.toJson(respModel)
 
         when(mockHipConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.calculateDraftDispose(atedRefNo, formBundle1))
 
@@ -606,12 +606,12 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         mockRetrievingNoAuthRef()
 
         when(mockEtmpConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
           .thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, "")))
         val thrown: RuntimeException = the[RuntimeException] thrownBy await(testDisposeLiabilityReturnService.calculateDraftDispose(atedRefNo, formBundle1))
 
         thrown.getMessage must include("pre-calculation-request returned wrong status")
-        verify(mockEtmpConnector, times(1)).submitEditedLiabilityReturns(any(), any(), any())(any(), any())
+        verify(mockEtmpConnector, times(1)).submitEditedLiabilityReturns(any(), any(), any())(using any(), any())
       }
 
       "throw exception if pre-calculation call fails (HIP)" in new Setup {
@@ -625,12 +625,12 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         mockRetrievingNoAuthRef()
 
         when(mockHipConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
           .thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, "")))
         val thrown: RuntimeException = the[RuntimeException] thrownBy await(testDisposeLiabilityReturnService.calculateDraftDispose(atedRefNo, formBundle1))
 
         thrown.getMessage must include("pre-calculation-request returned wrong status")
-        verify(mockHipConnector, times(1)).submitEditedLiabilityReturns(any(), any(), any())(any(), any())
+        verify(mockHipConnector, times(1)).submitEditedLiabilityReturns(any(), any(), any())(using any(), any())
       }
 
       "return None, if form-bundle-no is not found in cache, in such case don't do pre-calculation call" in new Setup {
@@ -643,7 +643,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         mockRetrievingNoAuthRef()
         val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.calculateDraftDispose(atedRefNo, formBundle1))
         result must be(None)
-        verify(mockEtmpConnector, times(0)).submitEditedLiabilityReturns(any(), any(), any())(any(), any())
+        verify(mockEtmpConnector, times(0)).submitEditedLiabilityReturns(any(), any(), any())(using any(), any())
       }
 
       "return None, if form-bundle-no is not found in cache, in such case don't do pre-calculation call (HIP)" in new Setup {
@@ -657,7 +657,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         mockRetrievingNoAuthRef()
         val result: Option[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.calculateDraftDispose(atedRefNo, formBundle1))
         result must be(None)
-        verify(mockHipConnector, times(0)).submitEditedLiabilityReturns(any(), any(), any())(any(), any())
+        verify(mockHipConnector, times(0)).submitEditedLiabilityReturns(any(), any(), any())(using any(), any())
       }
     }
 
@@ -676,7 +676,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
         when(mockEtmpConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         val result: DisposeCalculated = await(testDisposeLiabilityReturnService.getPreCalculationAmounts(atedRefNo,
           formBundleReturn1,
@@ -700,7 +700,7 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
         when(mockHipConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         val result: DisposeCalculated = await(testDisposeLiabilityReturnService.getPreCalculationAmounts(atedRefNo,
           formBundleReturn1,
@@ -752,20 +752,20 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
               .authorise[Any](any(), any())(any(), any()))
               .thenReturn(Future.successful(Enrolments(testEnrolments)))
             when(mockSubscriptionDataService
-              .retrieveSubscriptionData(any())(any()))
+              .retrieveSubscriptionData(any())(using any()))
               .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
             when(mockEmailConnector
-              .sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
+              .sendTemplatedEmail(any(), any(), any())(using any())) thenReturn Future.successful(EmailSent)
 
             lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
             lazy val respJson: JsValue = Json.toJson(respModel)
             when(mockEtmpConnector
-              .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+              .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
               .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
 
             val result: HttpResponse = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
             result.status must be(OK)
-            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
+            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(using any())
           }
 
           "return BankDetails, if valid bank-details-model is passed (HIP)" in new Setup {
@@ -787,20 +787,20 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
               .authorise[Any](any(), any())(any(), any()))
               .thenReturn(Future.successful(Enrolments(testEnrolments)))
             when(mockSubscriptionDataService
-              .retrieveSubscriptionData(any())(any()))
+              .retrieveSubscriptionData(any())(using any()))
               .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
             when(mockEmailConnector
-              .sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
+              .sendTemplatedEmail(any(), any(), any())(using any())) thenReturn Future.successful(EmailSent)
 
             lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
             lazy val respJson: JsValue = Json.toJson(respModel)
             when(mockHipConnector
-              .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+              .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
               .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
 
             val result: HttpResponse = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
             result.status must be(OK)
-            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
+            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(using any())
           }
 
 
@@ -819,16 +819,16 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
               .authorise[Any](any(), any())(any(), any()))
               .thenReturn(Future.successful(Enrolments(testEnrolments)))
             when(mockSubscriptionDataService
-              .retrieveSubscriptionData(any())(any()))
+              .retrieveSubscriptionData(any())(using any()))
               .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
             val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
             val respJson: JsValue = Json.toJson(respModel)
-            when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+            when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
               .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
-            when(mockEmailConnector.sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
+            when(mockEmailConnector.sendTemplatedEmail(any(), any(), any())(using any())) thenReturn Future.successful(EmailSent)
             val result: HttpResponse = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
             result.status must be(OK)
-            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
+            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(using any())
           }
 
           "return None, if hasBankDetails is false passed (HIP)" in new Setup {
@@ -847,16 +847,16 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
               .authorise[Any](any(), any())(any(), any()))
               .thenReturn(Future.successful(Enrolments(testEnrolments)))
             when(mockSubscriptionDataService
-              .retrieveSubscriptionData(any())(any()))
+              .retrieveSubscriptionData(any())(using any()))
               .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
             val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
             val respJson: JsValue = Json.toJson(respModel)
-            when(mockHipConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+            when(mockHipConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
               .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
-            when(mockEmailConnector.sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
+            when(mockEmailConnector.sendTemplatedEmail(any(), any(), any())(using any())) thenReturn Future.successful(EmailSent)
             val result: HttpResponse = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
             result.status must be(OK)
-            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
+            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(using any())
           }
 
           "return None, if accountNumber & accountName & sortCode is not found" in new Setup {
@@ -877,17 +877,17 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
               .authorise[Any](any(), any())(any(), any()))
               .thenReturn(Future.successful(Enrolments(testEnrolments)))
             when(mockSubscriptionDataService
-              .retrieveSubscriptionData(any())(any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
+              .retrieveSubscriptionData(any())(using any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
             when(mockEmailConnector
-              .sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
+              .sendTemplatedEmail(any(), any(), any())(using any())) thenReturn Future.successful(EmailSent)
             lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
             lazy val respJson: JsValue = Json.toJson(respModel)
             when(mockEtmpConnector
-              .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+              .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
               .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
             val result: HttpResponse = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
             result.status must be(OK)
-            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
+            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(using any())
           }
 
           "return None, if accountNumber & accountName & sortCode is not found (HIP)" in new Setup {
@@ -909,17 +909,17 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
               .authorise[Any](any(), any())(any(), any()))
               .thenReturn(Future.successful(Enrolments(testEnrolments)))
             when(mockSubscriptionDataService
-              .retrieveSubscriptionData(any())(any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
+              .retrieveSubscriptionData(any())(using any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
             when(mockEmailConnector
-              .sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
+              .sendTemplatedEmail(any(), any(), any())(using any())) thenReturn Future.successful(EmailSent)
             lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
             lazy val respJson: JsValue = Json.toJson(respModel)
             when(mockHipConnector
-              .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+              .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
               .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
             val result: HttpResponse = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
             result.status must be(OK)
-            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
+            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(using any())
           }
 
           "return None, if None was passed as bank-details-model" in new Setup {
@@ -935,16 +935,16 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
             when(mockAuthConnector
               .authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)))
             when(mockSubscriptionDataService
-              .retrieveSubscriptionData(any())(any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
+              .retrieveSubscriptionData(any())(using any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
             when(mockEmailConnector
-              .sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
+              .sendTemplatedEmail(any(), any(), any())(using any())) thenReturn Future.successful(EmailSent)
             lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
             lazy val respJson: JsValue = Json.toJson(respModel)
-            when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+            when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
               .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
             val result: HttpResponse = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
             result.status must be(OK)
-            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
+            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(using any())
           }
 
           "return None, if None was passed as bank-details-model (HIP)" in new Setup {
@@ -961,16 +961,16 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
             when(mockAuthConnector
               .authorise[Any](any(), any())(any(), any())).thenReturn(Future.successful(Enrolments(testEnrolments)))
             when(mockSubscriptionDataService
-              .retrieveSubscriptionData(any())(any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
+              .retrieveSubscriptionData(any())(using any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
             when(mockEmailConnector
-              .sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
+              .sendTemplatedEmail(any(), any(), any())(using any())) thenReturn Future.successful(EmailSent)
             lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
             lazy val respJson: JsValue = Json.toJson(respModel)
-            when(mockHipConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+            when(mockHipConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
               .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
             val result: HttpResponse = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
             result.status must be(OK)
-            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
+            verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(using any())
           }
         }
       }
@@ -990,18 +990,18 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           .authorise[Any](any(), any())(any(), any()))
           .thenReturn(Future.successful(Enrolments(testEnrolments)))
         when(mockSubscriptionDataService
-          .retrieveSubscriptionData(any())(any()))
+          .retrieveSubscriptionData(any())(using any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         when(mockEmailConnector
-          .sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
+          .sendTemplatedEmail(any(), any(), any())(using any())) thenReturn Future.successful(EmailSent)
         lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         lazy val respJson: JsValue = Json.toJson(respModel)
         when(mockEtmpConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         val result: HttpResponse = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
         result.status must be(OK)
-        verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
+        verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(using any())
       }
 
       "generateEditReturnRequest - if dateOfDisposal is not found, use oldFormbundleReturn 'date from' value (HIP)" in new Setup {
@@ -1020,18 +1020,18 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           .authorise[Any](any(), any())(any(), any()))
           .thenReturn(Future.successful(Enrolments(testEnrolments)))
         when(mockSubscriptionDataService
-          .retrieveSubscriptionData(any())(any()))
+          .retrieveSubscriptionData(any())(using any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         when(mockEmailConnector
-          .sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
+          .sendTemplatedEmail(any(), any(), any())(using any())) thenReturn Future.successful(EmailSent)
         lazy val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         lazy val respJson: JsValue = Json.toJson(respModel)
         when(mockHipConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         val result: HttpResponse = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
         result.status must be(OK)
-        verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
+        verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(using any())
       }
 
       "return NOT_FOUND as status, if form-bundle not found in list" in new Setup {
@@ -1040,11 +1040,11 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           .thenReturn(Future.successful(Seq(disposeLiability2)))
         mockRetrievingNoAuthRef()
         when(mockSubscriptionDataService
-          .retrieveSubscriptionData(any())(any()))
+          .retrieveSubscriptionData(any())(using any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         val result: HttpResponse = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
         result.status must be(NOT_FOUND)
-        verify(mockEmailConnector, times(0)).sendTemplatedEmail(any(), any(), any())(any())
+        verify(mockEmailConnector, times(0)).sendTemplatedEmail(any(), any(), any())(using any())
       }
 
       "return the status with body, if etmp call returns any other status other than OK" in new Setup {
@@ -1060,14 +1060,14 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
         mockRetrievingNoAuthRef()
         when(mockSubscriptionDataService
-          .retrieveSubscriptionData(any())(any()))
+          .retrieveSubscriptionData(any())(using any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         when(mockEtmpConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
           .thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, Json.parse("""{"reason": "Server error"}"""), Map.empty[String, Seq[String]])))
         val result: HttpResponse = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
         result.status must be(INTERNAL_SERVER_ERROR)
-        verify(mockEmailConnector, times(0)).sendTemplatedEmail(any(), any(), any())(any())
+        verify(mockEmailConnector, times(0)).sendTemplatedEmail(any(), any(), any())(using any())
       }
 
       "return the status with body, if etmp call returns any other status other than OK (HIP)" in new Setup {
@@ -1084,14 +1084,14 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]())).thenReturn(Future.successful(DisposeLiabilityReturnCached))
         mockRetrievingNoAuthRef()
         when(mockSubscriptionDataService
-          .retrieveSubscriptionData(any())(any()))
+          .retrieveSubscriptionData(any())(using any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         when(mockHipConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(any(), any()))
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using any(), any()))
           .thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, Json.parse("""{"reason": "Server error"}"""), Map.empty[String, Seq[String]])))
         val result: HttpResponse = await(testDisposeLiabilityReturnService.submitDisposeLiability(atedRefNo, formBundle1))
         result.status must be(INTERNAL_SERVER_ERROR)
-        verify(mockEmailConnector, times(0)).sendTemplatedEmail(any(), any(), any())(any())
+        verify(mockEmailConnector, times(0)).sendTemplatedEmail(any(), any(), any())(using any())
       }
     }
   }

@@ -31,8 +31,8 @@ class DefaultDeleteLiabilityReturnsService @Inject()(val servicesConfig: Service
                                             val repository: DisposeLiabilityReturnMongoWrapper,
                                             val environment: Environment,
                                             val lockRepositoryProvider: LockRepositoryProvider,
-                                            val configuration: Configuration,
-                                            override implicit val ec: ExecutionContext
+                                            val configuration: Configuration)(
+                                            using override val ec: ExecutionContext
                                             ) extends DeleteLiabilityReturnsService {
 
   override val documentBatchSize: Int = servicesConfig.getInt("schedules.delete-liability-returns-job.cleardown.batchSize")
@@ -43,9 +43,9 @@ class DefaultDeleteLiabilityReturnsService @Inject()(val servicesConfig: Service
 
 trait DeleteLiabilityReturnsService extends ScheduledService[Int] with Logging {
 
-  implicit val ec: ExecutionContext
+  given ec: ExecutionContext
   lazy val repo: DisposeLiabilityReturnMongoRepository = repository()
-  implicit val hc: HeaderCarrier = HeaderCarrier()
+  given hc: HeaderCarrier = HeaderCarrier()
 
   val repository: DisposeLiabilityReturnMongoWrapper
   val lockService: LockService
@@ -55,7 +55,7 @@ trait DeleteLiabilityReturnsService extends ScheduledService[Int] with Logging {
     repo.deleteExpired60DayLiabilityReturns(documentBatchSize)
   }
 
-  def invoke()(implicit ec: ExecutionContext): Future[Int] = {
+  def invoke()(using ec: ExecutionContext): Future[Int] = {
     Mdc.preservingMdc(lockService.withLock(deleteOldLiabilityReturns())) map {
       case Some(result) =>
         logger.info(s"[DeleteLiabilityReturnsService] Deleted $result draft documents past the given day limit")

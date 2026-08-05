@@ -10,7 +10,7 @@ import uk.gov.hmrc.versioning.SbtGitVersioning.autoImport.majorVersion
 val appName: String = "ated"
 
 ThisBuild / majorVersion := 3
-ThisBuild / scalaVersion := "2.13.18"
+ThisBuild / scalaVersion := "3.3.7"
 
 lazy val appDependencies : Seq[ModuleID] = AppDependencies()
 lazy val plugins : Seq[Plugins] = Seq(play.sbt.PlayScala, SbtDistributablesPlugin)
@@ -26,13 +26,20 @@ lazy val microservice = Project(appName, file("."))
     Test / fork := false,
     retrieveManaged := true,
     routesGenerator := InjectedRoutesGenerator,
-    scalacOptions += "-Wconf:src=routes/.*:s",
+    scalacOptions ++= Seq(
+      "-Wconf:src=target/.*:s",
+      "-Wconf:src=.*routes.*:s",
+      "-language:implicitConversions"
+    ),
     scalaSettings,
     playSettings,
     defaultSettings(),
   )
   .settings(
     resolvers += Resolver.typesafeRepo("releases")
+  )
+  .settings(
+    scalacOptions ~= (_.distinct)
   )
   .settings(CodeCoverageSettings.settings: _*)
   .enablePlugins((Seq(play.sbt.PlayScala, SbtDistributablesPlugin) ++ plugins) *)

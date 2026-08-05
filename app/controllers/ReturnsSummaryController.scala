@@ -29,11 +29,11 @@ class ReturnsSummaryControllerImpl @Inject()(
                                               val returnSummaryService: ReturnSummaryService,
                                               val cc: ControllerComponents
                                             ) extends BackendController(cc) with ReturnsSummaryController {
-  override implicit val ec: ExecutionContext = cc.executionContext
+  given ec: ExecutionContext = cc.executionContext
 }
 
 trait ReturnsSummaryController extends BackendController {
-  implicit val ec: ExecutionContext
+  given ec: ExecutionContext
 
   def returnSummaryService: ReturnSummaryService
 

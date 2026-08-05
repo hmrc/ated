@@ -19,7 +19,7 @@ package models
 import java.time.{ZonedDateTime, ZoneId}
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.crypto.{Encrypter, Decrypter}
-import models.mongo.MongoDateTimeFormats.Implicits._
+import models.mongo.MongoDateTimeFormats
 
 case class PropertyDetails(atedRefNo: String,
                            id: String,
@@ -35,8 +35,9 @@ case class PropertyDetails(atedRefNo: String,
 
 object PropertyDetails {
 
-  def formats(implicit crypto: Encrypter with Decrypter): OFormat[PropertyDetails] = {
-    implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
+  def formats(using crypto: Encrypter with Decrypter): OFormat[PropertyDetails] = {
+    given bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
+    given dateTimeFormat: Format[ZonedDateTime] = MongoDateTimeFormats.tolerantDateTimeFormat
 
     Json.format[PropertyDetails]
   }

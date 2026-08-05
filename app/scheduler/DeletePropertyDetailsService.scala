@@ -39,7 +39,7 @@ class DefaultDeletePropertyDetailsService @Inject()(val servicesConfig: Services
 
 trait DeletePropertyDetailsService extends ScheduledService[Int] with Logging {
   lazy val repo: PropertyDetailsMongoRepository = repository()
-  implicit val hc: HeaderCarrier = HeaderCarrier()
+  given hc: HeaderCarrier = HeaderCarrier()
 
   val repository: PropertyDetailsMongoWrapper
   val lockService: LockService
@@ -49,7 +49,7 @@ trait DeletePropertyDetailsService extends ScheduledService[Int] with Logging {
     repo.deleteExpired60PropertyDetails(documentBatchSize)
   }
 
-  def invoke()(implicit ec: ExecutionContext): Future[Int] = {
+  def invoke()(using ec: ExecutionContext): Future[Int] = {
     lockService.withLock(deleteOldPropertyDetails()) map {
       case Some(result) =>
         logger.info(s"[deleteOldPropertyDetails] Deleted $result draft documents past the given day limit")

@@ -16,9 +16,9 @@
 
 package models
 
-import play.api.libs.json._
+import play.api.libs.json.*
 import org.bson.types.ObjectId
-import uk.gov.hmrc.mongo.play.json.formats.MongoFormats.Implicits._
+import uk.gov.hmrc.mongo.play.json.formats.MongoFormats.Implicits.*
 import scala.collection.Set
 import scala.language.implicitConversions
 
@@ -28,7 +28,7 @@ object Id {
 
   import play.api.libs.json.{Format, Reads, Writes}
 
-  implicit def stringToId(s: String): Id = new Id(s)
+  given Conversion[String, Id] = new Id(_)
 
   private val idWrite: Writes[Id] = (value: Id) => JsString(value.id)
 
@@ -37,7 +37,7 @@ object Id {
     case noParsed => throw new Exception(s"Could not read Json value of 'id' in $noParsed")
   }
 
-  implicit val idFormats: Format[Id] = Format(idRead, idWrite)
+  given idFormats: Format[Id] = Format(idRead, idWrite)
 }
 
 
@@ -49,7 +49,7 @@ case class Cache(_id: Id, data: Option[JsValue] = None,
 object Cache {
   final val DataAttributeName = "data"
 
-  implicit val cacheFormat: OFormat[Cache] = Json.format[Cache]
+  given cacheFormat: OFormat[Cache] = Json.format[Cache]
 
   val mongoFormats: Format[Cache] = cacheFormat
 }

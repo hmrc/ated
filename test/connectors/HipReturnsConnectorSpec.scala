@@ -18,14 +18,14 @@ package connectors
 
 import builders.TestAudit
 import metrics.ServiceMetrics
-import models._
-import org.mockito.Mockito._
+import models.*
+import org.mockito.Mockito.*
 import org.scalatest.BeforeAndAfter
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.Json
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -42,7 +42,7 @@ class HipReturnsConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with 
 
   val testFormBundleNum = "123456789012"
 
-  implicit val hc: HeaderCarrier = HeaderCarrier()
+  given hc: HeaderCarrier = HeaderCarrier()
 
   trait Setup extends ConnectorTest {
     class TestHipReturnsConnector extends HipReturnsConnector {

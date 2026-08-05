@@ -19,7 +19,7 @@ package utils
 import models.{ClientsAgent, RelationshipDetails}
 import java.time.LocalDate
 import uk.gov.hmrc.http.{HeaderCarrier, SessionId}
-import utils.AtedConstants._
+import utils.AtedConstants.*
 
 object AtedUtils {
 

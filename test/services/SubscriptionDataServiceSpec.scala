@@ -18,15 +18,15 @@ package services
 
 import builders.AuthFunctionalityHelper
 import connectors.{EtmpDetailsConnector, HipDetailsConnector}
-import models._
+import models.*
 import org.mockito.ArgumentMatchers
-import org.mockito.Mockito._
+import org.mockito.Mockito.*
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -36,11 +36,11 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach with AuthFunctionalityHelper {
 
-  implicit val mockServicesConfig: ServicesConfig = mock[ServicesConfig]
+  given mockServicesConfig: ServicesConfig = mock[ServicesConfig]
   val mockEtmpConnector: EtmpDetailsConnector = mock[EtmpDetailsConnector]
   val mockHipConnector: HipDetailsConnector = mock[HipDetailsConnector]
   val mockAuthConnector: AuthConnector = mock[AuthConnector]
-  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+  given ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   trait Setup {
     class TestSubscriptionDataService extends SubscriptionDataService {
@@ -70,8 +70,8 @@ class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite w
   "SubscriptionDataService" must {
 
     "retrieve Subscription Data" in new Setup {
-      implicit val hc: HeaderCarrier = HeaderCarrier()
-      when(mockEtmpConnector.getSubscriptionData(ArgumentMatchers.any())(
+      given hc: HeaderCarrier = HeaderCarrier()
+      when(mockEtmpConnector.getSubscriptionData(ArgumentMatchers.any())(using
         ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
 
       val result: Future[HttpResponse] = testSubscriptionDataService.retrieveSubscriptionData(accountRef)
@@ -82,9 +82,9 @@ class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite w
     }
 
     "retrieve Subscription Data (HIP)" in new Setup {
-      implicit val hc: HeaderCarrier = HeaderCarrier()
+      given hc: HeaderCarrier = HeaderCarrier()
       FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
-      when(mockHipConnector.getSubscriptionData(ArgumentMatchers.any())(
+      when(mockHipConnector.getSubscriptionData(ArgumentMatchers.any())(using
         ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
 
       val result: Future[HttpResponse] = testSubscriptionDataService.retrieveSubscriptionData(accountRef)
@@ -102,10 +102,10 @@ class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite w
         val updatedData: UpdateSubscriptionDataRequest = UpdateSubscriptionDataRequest(
           emailConsent = true, ChangeIndicators(), List(Address(addressDetails = addressDetails))
         )
-        implicit val hc:HeaderCarrier = HeaderCarrier()
+        given hc:HeaderCarrier = HeaderCarrier()
 
         when(mockEtmpConnector.updateSubscriptionData(
-          ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
         mockRetrievingNoAuthRef()
         val result: Future[HttpResponse] = testSubscriptionDataService.updateSubscriptionData(accountRef, updatedData)
@@ -120,10 +120,10 @@ class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite w
         val updatedData: UpdateSubscriptionDataRequest = UpdateSubscriptionDataRequest(
           emailConsent = true, ChangeIndicators(), List(Address(addressDetails = addressDetails))
         )
-        implicit val hc:HeaderCarrier = HeaderCarrier()
+        given hc:HeaderCarrier = HeaderCarrier()
 
         when(mockHipConnector.updateSubscriptionData(
-          ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
         mockRetrievingNoAuthRef()
         val result: Future[HttpResponse] = testSubscriptionDataService.updateSubscriptionData(accountRef, updatedData)
@@ -137,14 +137,14 @@ class SubscriptionDataServiceSpec extends PlaySpec with GuiceOneServerPerSuite w
       val successResponse = Json.parse( """{"processingDate": "2001-12-17T09:30:47Z"}""")
 
       "work if we have valid data" in new Setup {
-        implicit val hc: HeaderCarrier = HeaderCarrier()
+        given hc: HeaderCarrier = HeaderCarrier()
         val registeredDetails: RegisteredAddressDetails = RegisteredAddressDetails(addressLine1 = "", addressLine2 = "", countryCode = "GB")
 
         val updatedData = new UpdateRegistrationDetailsRequest(
           None, isAnIndividual = false, None, Some(Organisation("testName")), registeredDetails, ContactDetails(), isAnAgent = false, isAGroup = false)
 
         when(mockEtmpConnector.updateRegistrationDetails(
-          ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
 
         val result: Future[HttpResponse] = testSubscriptionDataService.updateRegistrationDetails(accountRef, "safeId", updatedData)

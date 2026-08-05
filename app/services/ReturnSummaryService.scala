@@ -19,13 +19,13 @@ package services
 import connectors.{EtmpReturnsConnector, HipReturnsConnector}
 
 import javax.inject.Inject
-import models._
-import play.api.http.Status._
+import models.*
+import play.api.http.Status.*
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import utils.ATEDFeatureSwitches
-import utils.AtedConstants._
-import utils.ReliefUtils._
+import utils.AtedConstants.*
+import utils.ReliefUtils.*
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -33,12 +33,12 @@ class ReturnSummaryServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnector
                                          val hipConnector: HipReturnsConnector,
                                          val propertyDetailsService: PropertyDetailsService,
                                          val reliefsService: ReliefsService,
-                                         val disposeLiabilityReturnService: DisposeLiabilityReturnService,
-                                         override implicit val sc: ServicesConfig) extends ReturnSummaryService
+                                         val disposeLiabilityReturnService: DisposeLiabilityReturnService)(
+                                         using override val sc: ServicesConfig) extends ReturnSummaryService
 
 trait ReturnSummaryService {
 
-  implicit val sc: ServicesConfig
+  given sc: ServicesConfig
 
   def etmpConnector: EtmpReturnsConnector
   def hipConnector: HipReturnsConnector
@@ -71,7 +71,7 @@ trait ReturnSummaryService {
     reliefDraftSeq ++ liabilityDraftSeq ++ disposeLiabilityDraftsSeq
   }
 
-  def getPartialSummaryReturn(atedRef: String)(implicit ec: ExecutionContext): Future[SummaryReturnsModel] = {
+  def getPartialSummaryReturn(atedRef: String)(using ec: ExecutionContext): Future[SummaryReturnsModel] = {
     val reliefDraftsFuture = reliefsService.retrieveDraftReliefs(atedRef)
     val liabilityDraftsFuture = propertyDetailsService.retrieveDraftPropertyDetails(atedRef)
     val disposeLiabilityDraftsFuture = disposeLiabilityReturnService.retrieveDraftDisposeLiabilityReturns(atedRef)
@@ -97,7 +97,7 @@ trait ReturnSummaryService {
     }
   }
 
-  def getFullSummaryReturns(atedRef: String)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[SummaryReturnsModel] = {
+  def getFullSummaryReturns(atedRef: String)(using ec: ExecutionContext, hc: HeaderCarrier): Future[SummaryReturnsModel] = {
     val etmpReturnsFuture = {
       if (ATEDFeatureSwitches.hipSwitch().enabled) {
         hipConnector.getSummaryReturns(atedRef, years)
@@ -111,9 +111,9 @@ trait ReturnSummaryService {
 
     def extractEtmpReturns(etmpResponse: HttpResponse): Option[EtmpGetReturnsResponse] = {
       etmpResponse.status match {
-        case OK => etmpResponse.json.asOpt[EtmpGetReturnsResponse]
+        case OK        => etmpResponse.json.asOpt[EtmpGetReturnsResponse]
         case NOT_FOUND => None
-        case status => None
+        case _         => None
       }
     }
     for {
@@ -144,7 +144,7 @@ trait ReturnSummaryService {
   }
 
   def filterReturnsByOldAndNew(etmpPropertySummary : Seq[EtmpPropertySummary]) : (Seq[SubmittedLiabilityReturns], Seq[SubmittedLiabilityReturns]) = {
-    implicit val returnOrdering: Ordering[EtmpReturn] = Ordering.by{ etmp: EtmpReturn =>
+    given returnOrdering: Ordering[EtmpReturn] = Ordering.by { (etmp: EtmpReturn) =>
       (etmp.dateOfSubmission, etmp.changeAllowed)
     }
 

@@ -21,11 +21,11 @@ import play.api.libs.json.{Json, OFormat}
 case class EtmpRelationship(action: String, isExclusiveAgent: Boolean)
 
 object EtmpRelationship {
-  implicit val formats: OFormat[EtmpRelationship] = Json.format[EtmpRelationship]
+  given formats: OFormat[EtmpRelationship] = Json.format[EtmpRelationship]
 }
 
 case class EtmpAgentClientRelationship(acknowledgementReference: String, atedRefNumber: String, agentReferenceNumber: String, authorisation: EtmpRelationship)
 
 object EtmpAgentClientRelationship {
-  implicit val formats: OFormat[EtmpAgentClientRelationship] = Json.format[EtmpAgentClientRelationship]
+  given formats: OFormat[EtmpAgentClientRelationship] = Json.format[EtmpAgentClientRelationship]
 }

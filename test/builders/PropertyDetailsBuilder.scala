@@ -16,7 +16,7 @@
 
 package builders
 
-import models._
+import models.*
 import java.time.LocalDate
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite

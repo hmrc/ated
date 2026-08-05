@@ -18,11 +18,12 @@ package test.service
 
 import crypto.MongoCryptoProvider
 import helpers.{AssertionHelpers, IntegrationSpec}
+import org.mongodb.scala.SingleObservableFuture
 import models.{BankDetailsModel, PropertyDetails, PropertyDetailsAddress}
-import play.api.http.Status._
-import play.api.libs.json.Reads._
+import play.api.http.Status.*
+import play.api.libs.json.Reads.*
 import play.api.libs.json.{Format, JsValue, Json, OFormat}
-import play.api.libs.ws.WSResponse
+import play.api.libs.ws.{WSResponse, writeableOf_JsValue}
 import play.api.test.FutureAwaits
 import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
 import scheduler.DeletePropertyDetailsService
@@ -34,9 +35,9 @@ import scala.concurrent.Future
 
 class DeletePropertyDetailsServiceISpec extends IntegrationSpec with AssertionHelpers with FutureAwaits {
   private val mongoCrypto: MongoCryptoProvider = app.injector.instanceOf[MongoCryptoProvider]
-  implicit val crypto: Encrypter with Decrypter = mongoCrypto.crypto
-  implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
-  implicit val formats: OFormat[PropertyDetails] = Json.format[PropertyDetails]
+  given crypto: (Encrypter & Decrypter) = mongoCrypto.crypto
+  given bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
+  given formats: OFormat[PropertyDetails] = Json.format[PropertyDetails]
 
   val documentUpdateService: DeletePropertyDetailsService = app.injector.instanceOf[DeletePropertyDetailsService]
   val dateOneMinAgo: ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC")).minusMinutes(1)

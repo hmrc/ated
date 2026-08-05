@@ -21,13 +21,13 @@ import connectors.{EmailConnector, EmailSent, EtmpReturnsConnector, HipReturnsCo
 import models.{Reliefs, ReliefsTaxAvoidance, TaxAvoidance}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito._
+import org.mockito.Mockito.*
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import repository.{ReliefCached, ReliefDeleted, ReliefsMongoRepository}
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
@@ -45,7 +45,7 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
   val mockAuthConnector: AuthConnector = mock[AuthConnector]
   val mockSubscriptionDataService: SubscriptionDataService = mock[SubscriptionDataService]
   val mockEmailConnector: EmailConnector = mock[EmailConnector]
-  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+  given ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   trait Setup {
     class TestReliefsService extends ReliefsService {
@@ -55,8 +55,8 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
       override val authConnector: AuthConnector = mockAuthConnector
       override val subscriptionDataService: SubscriptionDataService = mockSubscriptionDataService
       override val emailConnector: EmailConnector = mockEmailConnector
-      implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
-      implicit val sc: ServicesConfig = mockServicesConfig
+      given ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+      given sc: ServicesConfig = mockServicesConfig
     }
 
     val testReliefsService = new TestReliefsService()
@@ -112,45 +112,45 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
     "submit cached Reliefs" must {
 
       "work even if we have no reliefs found" in new Setup {
-        implicit val hc: HeaderCarrier = new HeaderCarrier()
+        given hc: HeaderCarrier = new HeaderCarrier()
 
         when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq()))
-        when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, "")))
         when(mockAuthConnector.authorise[Option[String]](any(), any())(any(), any())).thenReturn(Future.successful(Some("Name")))
 
         when(mockReliefsCache.deleteReliefs(ArgumentMatchers.anyString())).thenReturn(Future.successful(ReliefDeleted))
         mockRetrievingNoAuthRef()
 
-        when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
 
         val result: Future[HttpResponse] = testReliefsService.submitAndDeleteDraftReliefs("accountRef", periodKey)
         await(result).status must be(NOT_FOUND)
-        verify(mockEmailConnector, times(0)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
+        verify(mockEmailConnector, times(0)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any())
       }
 
       "work even if we have no reliefs found (HIP)" in new Setup {
-        implicit val hc: HeaderCarrier = new HeaderCarrier()
+        given hc: HeaderCarrier = new HeaderCarrier()
         FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         when(mockReliefsCache.fetchReliefs(ArgumentMatchers.any())).thenReturn(Future.successful(Seq()))
-        when(mockHipConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHipConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, "")))
         when(mockAuthConnector.authorise[Option[String]](any(), any())(any(), any())).thenReturn(Future.successful(Some("Name")))
 
         when(mockReliefsCache.deleteReliefs(ArgumentMatchers.anyString())).thenReturn(Future.successful(ReliefDeleted))
         mockRetrievingNoAuthRef()
 
-        when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockSubscriptionDataService.retrieveSubscriptionData(ArgumentMatchers.any())(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
 
         val result: Future[HttpResponse] = testReliefsService.submitAndDeleteDraftReliefs("accountRef", periodKey)
         await(result).status must be(NOT_FOUND)
-        verify(mockEmailConnector, times(0)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
+        verify(mockEmailConnector, times(0)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any())
       }
 
       "submit cached Reliefs and delete them if this submit works" in new Setup {
-        implicit val hc:HeaderCarrier = HeaderCarrier()
+        given hc:HeaderCarrier = HeaderCarrier()
 
         val testEnrolments: Set[Enrolment] = Set(Enrolment("HMRC-ATED-ORG", Seq(EnrolmentIdentifier("AgentRefNumber", "XN1200000100001")), "activated"))
 
@@ -173,21 +173,21 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
         when(mockAuthConnector.authorise[Any](any(), any())(any(), any()))
           .thenReturn(Future.successful(Enrolments(testEnrolments)))
         when(mockSubscriptionDataService.retrieveSubscriptionData(
-          ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
+          ArgumentMatchers.any())(using ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         when(mockEmailConnector.sendTemplatedEmail(
-          ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
+          ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
         when(mockReliefsCache.deleteDraftReliefByYear(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(ReliefDeleted))
 
         val submitSuccess: JsValue = Json.parse( """{"status" : "OK", "processingDate" :  "2014-12-17T09:30:47Z", "formBundleNumber" : "123456789012"}""")
-        when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockEtmpConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, submitSuccess, Map.empty[String, Seq[String]])))
         val result: Future[HttpResponse] = testReliefsService.submitAndDeleteDraftReliefs("accountRef", periodKey)
         await(result).status must be(OK)
-        verify(mockEmailConnector, times(1)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
+        verify(mockEmailConnector, times(1)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any())
       }
 
       "submit cached Reliefs and delete them if this submit works (HIP)" in new Setup {
-        implicit val hc:HeaderCarrier = HeaderCarrier()
+        given hc:HeaderCarrier = HeaderCarrier()
         FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         val testEnrolments: Set[Enrolment] = Set(Enrolment("HMRC-ATED-ORG", Seq(EnrolmentIdentifier("AgentRefNumber", "XN1200000100001")), "activated"))
 
@@ -210,17 +210,17 @@ class ReliefsServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
         when(mockAuthConnector.authorise[Any](any(), any())(any(), any()))
           .thenReturn(Future.successful(Enrolments(testEnrolments)))
         when(mockSubscriptionDataService.retrieveSubscriptionData(
-          ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
+          ArgumentMatchers.any())(using ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         when(mockEmailConnector.sendTemplatedEmail(
-          ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
+          ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any())) thenReturn Future.successful(EmailSent)
         when(mockReliefsCache.deleteDraftReliefByYear(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(ReliefDeleted))
 
         val submitSuccess: JsValue = Json.parse( """{"status" : "OK", "processingDate" :  "2014-12-17T09:30:47Z", "formBundleNumber" : "123456789012"}""")
-        when(mockHipConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHipConnector.submitReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, submitSuccess, Map.empty[String, Seq[String]])))
         val result: Future[HttpResponse] = testReliefsService.submitAndDeleteDraftReliefs("accountRef", periodKey)
         await(result).status must be(OK)
-        verify(mockEmailConnector, times(1)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
+        verify(mockEmailConnector, times(1)).sendTemplatedEmail(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any())
       }
     }
 

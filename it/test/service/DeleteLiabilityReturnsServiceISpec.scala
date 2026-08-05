@@ -17,10 +17,11 @@
 package test.service
 
 import helpers.{AssertionHelpers, IntegrationSpec}
-import models._
-import play.api.http.Status._
+import models.*
+import org.mongodb.scala.SingleObservableFuture
+import play.api.http.Status.*
 import play.api.libs.json.{Format, Json, OFormat}
-import play.api.libs.ws.WSResponse
+import play.api.libs.ws.{WSResponse, writeableOf_JsValue}
 import play.api.test.FutureAwaits
 import repository.{DisposeLiabilityReturnMongoRepository, DisposeLiabilityReturnMongoWrapper}
 import scheduler.DeleteLiabilityReturnsService
@@ -34,9 +35,9 @@ import scala.concurrent.Future
 class DeleteLiabilityReturnsServiceISpec extends IntegrationSpec with AssertionHelpers with FutureAwaits {
   private val mongoCrypto: MongoCryptoProvider = app.injector.instanceOf[MongoCryptoProvider]
 
-  implicit val crypto: Encrypter with Decrypter = mongoCrypto.crypto
-  implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
-  implicit val formats: OFormat[DisposeLiability] = DisposeLiability.formats
+  given crypto: (Encrypter & Decrypter) = mongoCrypto.crypto
+  given bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
+  given formats: OFormat[DisposeLiability] = DisposeLiability.formats
 
   val deleteLiabilityReturnsService: DeleteLiabilityReturnsService = app.injector.instanceOf[DeleteLiabilityReturnsService]
   val justAdded: ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC")).minusMinutes(1)

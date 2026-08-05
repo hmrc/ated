@@ -19,7 +19,7 @@ package services
 import connectors.{EtmpDetailsConnector, HipDetailsConnector}
 
 import javax.inject.Inject
-import models._
+import models.*
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -29,12 +29,12 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class SubscriptionDataServiceImpl @Inject()(val etmpConnector: EtmpDetailsConnector,
                                             val hipConnector: HipDetailsConnector,
-                                            val authConnector: AuthConnector,
-                                            override implicit val sc: ServicesConfig) extends SubscriptionDataService
+                                            val authConnector: AuthConnector)(
+                                            using override val sc: ServicesConfig) extends SubscriptionDataService
 
 trait SubscriptionDataService extends AuthFunctionality {
 
-  implicit val sc: ServicesConfig
+  given sc: ServicesConfig
 
   def etmpConnector: EtmpDetailsConnector
 
@@ -42,7 +42,7 @@ trait SubscriptionDataService extends AuthFunctionality {
 
   def authConnector: AuthConnector
 
-  def retrieveSubscriptionData(atedReferenceNo: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def retrieveSubscriptionData(atedReferenceNo: String)(using hc: HeaderCarrier): Future[HttpResponse] = {
 
     if (ATEDFeatureSwitches.hipSwitch().enabled) {
       hipConnector.getSubscriptionData(atedReferenceNo)
@@ -52,7 +52,7 @@ trait SubscriptionDataService extends AuthFunctionality {
   }
 
   def updateSubscriptionData(atedReferenceNo: String, updateData: UpdateSubscriptionDataRequest)
-                            (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
+                            (using hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
     retrieveAgentRefNumberFor { agentRefNo =>
       val request = UpdateEtmpSubscriptionDataRequest(
         SessionUtils.getUniqueAckNo,
@@ -70,7 +70,7 @@ trait SubscriptionDataService extends AuthFunctionality {
   }
 
   def updateRegistrationDetails(atedReferenceNo: String, safeId: String, updateData: UpdateRegistrationDetailsRequest)
-                               (implicit hc: HeaderCarrier): Future[HttpResponse] = {
+                               (using hc: HeaderCarrier): Future[HttpResponse] = {
     val request = updateData.copy(acknowledgementReference = Some(SessionUtils.getUniqueAckNo))
     etmpConnector.updateRegistrationDetails(atedReferenceNo, safeId, request)
   }

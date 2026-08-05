@@ -17,7 +17,7 @@
 package controllers
 
 import org.mockito.ArgumentMatchers
-import org.mockito.Mockito._
+import org.mockito.Mockito.*
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
@@ -25,7 +25,7 @@ import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{ControllerComponents, Result}
 import play.api.test.FakeRequest
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import services.FormBundleService
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -45,7 +45,7 @@ class FormBundleReturnsControllerSpec extends PlaySpec with GuiceOneServerPerSui
     val cc: ControllerComponents = app.injector.instanceOf[ControllerComponents]
 
     class TestFormBundleReturnsController extends BackendController(cc) with FormBundleReturnsController {
-      implicit val ec: ExecutionContext = cc.executionContext
+      given ec: ExecutionContext = cc.executionContext
       val formBundleService: FormBundleService = mockFormBundleService
     }
 
@@ -56,31 +56,31 @@ class FormBundleReturnsControllerSpec extends PlaySpec with GuiceOneServerPerSui
   "FormBundleReturnsController" must {
     "getFormBundleReturns" must {
       "respond with OK, for successful GET" in new Setup {
-        when(mockFormBundleService.getFormBundleReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockFormBundleService.getFormBundleReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         val result: Future[Result] = controller.getFormBundleReturns(callingUtr, testFormBundleNum).apply(FakeRequest())
         status(result) must be(OK)
       }
       "respond with NOT_FOUND, for unsuccessful GET" in new Setup {
-        when(mockFormBundleService.getFormBundleReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockFormBundleService.getFormBundleReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(NOT_FOUND, failureResponseJson, Map.empty[String, Seq[String]])))
         val result: Future[Result] = controller.getFormBundleReturns(callingUtr, testFormBundleNum).apply(FakeRequest())
         status(result) must be(NOT_FOUND)
       }
       "respond with BAD_REQUEST, if ETMP sends BadRequest status" in new Setup {
-        when(mockFormBundleService.getFormBundleReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockFormBundleService.getFormBundleReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, errorResponseJson, Map.empty[String, Seq[String]])))
         val result: Future[Result] = controller.getFormBundleReturns(callingUtr, testFormBundleNum).apply(FakeRequest())
         status(result) must be(BAD_REQUEST)
       }
       "respond with SERVICE_UNAVAILABLE, if ETMP is unavailable" in new Setup {
-        when(mockFormBundleService.getFormBundleReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockFormBundleService.getFormBundleReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(SERVICE_UNAVAILABLE, errorResponseJson, Map.empty[String, Seq[String]])))
         val result: Future[Result] = controller.getFormBundleReturns(callingUtr, testFormBundleNum).apply(FakeRequest())
         status(result) must be(SERVICE_UNAVAILABLE)
       }
       "respond with InternalServerError, if ETMP sends some server error response" in new Setup {
-        when(mockFormBundleService.getFormBundleReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockFormBundleService.getFormBundleReturns(ArgumentMatchers.any(), ArgumentMatchers.any())(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, errorResponseJson, Map.empty[String, Seq[String]])))
         val result: Future[Result] = controller.getFormBundleReturns(callingUtr, testFormBundleNum).apply(FakeRequest())
         status(result) must be(INTERNAL_SERVER_ERROR)

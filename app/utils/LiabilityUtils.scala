@@ -16,9 +16,9 @@
 
 package utils
 
-import models._
+import models.*
 import java.time.LocalDate
-import utils.PropertyDetailsUtils._
+import utils.PropertyDetailsUtils.*
 
 
 object LiabilityUtils extends LiabilityUtils

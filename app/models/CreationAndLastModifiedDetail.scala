@@ -17,8 +17,8 @@
 package models
 
 import java.time.{ZoneId, ZonedDateTime}
-import play.api.libs.json.{Json, OFormat}
-import models.mongo.MongoDateTimeFormats.Implicits._
+import play.api.libs.json.{Format, Json, OFormat}
+import models.mongo.MongoDateTimeFormats
 
 case class CreationAndLastModifiedDetail(
                                           createdAt: ZonedDateTime   = ZonedDateTime.now(ZoneId.of("UTC")),
@@ -30,7 +30,8 @@ case class CreationAndLastModifiedDetail(
 }
 
 object CreationAndLastModifiedDetail {
-  implicit val formats: OFormat[CreationAndLastModifiedDetail] = Json.format[CreationAndLastModifiedDetail]
+  given dateTimeFormat: Format[ZonedDateTime] = MongoDateTimeFormats.tolerantDateTimeFormat
+  given formats: OFormat[CreationAndLastModifiedDetail] = Json.format[CreationAndLastModifiedDetail]
 
   def withTime(time: ZonedDateTime) = new CreationAndLastModifiedDetail(
     createdAt   = time,

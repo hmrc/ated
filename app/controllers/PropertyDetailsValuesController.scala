@@ -17,7 +17,7 @@
 package controllers
 
 import javax.inject.{Inject, Named, Singleton}
-import models._
+import models.*
 import play.api.libs.json.JsValue
 import play.api.mvc.{Action, ControllerComponents}
 import services.PropertyDetailsValuesService
@@ -34,11 +34,11 @@ class PropertyDetailsValuesControllerImpl @Inject()(val cc: ControllerComponents
                                                     @Named("appName") val appName: String
                                                    ) extends BackendController(cc) with PropertyDetailsValuesController {
   val audit: Audit = new Audit(s"ATED:$appName", auditConnector)
-  override implicit val ec: ExecutionContext = cc.executionContext
+  given ec: ExecutionContext = cc.executionContext
 }
 
 trait PropertyDetailsValuesController extends BackendController {
-  implicit val ec: ExecutionContext
+  given ec: ExecutionContext
   def propertyDetailsService: PropertyDetailsValuesService
 
   def saveDraftHasValueChanged(atedRefNo: String, id: String) = Action.async(parse.json) {
