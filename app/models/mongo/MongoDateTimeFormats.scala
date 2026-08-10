@@ -16,8 +16,8 @@
 
 package models.mongo
 
-import java.time._
-import play.api.libs.json._
+import java.time.*
+import play.api.libs.json.*
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
 trait MongoDateTimeFormats {
@@ -60,8 +60,8 @@ trait MongoDateTimeFormats {
   final val tolerantLocalDateFormat: Format[LocalDate] = Format(tolerantLocalDateReads, Writes.DefaultLocalDateWrites)
 
   trait Implicits extends MongoJavatimeFormats.Implicits {
-    implicit val mdDateTimeFormat: Format[ZonedDateTime] = tolerantDateTimeFormat
-    implicit val mdLocalDateFormat: Format[LocalDate] = tolerantLocalDateFormat
+    given mdDateTimeFormat: Format[ZonedDateTime] = tolerantDateTimeFormat
+    given mdLocalDateFormat: Format[LocalDate] = tolerantLocalDateFormat
   }
 
   object Implicits extends Implicits

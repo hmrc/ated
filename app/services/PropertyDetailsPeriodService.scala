@@ -17,7 +17,7 @@
 package services
 
 import javax.inject.Inject
-import models._
+import models.*
 
 import java.time.LocalDate
 import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
@@ -35,7 +35,7 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
   def propertyDetailsCache: PropertyDetailsMongoRepository
 
   def cacheDraftFullTaxPeriod(atedRefNo: String, id: String, updatedDetails: IsFullTaxPeriod)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -61,7 +61,7 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
   }
 
   def cacheDraftInRelief(atedRefNo: String, id: String, updatedDetails: PropertyDetailsInRelief)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -79,7 +79,7 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
 
 
   def cacheDraftDatesLiable(atedRefNo: String, id: String, updatedDetails: PropertyDetailsDatesLiable)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       def lineItemMatches(lineItem: LineItem) = {
@@ -117,7 +117,7 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
 
 
   def addDraftDatesLiable(atedRefNo: String, id: String, updatedDetails: PropertyDetailsDatesLiable)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
 
@@ -145,7 +145,7 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
 
 
   def addDraftDatesInRelief(atedRefNo: String, id: String, updatedDetails: PropertyDetailsDatesInRelief)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
 
@@ -174,7 +174,7 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
 
 
   def deleteDraftPeriod(atedRefNo: String, id: String, periodStartDate: LocalDate)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
 
@@ -197,7 +197,7 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
 
 
   private def cacheDraftPropertyDetails(atedRefNo: String, updatePropertyDetails: Seq[PropertyDetails] => Future[Option[PropertyDetails]])(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
     for {
       propertyDetailsList <- propertyDetailsCache.fetchPropertyDetails(atedRefNo)
       newPropertyDetails <- updatePropertyDetails(propertyDetailsList)

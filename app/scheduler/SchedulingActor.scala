@@ -18,13 +18,14 @@ package scheduler
 
 import org.apache.pekko.actor.{Actor, ActorLogging, Props}
 import play.api.Logging
-import scheduler.SchedulingActor._
+import scheduler.SchedulingActor.*
 
 class SchedulingActor extends Actor with ActorLogging with Logging {
+
   import context.dispatcher
 
   override def receive: Receive = {
-    case message : ScheduledMessage[_] =>
+    case message: ScheduledMessage[_] =>
       logger.info(s"Received ${message.getClass.getSimpleName}")
       message.service.invoke()
   }
@@ -36,8 +37,10 @@ object SchedulingActor {
   }
 
   case class deletePropertyDetailsDrafts(service: DeletePropertyDetailsService) extends ScheduledMessage[Int]
-	case class deleteReliefDrafts(service: DeleteReliefsService) extends ScheduledMessage[Int]
-	case class deleteLiabilityReturns(service: DeleteLiabilityReturnsService) extends ScheduledMessage[Int]
 
-	def props: Props = Props[SchedulingActor]()
+  case class deleteReliefDrafts(service: DeleteReliefsService) extends ScheduledMessage[Int]
+
+  case class deleteLiabilityReturns(service: DeleteLiabilityReturnsService) extends ScheduledMessage[Int]
+
+  def props: Props = Props[SchedulingActor]()
 }

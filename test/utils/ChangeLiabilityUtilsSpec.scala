@@ -17,7 +17,7 @@
 package utils
 
 import builders.ChangeLiabilityReturnBuilder
-import models._
+import models.*
 import java.time.LocalDate
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
@@ -29,7 +29,7 @@ import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 class ChangeLiabilityUtilsSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar {
 
-  implicit val mockServicesConfig: ServicesConfig = mock[ServicesConfig]
+  given mockServicesConfig: ServicesConfig = mock[ServicesConfig]
 
   "ChangeLiabilityUtils" must {
     "generateAddressFromLiabilityReturn" must {

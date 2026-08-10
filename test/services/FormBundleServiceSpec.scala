@@ -18,13 +18,13 @@ package services
 
 import connectors.{EtmpReturnsConnector, HipReturnsConnector}
 import org.mockito.ArgumentMatchers
-import org.mockito.Mockito._
+import org.mockito.Mockito.*
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import utils.FeatureSwitch
@@ -66,7 +66,7 @@ class FormBundleServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
       "return response from connector" in new Setup {
         implicit val hc: HeaderCarrier = HeaderCarrier()
         when(mockEtmpConnector
-          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         val response: Future[HttpResponse] = testFormBundleService.getFormBundleReturns(atedRefNo, formBundle)
         await(response).status must be(OK)
@@ -76,7 +76,7 @@ class FormBundleServiceSpec extends PlaySpec with GuiceOneServerPerSuite with Mo
         implicit val hc: HeaderCarrier = HeaderCarrier()
         FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         when(mockHipConnector
-          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         val response: Future[HttpResponse] = testFormBundleService.getFormBundleReturns(atedRefNo, formBundle)
         await(response).status must be(OK)

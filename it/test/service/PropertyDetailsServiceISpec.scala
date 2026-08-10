@@ -18,7 +18,9 @@ package test.service
 
 import helpers.{AssertionHelpers, IntegrationSpec}
 import models.PropertyDetailsAddress
+import org.mongodb.scala.SingleObservableFuture
 import play.api.libs.json.Json
+import play.api.libs.ws.writeableOf_JsValue
 import play.api.test.FutureAwaits
 import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
 import services.PropertyDetailsService

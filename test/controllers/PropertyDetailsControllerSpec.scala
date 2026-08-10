@@ -18,16 +18,16 @@ package controllers
 
 import builders.{ChangeLiabilityReturnBuilder, PropertyDetailsBuilder}
 import crypto.MongoCryptoProvider
-import models._
+import models.*
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito._
+import org.mockito.Mockito.*
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json, OFormat}
 import play.api.mvc.{AnyContentAsEmpty, ControllerComponents, Result}
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.PropertyDetailsService
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
@@ -43,9 +43,9 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
   val mockPropertyDetailsService: PropertyDetailsService = mock[PropertyDetailsService]
 
   private val testMongoCrypto: MongoCryptoProvider = app.injector.instanceOf[MongoCryptoProvider]
-  implicit lazy val crypto: Encrypter with Decrypter = testMongoCrypto.crypto
-  implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
-  implicit val mockServicesConfig: ServicesConfig = mock[ServicesConfig]
+  given crypto: (Encrypter & Decrypter) = testMongoCrypto.crypto
+  given format: OFormat[PropertyDetails] = PropertyDetails.formats
+  given mockServicesConfig: ServicesConfig = mock[ServicesConfig]
 
   trait Setup {
     val cc: ControllerComponents = app.injector.instanceOf[ControllerComponents]
@@ -54,8 +54,8 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
     class TestPropertyDetailsController extends BackendController(cc) with PropertyDetailsController {
       val propertyDetailsService: PropertyDetailsService = mockPropertyDetailsService
       val mongoCrypto: MongoCryptoProvider = testMongoCrypto
-      implicit val ec: ExecutionContext = cc.executionContext
-      implicit val servicesConfig: ServicesConfig = mockServicesConfig
+      given ec: ExecutionContext = cc.executionContext
+      given servicesConfig: ServicesConfig = mockServicesConfig
     }
 
     val controller = new TestPropertyDetailsController()
@@ -70,7 +70,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
         val testPropertyDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
 
         when(mockPropertyDetailsService.retrieveDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"))(ArgumentMatchers.any())).thenReturn(Future(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"))(using ArgumentMatchers.any())).thenReturn(Future(Some(testPropertyDetails)))
 
         val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
         val result: Future[Result] = controller.retrieveDraftPropertyDetails(testAccountRef, "1").apply(fakeRequest)
@@ -82,7 +82,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
         val testAccountRef = "ATED1223123"
 
         when(mockPropertyDetailsService.retrieveDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("2"))(ArgumentMatchers.any())).thenReturn(Future(None))
+          ArgumentMatchers.eq("2"))(using ArgumentMatchers.any())).thenReturn(Future(None))
 
         val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
         val result: Future[Result] = controller.retrieveDraftPropertyDetails(testAccountRef, "2").apply(fakeRequest)
@@ -102,7 +102,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
         when(mockPropertyDetailsService
           .createDraftPropertyDetails(ArgumentMatchers.eq(testAccountRef),
             ArgumentMatchers.eq(year),
-            ArgumentMatchers.eq(testPropertyDetailsAddr))(ArgumentMatchers.any()))
+            ArgumentMatchers.eq(testPropertyDetailsAddr))(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST",
@@ -120,7 +120,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
         val testPropertyDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val testPropertyDetailsAddr: PropertyDetailsAddress = testPropertyDetails.addressProperty
         when(mockPropertyDetailsService.createDraftPropertyDetails(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq(year), ArgumentMatchers.eq(testPropertyDetailsAddr))(ArgumentMatchers.any()))
+          ArgumentMatchers.eq(year), ArgumentMatchers.eq(testPropertyDetailsAddr))(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(None))
 
         val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST",
@@ -141,7 +141,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
         val testPropertyDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val testPropertyDetailsAddr: PropertyDetailsAddress = testPropertyDetails.addressProperty
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsAddress(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsAddr))(ArgumentMatchers.any()))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsAddr))(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST",
@@ -159,7 +159,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
         val testPropertyDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val testPropertyDetailsAddr: PropertyDetailsAddress = testPropertyDetails.addressProperty
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsAddress(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsAddr))(ArgumentMatchers.any()))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsAddr))(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(None))
 
         val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST",
@@ -179,7 +179,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
         val testPropertyDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val testPropertyDetailsTitle: PropertyDetailsTitle = testPropertyDetails.title.get
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsTitle(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsTitle))(ArgumentMatchers.any()))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsTitle))(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST",
@@ -197,7 +197,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
         val testPropertyDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         val testPropertyDetailsTitle: PropertyDetailsTitle = testPropertyDetails.title.get
         when(mockPropertyDetailsService.cacheDraftPropertyDetailsTitle(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsTitle))(ArgumentMatchers.any()))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsTitle))(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(None))
 
         val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST",
@@ -217,7 +217,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
         lazy val testPropertyDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod: PropertyDetailsTaxAvoidance = PropertyDetailsTaxAvoidance()
         when(mockPropertyDetailsService.cacheDraftTaxAvoidance(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any()))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST",
@@ -234,7 +234,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
 
         lazy val testPropertyDetailsPeriod: PropertyDetailsTaxAvoidance = PropertyDetailsTaxAvoidance()
         when(mockPropertyDetailsService.cacheDraftTaxAvoidance(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any()))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(None))
 
         val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST",
@@ -254,7 +254,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
         lazy val testPropertyDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         lazy val testPropertyDetailsPeriod: PropertyDetailsSupportingInfo = PropertyDetailsSupportingInfo("")
         when(mockPropertyDetailsService.cacheDraftSupportingInfo(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any()))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST",
@@ -271,7 +271,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
 
         lazy val testPropertyDetailsPeriod: PropertyDetailsSupportingInfo = PropertyDetailsSupportingInfo("")
         when(mockPropertyDetailsService.cacheDraftSupportingInfo(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(ArgumentMatchers.any()))
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(testPropertyDetailsPeriod))(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(None))
 
         val fakeRequest: FakeRequest[JsValue] = FakeRequest(method = "POST",
@@ -293,7 +293,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
           headers = FakeHeaders(Seq("Content-type" -> "application/json")),
           body = Json.toJson(true))
         when(mockPropertyDetailsService.cacheDraftHasBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1),
-          ArgumentMatchers.eq(true))(ArgumentMatchers.any()))
+          ArgumentMatchers.eq(true))(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(changeLiabilityReturn)))
         val result: Future[Result] = controller.updateDraftHasBankDetails(atedRefNo, formBundle1).apply(fakeRequest)
         status(result) must be(OK)
@@ -306,7 +306,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
           headers = FakeHeaders(Seq("Content-type" -> "application/json")),
           body = Json.toJson(false))
         when(mockPropertyDetailsService.cacheDraftHasBankDetails(ArgumentMatchers.eq(atedRefNo),
-          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(false))(ArgumentMatchers.any()))
+          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(false))(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(None))
         val result: Future[Result] = controller.updateDraftHasBankDetails(atedRefNo, formBundle1).apply(fakeRequest)
         status(result) must be(NOT_FOUND)
@@ -327,7 +327,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
           body = Json.toJson(true))
 
         when(mockPropertyDetailsService.cacheDraftHasUkBankAccount(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1),
-          ArgumentMatchers.eq(true))(ArgumentMatchers.any()))
+          ArgumentMatchers.eq(true))(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(changeLiabilityReturn)))
 
         val result: Future[Result] = controller.updateDraftHasUkBankAccount(atedRefNo, formBundle1).apply(fakeRequest)
@@ -343,7 +343,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
           body = Json.toJson(false))
 
         when(mockPropertyDetailsService.cacheDraftHasUkBankAccount(ArgumentMatchers.eq(atedRefNo),
-          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(false))(ArgumentMatchers.any()))
+          ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(false))(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(None))
 
         val result: Future[Result] = controller.updateDraftHasUkBankAccount(atedRefNo, formBundle1).apply(fakeRequest)
@@ -364,7 +364,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
           headers = FakeHeaders(Seq("Content-type" -> "application/json")),
           body = Json.toJson(bankdetails))
         when(mockPropertyDetailsService.cacheDraftBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1),
-          ArgumentMatchers.eq(bankdetails))(ArgumentMatchers.any()))
+          ArgumentMatchers.eq(bankdetails))(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(changeLiabilityReturn)))
         val result: Future[Result] = controller.updateDraftBankDetails(atedRefNo, formBundle1).apply(fakeRequest)
         status(result) must be(OK)
@@ -378,7 +378,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
           headers = FakeHeaders(Seq("Content-type" -> "application/json")),
           body = Json.toJson(bankdetails))
         when(mockPropertyDetailsService
-          .cacheDraftBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(bankdetails))(ArgumentMatchers.any()))
+          .cacheDraftBankDetails(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1), ArgumentMatchers.eq(bankdetails))(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(None))
         val result: Future[Result] = controller.updateDraftBankDetails(atedRefNo, formBundle1).apply(fakeRequest)
         status(result) must be(NOT_FOUND)
@@ -393,7 +393,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
         val testPropertyDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
 
         when(mockPropertyDetailsService.calculateDraftPropertyDetails(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"))(any(), any())).thenReturn(Future(Some(testPropertyDetails)))
+          ArgumentMatchers.eq("1"))(using any(), any())).thenReturn(Future(Some(testPropertyDetails)))
 
         val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
         val result: Future[Result] = controller.calculateDraftPropertyDetails(testAccountRef, "1").apply(fakeRequest)
@@ -405,7 +405,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
         val testAccountRef = "ATED1223123"
 
         when(mockPropertyDetailsService.calculateDraftPropertyDetails(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"))(any(), any())).thenReturn(Future.successful(None))
+          ArgumentMatchers.eq("1"))(using any(), any())).thenReturn(Future.successful(None))
 
         val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
         val result: Future[Result] = controller.calculateDraftPropertyDetails(testAccountRef, "1").apply(fakeRequest)
@@ -429,7 +429,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
       "respond with OK and a list of cached Property Details if this successfully submits" in new Setup {
         val testAccountRef = "ATED1223123"
         when(mockPropertyDetailsService
-          .submitDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(any(), any()))
+          .submitDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(using any(), any()))
           .thenReturn(Future(HttpResponse(OK, successResponse, Map.empty[String, Seq[String]])))
         val result: Future[Result] = controller.submitDraftPropertyDetails(testAccountRef, "1").apply(FakeRequest().withJsonBody(Json.parse( """{}""")))
         status(result) must be(OK)
@@ -438,7 +438,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
       "respond with NOT_FOUND and a list of cached Property Details if no data is found" in new Setup {
         val testAccountRef = "ATED1223123"
         when(mockPropertyDetailsService
-          .submitDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(any(), any()))
+          .submitDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(using any(), any()))
           .thenReturn(Future(HttpResponse(NOT_FOUND, successResponse, Map.empty[String, Seq[String]])))
         val result: Future[Result] = controller.submitDraftPropertyDetails(testAccountRef, "1").apply(FakeRequest().withJsonBody(Json.parse( """{}""")))
         status(result) must be(NOT_FOUND)
@@ -447,7 +447,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
       "respond with BAD_REQUEST and a list of cached Property Details if we have this status" in new Setup {
         val testAccountRef = "ATED1223123"
         when(mockPropertyDetailsService
-          .submitDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(any(), any()))
+          .submitDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(using any(), any()))
           .thenReturn(Future(HttpResponse(BAD_REQUEST, failureResponse, Map.empty[String, Seq[String]])))
         val result: Future[Result] = controller.submitDraftPropertyDetails(testAccountRef, "1").apply(FakeRequest().withJsonBody(Json.parse( """{}""")))
         status(result) must be(BAD_REQUEST)
@@ -456,7 +456,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
       "respond with SERVICE_UNAVAILABLE and a list of cached Property Details if we have this status" in new Setup {
         val testAccountRef = "ATED1223123"
         when(mockPropertyDetailsService.submitDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"))(any(), any()))
+          ArgumentMatchers.eq("1"))(using any(), any()))
           .thenReturn(Future(HttpResponse(SERVICE_UNAVAILABLE, failureResponse, Map.empty[String, Seq[String]])))
         val result: Future[Result] = controller.submitDraftPropertyDetails(testAccountRef, "1").apply(FakeRequest().withJsonBody(Json.parse( """{}""")))
         status(result) must be(SERVICE_UNAVAILABLE)
@@ -465,7 +465,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
       "respond with 999 and a list of cached Property Details if we have this status" in new Setup {
         val testAccountRef = "ATED1223123"
         when(mockPropertyDetailsService.submitDraftPropertyDetail(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"))(any(), any()))
+          ArgumentMatchers.eq("1"))(using any(), any()))
           .thenReturn(Future(HttpResponse(statusCode, failureResponse, Map.empty[String, Seq[String]])))
         val result: Future[Result] = controller.submitDraftPropertyDetails(testAccountRef, "1").apply(FakeRequest().withJsonBody(Json.parse( """{}""")))
         status(result) must be(INTERNAL_SERVER_ERROR)
@@ -475,7 +475,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
     "deleteDraftPropertyDetails" must {
       "respond with OK when list is empty" in new Setup {
         val testAccountRef = "ATED1223123"
-        when(mockPropertyDetailsService.deleteChargeableDraft(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(ArgumentMatchers.any()))
+        when(mockPropertyDetailsService.deleteChargeableDraft(ArgumentMatchers.eq(testAccountRef), ArgumentMatchers.eq("1"))(using ArgumentMatchers.any()))
           .thenReturn(Future(Seq[PropertyDetails]()))
         val result: Future[Result] = controller.deleteDraftPropertyDetails(testAccountRef, "1").apply(FakeRequest().withJsonBody(Json.parse( """{}""")))
         status(result) must be(OK)
@@ -485,7 +485,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
         val testAccountRef = "ATED1223123"
         val testPropertyDetails: PropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
         when(mockPropertyDetailsService.deleteChargeableDraft(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"))(ArgumentMatchers.any()))
+          ArgumentMatchers.eq("1"))(using ArgumentMatchers.any()))
           .thenReturn(Future(Seq[PropertyDetails](testPropertyDetails)))
         val result: Future[Result] = controller.deleteDraftPropertyDetails(testAccountRef, "1").apply(FakeRequest().withJsonBody(Json.parse( """{}""")))
         status(result) must be(INTERNAL_SERVER_ERROR)

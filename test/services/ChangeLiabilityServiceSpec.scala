@@ -17,20 +17,20 @@
 package services
 
 import builders.AuthFunctionalityHelper
-import builders.ChangeLiabilityReturnBuilder._
+import builders.ChangeLiabilityReturnBuilder.*
 import connectors.{EmailConnector, EmailSent, EtmpReturnsConnector, HipReturnsConnector}
-import models._
+import models.*
 
 import java.time.{ZoneId, ZonedDateTime}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito._
+import org.mockito.Mockito.*
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import repository.{PropertyDetailsCached, PropertyDetailsDeleted, PropertyDetailsMongoRepository}
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
@@ -54,8 +54,8 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
   trait Setup {
 
     class TestChangeLiabilityReturnService extends ChangeLiabilityService {
-      override implicit val ec: ExecutionContext = app.injector.instanceOf[ExecutionContext]
-      override implicit val sc: ServicesConfig = mockServicesConfig
+      given ec: ExecutionContext = app.injector.instanceOf[ExecutionContext]
+      given sc: ServicesConfig = mockServicesConfig
       override val propertyDetailsCache: PropertyDetailsMongoRepository = mockPropertyDetailsCache
       override val etmpConnector: EtmpReturnsConnector = mockEtmpConnector
       override val hipConnector: HipReturnsConnector = mockHipConnector
@@ -118,7 +118,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       "return Some(ChangeLiabilityReturn) if form-bundle not-found in cache, but found in ETMP - also cache it in mongo - based on previous return" in new Setup {
         when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq()))
-        when(mockEtmpConnector.getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockEtmpConnector.getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, Json.toJson(formBundleResponse1), Map.empty[String, Seq[String]])))
         val result: Option[PropertyDetails] = await(testChangeLiabilityReturnService.convertSubmittedReturnToCachedDraft(atedRefNo, formBundle1, Some(true), Some(2016)))
 
@@ -136,7 +136,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq()))
-        when(mockHipConnector.getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHipConnector.getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, Json.toJson(formBundleResponse1), Map.empty[String, Seq[String]])))
         val result: Option[PropertyDetails] = await(testChangeLiabilityReturnService.convertSubmittedReturnToCachedDraft(atedRefNo, formBundle1, Some(true), Some(2016)))
 
@@ -156,7 +156,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
           .fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq()))
         when(mockEtmpConnector
-          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, Json.toJson(formBundleResponse1), Map.empty[String, Seq[String]])))
         val result: Option[PropertyDetails] = await(testChangeLiabilityReturnService.convertSubmittedReturnToCachedDraft(atedRefNo, formBundle1))
 
@@ -177,7 +177,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
           .fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq()))
         when(mockHipConnector
-          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, Json.toJson(formBundleResponse1), Map.empty[String, Seq[String]])))
         val result: Option[PropertyDetails] = await(testChangeLiabilityReturnService.convertSubmittedReturnToCachedDraft(atedRefNo, formBundle1))
 
@@ -197,7 +197,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
           .fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq()))
         when(mockEtmpConnector
-          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(NOT_FOUND, "")))
         val result: Option[PropertyDetails] = await(testChangeLiabilityReturnService.convertSubmittedReturnToCachedDraft(atedRefNo, formBundle1))
         result must be(None)
@@ -209,7 +209,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
           .fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo)))
           .thenReturn(Future.successful(Seq()))
         when(mockHipConnector
-          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .getFormBundleReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(formBundle1))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(NOT_FOUND, "")))
         val result: Option[PropertyDetails] = await(testChangeLiabilityReturnService.convertSubmittedReturnToCachedDraft(atedRefNo, formBundle1))
         result must be(None)
@@ -227,7 +227,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
         when(mockEtmpConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using 
             ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])) )
         mockRetrievingNoAuthRef()
         val thrown: NoLiabilityAmountException = the[NoLiabilityAmountException] thrownBy await(testChangeLiabilityReturnService.calculateDraftChangeLiability(atedRefNo, formBundle1))
@@ -245,7 +245,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
         when(mockHipConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using 
             ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])) )
         mockRetrievingNoAuthRef()
         val thrown: NoLiabilityAmountException = the[NoLiabilityAmountException] thrownBy await(testChangeLiabilityReturnService.calculateDraftChangeLiability(atedRefNo, formBundle1))
@@ -264,7 +264,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
         when(mockEtmpConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using 
             ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
 
         val result: Option[PropertyDetails] = await(testChangeLiabilityReturnService.calculateDraftChangeLiability(atedRefNo, formBundle1))
@@ -289,7 +289,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
         when(mockHipConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using 
             ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
 
         val result: Option[PropertyDetails] = await(testChangeLiabilityReturnService.calculateDraftChangeLiability(atedRefNo, formBundle1))
@@ -344,16 +344,16 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
           .thenReturn(Future.successful(PropertyDetailsDeleted))
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
-        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         when(mockSubscriptionDataService
-          .retrieveSubscriptionData(any())(any()))
+          .retrieveSubscriptionData(any())(using any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
-        when(mockEmailConnector.sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
+        when(mockEmailConnector.sendTemplatedEmail(any(), any(), any())(using any())) thenReturn Future.successful(EmailSent)
 
         val result: HttpResponse = await(testChangeLiabilityReturnService.submitChangeLiability(atedRefNo, formBundle1))
         result.status must be(OK)
-        verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
+        verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(using any())
       }
 
       "return status OK, if return found in cache and submitted correctly and then deleted from cache (HIP)" in new Setup {
@@ -374,40 +374,40 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
           .thenReturn(Future.successful(PropertyDetailsDeleted))
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
-        when(mockHipConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHipConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         when(mockSubscriptionDataService
-          .retrieveSubscriptionData(any())(any()))
+          .retrieveSubscriptionData(any())(using any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
-        when(mockEmailConnector.sendTemplatedEmail(any(), any(), any())(any())) thenReturn Future.successful(EmailSent)
+        when(mockEmailConnector.sendTemplatedEmail(any(), any(), any())(using any())) thenReturn Future.successful(EmailSent)
 
         val result: HttpResponse = await(testChangeLiabilityReturnService.submitChangeLiability(atedRefNo, formBundle1))
         result.status must be(OK)
-        verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(any())
+        verify(mockEmailConnector, times(1)).sendTemplatedEmail(any(), any(), any())(using any())
       }
 
       "return status NOT_FOUND, if return not-found in cache and hence not-submitted correctly and then not-deleted from cache" in new Setup {
         when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(changeLiability1)))
         mockRetrievingNoAuthRef()
         when(mockSubscriptionDataService
-          .retrieveSubscriptionData(any())(any()))
+          .retrieveSubscriptionData(any())(using any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
 
         val result: HttpResponse = await(testChangeLiabilityReturnService.submitChangeLiability(atedRefNo, formBundle2))
         result.status must be(NOT_FOUND)
-        verify(mockEmailConnector, times(0)).sendTemplatedEmail(any(), any(), any())(any())
+        verify(mockEmailConnector, times(0)).sendTemplatedEmail(any(), any(), any())(using any())
       }
 
       "return status NOT_FOUND, if return found in cache but calculated values don't exist in cache" in new Setup {
         when(mockPropertyDetailsCache.fetchPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(Seq(changeLiability1)))
         mockRetrievingNoAuthRef()
         when(mockSubscriptionDataService
-          .retrieveSubscriptionData(any())(any()))
+          .retrieveSubscriptionData(any())(using any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
 
         val result: HttpResponse = await(testChangeLiabilityReturnService.submitChangeLiability(atedRefNo, formBundle1))
         result.status must be(NOT_FOUND)
-        verify(mockEmailConnector, times(0)).sendTemplatedEmail(any(), any(), any())(any())
+        verify(mockEmailConnector, times(0)).sendTemplatedEmail(any(), any(), any())(using any())
       }
 
       "return status returned by connector, if return found in cache and but submission failed and hence draft return is not-deleted from cache" in new Setup {
@@ -421,14 +421,14 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
         when(mockEtmpConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, respJson, Map.empty[String, Seq[String]])))
         when(mockSubscriptionDataService
-          .retrieveSubscriptionData(any())(any()))
+          .retrieveSubscriptionData(any())(using any()))
           .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
         val result: HttpResponse = await(testChangeLiabilityReturnService.submitChangeLiability(atedRefNo, formBundle1))
         result.status must be(BAD_REQUEST)
-        verify(mockEmailConnector, times(0)).sendTemplatedEmail(any(), any(), any())(any())
+        verify(mockEmailConnector, times(0)).sendTemplatedEmail(any(), any(), any())(using any())
       }
     }
 
@@ -444,14 +444,14 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
       val respJson: JsValue = Json.toJson(respModel)
       when(mockHipConnector
-        .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, respJson, Map.empty[String, Seq[String]])))
       when(mockSubscriptionDataService
-        .retrieveSubscriptionData(any())(any()))
+        .retrieveSubscriptionData(any())(using any()))
         .thenReturn(Future.successful(HttpResponse(OK, successResponseJson, Map.empty[String, Seq[String]])))
       val result: HttpResponse = await(testChangeLiabilityReturnService.submitChangeLiability(atedRefNo, formBundle1))
       result.status must be(BAD_REQUEST)
-      verify(mockEmailConnector, times(0)).sendTemplatedEmail(any(), any(), any())(any())
+      verify(mockEmailConnector, times(0)).sendTemplatedEmail(any(), any(), any())(using any())
     }
 
     "getAmountDueOrRefund" must {
@@ -460,7 +460,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         val changeLiability1WithCalc: PropertyDetails = changeLiability1.copy(calculated = Some(calc1))
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
-        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, respJson, Map.empty[String, Seq[String]])))
         val thrown: NoLiabilityAmountException = the[NoLiabilityAmountException] thrownBy await(testChangeLiabilityReturnService.getAmountDueOrRefund(atedRefNo, "1", changeLiability1WithCalc))
         thrown.message must include("No Liability Amount Found")
@@ -472,7 +472,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         val changeLiability1WithCalc: PropertyDetails = changeLiability1.copy(calculated = Some(calc1))
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
-        when(mockHipConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHipConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, respJson, Map.empty[String, Seq[String]])))
         val thrown: NoLiabilityAmountException = the[NoLiabilityAmountException] thrownBy await(testChangeLiabilityReturnService.getAmountDueOrRefund(atedRefNo, "1", changeLiability1WithCalc))
         thrown.message must include("No Liability Amount Found")
@@ -481,7 +481,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
       "throw an InternalServerException if due to some issue, the API call didn't return OK as status" in new Setup {
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
-        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockEtmpConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, respJson, Map.empty[String, Seq[String]])))
       }
 
@@ -489,7 +489,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         FeatureSwitch.enable(FeatureSwitch.apply("hipSwitch", true))
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
-        when(mockHipConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHipConnector.submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, respJson, Map.empty[String, Seq[String]])))
       }
 
@@ -504,7 +504,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
         when(mockEtmpConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         val result: (Option[BigDecimal], Option[BigDecimal]) = await(testChangeLiabilityReturnService.getAmountDueOrRefund(atedRefNo, formBundle1, changeLiability1WithCalc))
         result must be((Some(2000.0), Some(-500.0)))
       }
@@ -516,7 +516,7 @@ class ChangeLiabilityServiceSpec extends PlaySpec with GuiceOneServerPerSuite wi
         val respModel: EditLiabilityReturnsResponseModel = generateEditLiabilityReturnResponse(formBundle1)
         val respJson: JsValue = Json.toJson(respModel)
         when(mockHipConnector
-          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
+          .submitEditedLiabilityReturns(ArgumentMatchers.eq(atedRefNo), any(), any())(using ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(HttpResponse(OK, respJson, Map.empty[String, Seq[String]])))
         val result: (Option[BigDecimal], Option[BigDecimal]) = await(testChangeLiabilityReturnService.getAmountDueOrRefund(atedRefNo, formBundle1, changeLiability1WithCalc))
         result must be((Some(2000.0), Some(-500.0)))
       }

@@ -39,7 +39,7 @@ class DefaultDeleteReliefsService @Inject()(val servicesConfig: ServicesConfig,
 
 trait DeleteReliefsService extends ScheduledService[Int] with Logging {
   lazy val repo: ReliefsMongoRepository = repository()
-  implicit val hc: HeaderCarrier = HeaderCarrier()
+  given hc: HeaderCarrier = HeaderCarrier()
 
   val repository: ReliefsMongoWrapper
   val lockService: LockService
@@ -49,7 +49,7 @@ trait DeleteReliefsService extends ScheduledService[Int] with Logging {
     repo.deleteExpired60Reliefs(documentBatchSize)
   }
 
-  def invoke()(implicit ec: ExecutionContext): Future[Int] = {
+  def invoke()(using ec: ExecutionContext): Future[Int] = {
     lockService.withLock(deleteOldReliefs()) map {
       case Some(result) =>
         logger.info(s"[DeleteReliefsService] Deleted $result draft documents past the given day limit")

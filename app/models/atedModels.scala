@@ -19,8 +19,8 @@ package models
 import play.api.libs.json.{Format, Json, OFormat}
 import java.time.{ZonedDateTime, ZoneId, LocalDate}
 import uk.gov.hmrc.crypto.{Encrypter, Decrypter}
-import play.api.libs.json.Reads._
-import play.api.libs.json.Writes._
+import play.api.libs.json.Reads.*
+import play.api.libs.json.Writes.*
 
 case class ClientsAgent(
                          arn: String,
@@ -31,7 +31,7 @@ case class ClientsAgent(
                        )
 
 object ClientsAgent {
-  implicit val formats: OFormat[ClientsAgent] = Json.format[ClientsAgent]
+  given formats: OFormat[ClientsAgent] = Json.format[ClientsAgent]
 }
 
 case class Client(atedReferenceNo: String, clientName: String)
@@ -39,7 +39,7 @@ case class Client(atedReferenceNo: String, clientName: String)
 // single client for an agent
 
 object Client {
-  implicit val formats: OFormat[Client] = Json.format[Client]
+  given formats: OFormat[Client] = Json.format[Client]
 }
 
 case class DisposeLiability(dateOfDisposal: Option[LocalDate] = None, periodKey: Int)
@@ -53,7 +53,7 @@ object DisposeLiability {
 case class DisposeCalculated(liabilityAmount: BigDecimal, amountDueOrRefund: BigDecimal)
 
 object DisposeCalculated {
-  implicit val formats: OFormat[DisposeCalculated] = Json.format[DisposeCalculated]
+  given formats: OFormat[DisposeCalculated] = Json.format[DisposeCalculated]
 }
 
 case class DisposeLiabilityReturn(atedRefNo: String,
@@ -65,16 +65,16 @@ case class DisposeLiabilityReturn(atedRefNo: String,
                                   timeStamp: ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC")))
 
 object DisposeLiabilityReturn {
-  def formats(implicit crypto: Encrypter with Decrypter): OFormat[DisposeLiabilityReturn] = {
-    implicit val disposeLiabilityFormat: OFormat[DisposeLiability] = DisposeLiability.formats
-    implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
+  def formats(using crypto: Encrypter with Decrypter): OFormat[DisposeLiabilityReturn] = {
+    given disposeLiabilityFormat: OFormat[DisposeLiability] = DisposeLiability.formats
+    given bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
 
     Json.format[DisposeLiabilityReturn]
   }
 
-  def mongoFormats(implicit crypto: Encrypter with Decrypter): OFormat[DisposeLiabilityReturn] = {
-    implicit val bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
-    implicit val disposeLiabilityFormat: OFormat[DisposeLiability] = DisposeLiability.formats
+  def mongoFormats(using crypto: Encrypter with Decrypter): OFormat[DisposeLiabilityReturn] = {
+    given bankDetailsModelFormat: Format[BankDetailsModel] = BankDetailsModel.format
+    given disposeLiabilityFormat: OFormat[DisposeLiability] = DisposeLiability.formats
 
     import models.mongo.MongoDateTimeFormats.Implicits.mdDateTimeFormat
 

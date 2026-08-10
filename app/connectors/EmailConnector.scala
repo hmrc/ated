@@ -19,12 +19,13 @@ package connectors
 import javax.inject.Inject
 import models.SendEmailRequest
 import play.api.Logging
-import play.api.http.Status._
+import play.api.http.Status.*
 import play.api.libs.json.Json
-import uk.gov.hmrc.http._
+import play.api.libs.ws.writeableOf_JsValue
+import uk.gov.hmrc.http.*
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.HttpReads.Implicits.*
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -33,19 +34,19 @@ case object EmailSent extends EmailStatus
 case object EmailNotSent extends EmailStatus
 
 class EmailConnectorImpl @Inject()(val servicesConfig: ServicesConfig,
-                                   val http: HttpClientV2,
-                                   override implicit val ec: ExecutionContext) extends EmailConnector {
+                                    val http: HttpClientV2)
+                                   (using override val ec: ExecutionContext) extends EmailConnector {
   val serviceUrl: String = servicesConfig.baseUrl("email")
   val sendEmailUri: String = "hmrc/email"
 }
 
 trait EmailConnector extends Logging {
-  implicit val ec: ExecutionContext
+  given ec: ExecutionContext
   val serviceUrl: String
   val sendEmailUri: String
   val http: HttpClientV2
 
-  def sendTemplatedEmail(emailAddress: String, templateName: String, params: Map[String, String])(implicit hc: HeaderCarrier): Future[EmailStatus] = {
+  def sendTemplatedEmail(emailAddress: String, templateName: String, params: Map[String, String])(using hc: HeaderCarrier): Future[EmailStatus] = {
     val sendEmailReq = SendEmailRequest(List(emailAddress), templateName, params, force = true)
 
     val postUrl = s"$serviceUrl/$sendEmailUri"

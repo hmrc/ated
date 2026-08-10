@@ -17,10 +17,10 @@
 package repository
 
 import com.google.inject.Inject
-import uk.gov.hmrc.mongo.lock._
+import uk.gov.hmrc.mongo.lock.*
 
 class DefaultLockRepositoryProvider @Inject()(component: MongoLockRepository) extends LockRepositoryProvider {
-  lazy val repo: MongoLockRepository = component
+  val repo: MongoLockRepository = component
 }
 trait LockRepositoryProvider {
   val repo: MongoLockRepository

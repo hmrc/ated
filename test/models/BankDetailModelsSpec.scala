@@ -17,7 +17,7 @@
 package models
 
 
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
+import org.scalatest.matchers.should.Matchers.*
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsString, JsValue, Json}
@@ -85,7 +85,7 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
   "BankDetailsModel" must {
     "decrypt the elements" when {
       "when there are non-Null protected bank details" in {
-        implicit val jsonCrypto: Encrypter with Decrypter = mongoCrypto.crypto
+        given jsonCrypto: (Encrypter & Decrypter) = mongoCrypto.crypto
 
         val encryptedProtectedBankDetailsJson =
           s"""
@@ -115,7 +115,7 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
       }
 
       "when there are Null protected bank details for every field" in {
-        implicit val jsonCrypto: Encrypter with Decrypter = mongoCrypto.crypto
+        given jsonCrypto: (Encrypter & Decrypter) = mongoCrypto.crypto
 
         val encryptedProtectedBankDetailsJson =
           s"""
@@ -145,7 +145,7 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
       }
     }
     "encrypt/decrypt ProtectedBankDetails entity that are Non-Null" in {
-      implicit val jsonCrypto: Encrypter with Decrypter = mongoCrypto.crypto
+      given jsonCrypto: (Encrypter & Decrypter) = mongoCrypto.crypto
 
       val protectedBankDetails = ProtectedBankDetails(Some(SensitiveHasUKBankAccount(Some(true))),
         Some(SensitiveAccountName(Some("AcountName"))), Some(SensitiveAccountNumber(Some("1111111"))), Some(SensitiveSortCode(Some(SortCode.fromString("000102")))),
@@ -161,7 +161,7 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
       (json \ "iban").get shouldBe JsString("fT98XnPNxN88UtlRy/DiamnNU1JKYdD5nTfOSKSdBlU=")
     }
     "encrypt/decrypt ProtectedBankDetails entity that are all Null" in {
-      implicit val jsonCrypto: Encrypter with Decrypter = mongoCrypto.crypto
+      given jsonCrypto: (Encrypter & Decrypter) = mongoCrypto.crypto
 
       val protectedBankDetails = ProtectedBankDetails(Some(SensitiveHasUKBankAccount(None)),
         Some(SensitiveAccountName(None)), Some(SensitiveAccountNumber(None)), Some(SensitiveSortCode(None)),

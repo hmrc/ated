@@ -16,7 +16,7 @@
 
 package helpers
 
-import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.client.WireMock.*
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 
 trait StubbedBasicHttpCalls {
@@ -40,20 +40,20 @@ trait StubbedBasicHttpCalls {
     )
   }
 
-	def stubbedGetStateful(url: String, statusCode: Int, responseBody: String, currentState: String, nextState: String = "endState"): StubMapping = {
-		stubFor(get(urlPathMatching(url))
-			.inScenario("Test")
-			.whenScenarioStateIs(currentState)
-			.willReturn(
-				aResponse()
-					.withStatus(statusCode)
-					.withBody(responseBody)
-			)
-			.willSetStateTo(nextState)
-		)
-	}
+  def stubbedGetStateful(url: String, statusCode: Int, responseBody: String, currentState: String, nextState: String = "endState"): StubMapping = {
+    stubFor(get(urlPathMatching(url))
+      .inScenario("Test")
+      .whenScenarioStateIs(currentState)
+      .willReturn(
+        aResponse()
+          .withStatus(statusCode)
+          .withBody(responseBody)
+      )
+      .willSetStateTo(nextState)
+    )
+  }
 
-  def  stubbedGetQueryParams(url: String, statusCode: Int, responseBody: String): StubMapping = {
+  def stubbedGetQueryParams(url: String, statusCode: Int, responseBody: String): StubMapping = {
     stubFor(get(urlPathEqualTo(url))
       .withQueryParam("encoding-type", equalTo("url"))
       .willReturn(

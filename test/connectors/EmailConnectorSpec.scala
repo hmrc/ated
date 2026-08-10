@@ -16,7 +16,7 @@
 
 package connectors
 
-import org.mockito.Mockito._
+import org.mockito.Mockito.*
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
@@ -30,7 +30,7 @@ class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
 
   trait Setup extends ConnectorTest{
     class TestEmailConnector extends EmailConnector {
-      implicit val ec: ExecutionContext = app.injector.instanceOf[ExecutionContext]
+      given ec: ExecutionContext = app.injector.instanceOf[ExecutionContext]
       val http: HttpClientV2 = mockHttpClient
       override val serviceUrl: String = "http://localhost:9020/etmp-hod"
       override val sendEmailUri: String = "http://localhost:9020/etmp-hod"
@@ -45,7 +45,7 @@ class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
     "return a 202 accepted" when {
 
       "correct emailId Id is passed" in new Setup {
-        implicit val hc: HeaderCarrier = HeaderCarrier()
+        given hc: HeaderCarrier = HeaderCarrier()
 
         val emailString = "test@mail.com"
         val templateId = "relief_return_submit"
@@ -64,7 +64,7 @@ class EmailConnectorSpec extends PlaySpec with GuiceOneServerPerSuite with Mocki
     "return other status" when {
 
       "incorrect email Id are passed" in new Setup {
-        implicit val hc: HeaderCarrier = HeaderCarrier()
+        given hc: HeaderCarrier = HeaderCarrier()
         val invalidEmailString = "test@test1.com"
         val templateId = "relief_return_submit"
         val params = Map("testParam" -> "testParam")

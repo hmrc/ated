@@ -29,7 +29,7 @@ class DetailsControllerImpl @Inject()(
                                       val etmpConnector: EtmpDetailsConnector
                                      ) extends BackendController(cc) with DetailsController {
 
-  override implicit val ec: ExecutionContext = cc.executionContext
+  given ec: ExecutionContext = cc.executionContext
 
 }
 
@@ -38,15 +38,15 @@ class AgentDetailsController @Inject()(
                                         val cc: ControllerComponents,
                                         val etmpConnector: EtmpDetailsConnector
                                       ) extends BackendController(cc) with DetailsController {
-  override implicit val ec: ExecutionContext = cc.executionContext
+  given ec: ExecutionContext = cc.executionContext
 }
 
 trait DetailsController extends BackendController {
 
-  implicit val ec: ExecutionContext
+  given ec: ExecutionContext
   def etmpConnector: EtmpDetailsConnector
 
-  def getDetails(accountRef: String, identifier: String, identifierType: String): Action[AnyContent] = Action.async { implicit request =>
+  def getDetails(@annotation.unused accountRef: String, identifier: String, identifierType: String): Action[AnyContent] = Action.async { implicit request =>
     etmpConnector.getDetails(identifier = identifier, identifierType = identifierType) map { responseReceived =>
       responseReceived.status match {
         case OK => Ok(responseReceived.body)

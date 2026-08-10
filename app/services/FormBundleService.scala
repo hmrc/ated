@@ -26,17 +26,17 @@ import utils.ATEDFeatureSwitches
 
 class FormBundleServiceImpl @Inject()(val etmpReturnsConnector: EtmpReturnsConnector,
                                       val hipReturnsConnector: HipReturnsConnector)(
-  override implicit val ec: ExecutionContext, override implicit val sc: ServicesConfig) extends FormBundleService
+  using override val ec: ExecutionContext, override val sc: ServicesConfig) extends FormBundleService
 
 trait FormBundleService {
-  implicit val ec: ExecutionContext
-  implicit val sc: ServicesConfig
+  given ec: ExecutionContext
+  given sc: ServicesConfig
 
   def etmpReturnsConnector: EtmpReturnsConnector
 
   def hipReturnsConnector: HipReturnsConnector
 
-  def getFormBundleReturns(atedReferenceNo: String, formBundleNumber: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def getFormBundleReturns(atedReferenceNo: String, formBundleNumber: String)(using hc: HeaderCarrier): Future[HttpResponse] = {
 
     if (ATEDFeatureSwitches.hipSwitch().enabled) {
       hipReturnsConnector.getFormBundleReturns(atedReferenceNo, formBundleNumber)

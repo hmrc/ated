@@ -40,11 +40,11 @@ class ReliefsControllerImpl @Inject()(val cc: ControllerComponents,
                                       val auditConnector: AuditConnector,
                                       @Named("appName") val appName: String) extends BackendController(cc) with ReliefsController {
   val audit: Audit = new Audit(s"ATED:$appName", auditConnector)
-  override implicit val ec: ExecutionContext = cc.executionContext
+  given ec: ExecutionContext = cc.executionContext
 }
 
 trait ReliefsController extends BackendController with Auditable with AuthFunctionality with Logging {
-  implicit val ec: ExecutionContext
+  given ec: ExecutionContext
 
   def reliefsService: ReliefsService
 
@@ -54,7 +54,7 @@ trait ReliefsController extends BackendController with Auditable with AuthFuncti
     retrieveAgentRefNumberFor { refNo =>
       withJsonBody[ReliefsTaxAvoidance] { draftRelief =>
         reliefsService.saveDraftReliefs(atedRefNo, draftRelief) map { reliefs =>
-					auditSaveDraftReliefs(atedRefNo, draftRelief, refNo)
+          auditSaveDraftReliefs(atedRefNo, draftRelief, refNo)
           Ok(Json.toJson(reliefs))
         }
       }
@@ -65,7 +65,7 @@ trait ReliefsController extends BackendController with Auditable with AuthFuncti
     reliefsService.retrieveDraftReliefs(atedRefNo).map { reliefs =>
       reliefs.find(_.periodKey == periodKey) match {
         case Some(x) => Ok(Json.toJson(x))
-        case None => NotFound(Json.parse( """{}"""))
+        case None => NotFound(Json.parse("""{}"""))
       }
     }
   }
@@ -80,7 +80,7 @@ trait ReliefsController extends BackendController with Auditable with AuthFuncti
         case INTERNAL_SERVER_ERROR | _ =>
           logger.warn(
             s"""[ReliefsController][submitDraftReliefs] - response.status = ${responseOfSubmit.status}
-                |&& response.body = ${responseOfSubmit.body}""".stripMargin)
+               |&& response.body = ${responseOfSubmit.body}""".stripMargin)
           InternalServerError(responseOfSubmit.body)
       }
     }
@@ -108,7 +108,7 @@ trait ReliefsController extends BackendController with Auditable with AuthFuncti
 
 
   private def auditSaveDraftReliefs(atedRefNo: String, reliefsTaxAvoid: ReliefsTaxAvoidance, agentRefNo: Option[String])
-                                   (implicit hc: HeaderCarrier): Unit = {
+                                   (using hc: HeaderCarrier): Unit = {
 
     val basicReliefsMap = Map(
       "submittedBy" -> atedRefNo,

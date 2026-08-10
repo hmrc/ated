@@ -28,11 +28,11 @@ class FormBundleReturnsControllerImpl @Inject()(
                                                  val cc: ControllerComponents,
                                                  val formBundleService: FormBundleService,
                                                ) extends BackendController(cc) with FormBundleReturnsController {
-  override implicit val ec: ExecutionContext = cc.executionContext
+  given ec: ExecutionContext = cc.executionContext
 }
 
 trait FormBundleReturnsController extends BackendController {
-  implicit val ec: ExecutionContext
+  given ec: ExecutionContext
   def formBundleService: FormBundleService
 
   def getFormBundleReturns(accountRef: String, formBundle: String): Action[AnyContent] = Action.async { implicit request =>

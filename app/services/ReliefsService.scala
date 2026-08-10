@@ -20,7 +20,7 @@ import connectors.{EmailConnector, EtmpReturnsConnector, HipReturnsConnector}
 
 import javax.inject.Inject
 import models.{ReliefsTaxAvoidance, SubmitEtmpReturnsRequest}
-import play.api.http.Status._
+import play.api.http.Status.*
 import play.api.libs.json.Json
 import repository.{ReliefsMongoRepository, ReliefsMongoWrapper}
 import uk.gov.hmrc.auth.core.AuthConnector
@@ -35,16 +35,16 @@ class ReliefsServiceImpl @Inject()(val etmpConnector: EtmpReturnsConnector,
                                    val authConnector: AuthConnector,
                                    val subscriptionDataService: SubscriptionDataService,
                                    val emailConnector: EmailConnector,
-                                   val reliefRepo: ReliefsMongoWrapper,
-                                   override implicit val ec: ExecutionContext,
-                                   override implicit val sc: ServicesConfig
+                                   val reliefRepo: ReliefsMongoWrapper)(
+                                   using override val ec: ExecutionContext,
+                                   override val sc: ServicesConfig
                                   ) extends ReliefsService {
  lazy val reliefsCache: ReliefsMongoRepository = reliefRepo()
 }
 
 trait ReliefsService extends NotificationService with AuthFunctionality {
 
-  implicit val sc: ServicesConfig
+  given sc: ServicesConfig
 
   def reliefsCache: ReliefsMongoRepository
   def etmpConnector: EtmpReturnsConnector
@@ -52,7 +52,7 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
   def authConnector: AuthConnector
   def subscriptionDataService: SubscriptionDataService
 
-  def saveDraftReliefs(atedRefNo: String, relief: ReliefsTaxAvoidance)(implicit ec: ExecutionContext): Future[Seq[ReliefsTaxAvoidance]] = {
+  def saveDraftReliefs(atedRefNo: String, relief: ReliefsTaxAvoidance)(using ec: ExecutionContext): Future[Seq[ReliefsTaxAvoidance]] = {
     for {
       _ <- reliefsCache.cacheRelief(relief.copy(atedRefNo = atedRefNo))
       draftReliefs <- reliefsCache.fetchReliefs(relief.atedRefNo)
@@ -65,7 +65,7 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
     reliefsCache.fetchReliefs(atedRefNo)
   }
 
-  def submitAndDeleteDraftReliefs(atedRefNo: String, periodKey: Int)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
+  def submitAndDeleteDraftReliefs(atedRefNo: String, periodKey: Int)(using hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
     retrieveAgentRefNumberFor { agentRefNo =>
       (for {
         reliefRequest <- getSubmitReliefsRequest(atedRefNo, periodKey, agentRefNo)
@@ -96,7 +96,7 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
   }
 
   def retrieveDraftReliefForPeriodKey(atedRefNo: String, periodKey: Int)(
-    implicit ec: ExecutionContext): Future[Option[ReliefsTaxAvoidance]] = {
+    using ec: ExecutionContext): Future[Option[ReliefsTaxAvoidance]] = {
     for {
       draftReliefs <- retrieveDraftReliefs(atedRefNo)
     } yield {
@@ -105,7 +105,7 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
   }
 
   private def getSubmitReliefsRequest(atedRefNo: String, periodKey: Int, agentRefNo: Option[String])(
-    implicit ec: ExecutionContext): Future[Option[SubmitEtmpReturnsRequest]] = {
+    using ec: ExecutionContext): Future[Option[SubmitEtmpReturnsRequest]] = {
     for {
       draftReliefs <- retrieveDraftReliefForPeriodKey(atedRefNo, periodKey)
     } yield {
@@ -113,7 +113,7 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
     }
   }
 
-  def deleteAllDraftReliefs(atedRefNo: String)(implicit ec: ExecutionContext): Future[Seq[ReliefsTaxAvoidance]] = {
+  def deleteAllDraftReliefs(atedRefNo: String)(using ec: ExecutionContext): Future[Seq[ReliefsTaxAvoidance]] = {
     for {
       _ <- reliefsCache.deleteReliefs(atedRefNo)
       reliefsList <- reliefsCache.fetchReliefs(atedRefNo)
@@ -123,7 +123,7 @@ trait ReliefsService extends NotificationService with AuthFunctionality {
   }
 
   def deleteAllDraftReliefByYear(atedRefNo: String, periodKey: Int)(
-    implicit ec: ExecutionContext): Future[Seq[ReliefsTaxAvoidance]] = {
+    using ec: ExecutionContext): Future[Seq[ReliefsTaxAvoidance]] = {
     for {
       _ <- reliefsCache.deleteDraftReliefByYear(atedRefNo, periodKey)
       reliefsList <- reliefsCache.fetchReliefsByYear(atedRefNo, periodKey)

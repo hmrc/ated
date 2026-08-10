@@ -16,13 +16,13 @@
 
 package module
 
-import connectors._
+import connectors.*
 import metrics.{ServiceMetrics, ServiceMetricsImpl}
 import play.api.inject.{Binding, Module}
 import play.api.{Configuration, Environment}
-import repository._
-import scheduler._
-import services._
+import repository.*
+import scheduler.*
+import services.*
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
 import play.api.inject.{bind => playBind}

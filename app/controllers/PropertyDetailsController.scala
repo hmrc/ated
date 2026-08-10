@@ -19,7 +19,7 @@ package controllers
 import crypto.MongoCryptoProvider
 
 import javax.inject.{Inject, Singleton}
-import models._
+import models.*
 import play.api.{Configuration, Logging}
 import play.api.libs.json.{JsValue, Json, OFormat}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
@@ -35,15 +35,15 @@ class PropertyDetailsControllerImpl @Inject()(val propertyDetailsService: Proper
                                               val servicesConfig: ServicesConfig,
                                               val mongoCrypto: MongoCryptoProvider,
                                               val config: Configuration) extends BackendController(cc) with PropertyDetailsController {
-  override implicit val ec: ExecutionContext = cc.executionContext
+  given ec: ExecutionContext = cc.executionContext
 }
 
 trait PropertyDetailsController extends BackendController with Logging {
-  implicit val ec: ExecutionContext
-  implicit val servicesConfig: ServicesConfig
+  given ec: ExecutionContext
+  given servicesConfig: ServicesConfig
   val mongoCrypto: MongoCryptoProvider
-  implicit lazy val compositeCrypto: Encrypter with Decrypter = mongoCrypto.crypto
-  implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
+  given compositeCrypto: (Encrypter & Decrypter) = mongoCrypto.crypto
+  given format: OFormat[PropertyDetails] = PropertyDetails.formats
 
   def propertyDetailsService: PropertyDetailsService
 

@@ -19,7 +19,7 @@ package services
 
 
 import javax.inject.Inject
-import models._
+import models.*
 import repository.{PropertyDetailsMongoRepository, PropertyDetailsMongoWrapper}
 import utils.ReliefConstants
 
@@ -35,7 +35,7 @@ trait PropertyDetailsValuesService extends ReliefConstants {
   def propertyDetailsCache: PropertyDetailsMongoRepository
 
   def cacheDraftPropertyDetailsOwnedBefore(atedRefNo: String, id: String, updatedDetails: PropertyDetailsOwnedBefore)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -58,7 +58,7 @@ trait PropertyDetailsValuesService extends ReliefConstants {
 
 
   def cacheDraftHasValueChanged(atedRefNo: String, id: String, newValue: Boolean)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -79,7 +79,7 @@ trait PropertyDetailsValuesService extends ReliefConstants {
 
 
   def cacheDraftPropertyDetailsAcquisition(atedRefNo: String, id: String, newValue: Boolean)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -104,7 +104,7 @@ trait PropertyDetailsValuesService extends ReliefConstants {
   }
 
   def cacheDraftPropertyDetailsRevalued(atedRefNo: String, id: String, updatedDetails: PropertyDetailsRevalued)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -131,7 +131,7 @@ trait PropertyDetailsValuesService extends ReliefConstants {
   }
 
   def cacheDraftPropertyDetailsIsNewBuild(atedRefNo: String, id: String, updatedDetails: PropertyDetailsIsNewBuild)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -153,7 +153,7 @@ trait PropertyDetailsValuesService extends ReliefConstants {
   }
 
   def cacheDraftPropertyDetailsNewBuildDates(atedRefNo: String, id: String, updatedDetails: PropertyDetailsNewBuildDates)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -180,7 +180,7 @@ trait PropertyDetailsValuesService extends ReliefConstants {
   }
 
   def cacheDraftPropertyDetailsNewBuildValue(atedRefNo: String, id: String, updatedDetails: PropertyDetailsNewBuildValue)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -201,7 +201,7 @@ trait PropertyDetailsValuesService extends ReliefConstants {
   }
 
   def cacheDraftPropertyDetailsValueAcquired(atedRefNo: String, id: String, updatedDetails: PropertyDetailsValueOnAcquisition)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -223,7 +223,7 @@ trait PropertyDetailsValuesService extends ReliefConstants {
   }
 
   def cacheDraftPropertyDetailsDatesAcquired(atedRefNo: String, id: String, updatedDetails: PropertyDetailsDateOfAcquisition)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -244,7 +244,7 @@ trait PropertyDetailsValuesService extends ReliefConstants {
   }
 
   def cacheDraftPropertyDetailsProfessionallyValued(atedRefNo: String, id: String, updatedDetails: PropertyDetailsProfessionallyValued)(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
@@ -266,7 +266,7 @@ trait PropertyDetailsValuesService extends ReliefConstants {
   }
 
   private def cacheDraftPropertyDetails(atedRefNo: String, updatePropertyDetails: Seq[PropertyDetails] => Future[Option[PropertyDetails]])(
-    implicit ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
     for {
       propertyDetailsList <- propertyDetailsCache.fetchPropertyDetails(atedRefNo)
       newPropertyDetails <- updatePropertyDetails(propertyDetailsList)

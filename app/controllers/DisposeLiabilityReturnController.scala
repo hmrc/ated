@@ -35,14 +35,14 @@ class DisposeLiabilityReturnControllerImpl @Inject()(
                                                     val cc: ControllerComponents,
                                                     val mongoCrypto: MongoCryptoProvider
                                                     ) extends BackendController(cc) with DisposeLiabilityReturnController {
-  override implicit val ec: ExecutionContext = cc.executionContext
+  given ec: ExecutionContext = cc.executionContext
 }
 
 trait DisposeLiabilityReturnController extends BackendController with Logging {
-  implicit val ec: ExecutionContext
+  given ec: ExecutionContext
   val mongoCrypto: MongoCryptoProvider
-  implicit lazy val compositeCrypto: Encrypter with Decrypter = mongoCrypto.crypto
-  implicit lazy val format: OFormat[DisposeLiabilityReturn] = DisposeLiabilityReturn.formats
+  given compositeCrypto: (Encrypter & Decrypter) = mongoCrypto.crypto
+  given format: OFormat[DisposeLiabilityReturn] = DisposeLiabilityReturn.formats
 
   def disposeLiabilityReturnService: DisposeLiabilityReturnService
 
@@ -58,7 +58,7 @@ trait DisposeLiabilityReturnController extends BackendController with Logging {
   }
 
   def updateDisposalDate(atedRef: String, oldFormBundleNo: String): Action[JsValue] = Action.async(parse.json) {
-    implicit val disposeLiabilityFormat: OFormat[DisposeLiability] = DisposeLiability.formats
+    given disposeLiabilityFormat: OFormat[DisposeLiability] = DisposeLiability.formats
 
     implicit request => withJsonBody[DisposeLiability] {
       updatedDate => disposeLiabilityReturnService.updateDraftDisposeLiabilityReturnDate(atedRef, oldFormBundleNo, updatedDate) map {

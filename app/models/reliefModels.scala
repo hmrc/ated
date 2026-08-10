@@ -17,8 +17,8 @@
 package models
 
 import java.time.{ZonedDateTime, ZoneId, LocalDate}
-import play.api.libs.functional.syntax._
-import play.api.libs.json._
+import play.api.libs.functional.syntax.*
+import play.api.libs.json.*
 
 case class TaxAvoidance(
                          rentalBusinessScheme: Option[String] = None,
@@ -42,7 +42,7 @@ case class TaxAvoidance(
                        )
 
 object TaxAvoidance {
-  implicit val formats: OFormat[TaxAvoidance] = Json.format[TaxAvoidance]
+  given formats: OFormat[TaxAvoidance] = Json.format[TaxAvoidance]
 }
 
 case class Reliefs( periodKey: Int,
@@ -68,10 +68,10 @@ case class Reliefs( periodKey: Int,
                   )
 
 object Reliefs {
-  import play.api.libs.json.Reads._
-  import play.api.libs.json.Writes._
+  import play.api.libs.json.Reads.*
+  import play.api.libs.json.Writes.*
 
-  implicit val formats: OFormat[Reliefs] = {
+  given formats: OFormat[Reliefs] = {
     Json.format[Reliefs]
   }
   val mongoFormats: OFormat[Reliefs] = {
@@ -89,8 +89,8 @@ case class ReliefsTaxAvoidance(atedRefNo: String,
 
 object ReliefsTaxAvoidance {
 
-  import play.api.libs.json.Reads._
-  import play.api.libs.json.Writes._
+  import play.api.libs.json.Reads.*
+  import play.api.libs.json.Writes.*
 
   val (reliefTaxAvoidanceReads, reliefTaxAvoidanceWrites) = {
     val reliefReads: Reads[ReliefsTaxAvoidance] = (
@@ -118,7 +118,7 @@ object ReliefsTaxAvoidance {
     (reliefReads, reliefWrites)
   }
 
-  implicit val formats: OFormat[ReliefsTaxAvoidance] = OFormat(reliefTaxAvoidanceReads, reliefTaxAvoidanceWrites)
+  given formats: OFormat[ReliefsTaxAvoidance] = OFormat(reliefTaxAvoidanceReads, reliefTaxAvoidanceWrites)
 
   val (mongoReads, mongoWrites) = {
 

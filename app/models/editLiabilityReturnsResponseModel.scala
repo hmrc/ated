@@ -40,7 +40,7 @@ object EditLiabilityReturnsResponse {
     ) (EditLiabilityReturnsResponse.apply _)
 
   implicit val writes = Json.writes[EditLiabilityReturnsResponse]*/
-    implicit val formats: OFormat[EditLiabilityReturnsResponse] = Json.format[EditLiabilityReturnsResponse]
+    given formats: OFormat[EditLiabilityReturnsResponse] = Json.format[EditLiabilityReturnsResponse]
 }
 
 case class EditLiabilityReturnsResponseModel(processingDate: ZonedDateTime,
@@ -48,5 +48,5 @@ case class EditLiabilityReturnsResponseModel(processingDate: ZonedDateTime,
                                              accountBalance: BigDecimal)
 
 object EditLiabilityReturnsResponseModel {
-  implicit val formats: OFormat[EditLiabilityReturnsResponseModel] = Json.format[EditLiabilityReturnsResponseModel]
+  given formats: OFormat[EditLiabilityReturnsResponseModel] = Json.format[EditLiabilityReturnsResponseModel]
 }

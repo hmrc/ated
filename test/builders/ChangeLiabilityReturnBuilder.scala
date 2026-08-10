@@ -16,7 +16,7 @@
 
 package builders
 
-import models._
+import models.*
 import java.time.{ZonedDateTime, LocalDate, ZoneId, ZoneOffset}
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
@@ -99,7 +99,7 @@ object ChangeLiabilityReturnBuilder extends PlaySpec with GuiceOneServerPerSuite
       formBundleReturn = Some(formBundleResponse))
   }
 
-  def generateLiabilityValueDetails(periodKey: Int): PropertyDetailsValue = {
+  def generateLiabilityValueDetails(@annotation.unused periodKey: Int): PropertyDetailsValue = {
     PropertyDetailsValue(hasValueChanged = Some(false))
   }
 

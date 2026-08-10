@@ -27,7 +27,7 @@ trait AuthFunctionality extends AuthorisedFunctions {
   private val enrolmentKey = "HMRC-AGENT-AGENT"
 
   def retrieveAgentRefNumberFor[A](body: Option[String] => Future[A])
-                                  (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[A] = {
+                                  (using hc: HeaderCarrier, ec: ExecutionContext): Future[A] = {
     authorised().retrieve(Retrievals.allEnrolments) {
       case enrolments @ Enrolments(_) =>
         val enrolment: Option[EnrolmentIdentifier] = enrolments

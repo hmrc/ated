@@ -16,16 +16,15 @@
 
 package utils
 
-import models._
+import models.*
 import java.time.LocalDate
 
 object ReliefUtils extends ReliefUtils
 
 trait ReliefUtils extends ReliefConstants {
 
-  implicit class RichBoolean(val b: Boolean) {
-    final def option[A](a: => A): Option[A] = if (b) Some(a) else None
-  }
+  extension (b: Boolean)
+    def option[A](a: => A): Option[A] = if b then Some(a) else None
 
   def convertToSubmitReturnsRequest(reliefs: Option[ReliefsTaxAvoidance], agentRefNo: Option[String] = None): Option[SubmitEtmpReturnsRequest] = {
     reliefs.flatMap { reliefOptions =>

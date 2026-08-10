@@ -17,10 +17,10 @@
 package controllers
 
 import javax.inject.{Inject, Singleton}
-import models._
+import models.*
 
 import java.time.LocalDate
-import play.api.libs.json.Reads._
+import play.api.libs.json.Reads.*
 import play.api.libs.json.{Json, OFormat}
 import play.api.mvc.ControllerComponents
 import services.PropertyDetailsPeriodService
@@ -35,14 +35,14 @@ class PropertyDetailsPeriodControllerImpl @Inject()(
                                                      val cc: ControllerComponents,
                                                      val mongoCrypto: MongoCryptoProvider
                                                    ) extends BackendController(cc) with PropertyDetailsPeriodController {
-  override implicit val ec: ExecutionContext = cc.executionContext
+  given ec: ExecutionContext = cc.executionContext
 }
 
 trait PropertyDetailsPeriodController extends BackendController {
-  implicit val ec: ExecutionContext
+  given ec: ExecutionContext
   val mongoCrypto: MongoCryptoProvider
-  implicit lazy val compositeCrypto: Encrypter with Decrypter = mongoCrypto.crypto
-  implicit lazy val format: OFormat[PropertyDetails] = PropertyDetails.formats
+  given compositeCrypto: (Encrypter & Decrypter) = mongoCrypto.crypto
+  given format: OFormat[PropertyDetails] = PropertyDetails.formats
 
   def propertyDetailsService: PropertyDetailsPeriodService
 
@@ -50,7 +50,7 @@ trait PropertyDetailsPeriodController extends BackendController {
     implicit request =>
       withJsonBody[IsFullTaxPeriod] { draftPropertyDetails =>
         propertyDetailsService.cacheDraftFullTaxPeriod(atedRefNo, id, draftPropertyDetails).map {
-            case Some(x) => Ok("")
+            case Some(_) => Ok("")
             case None => BadRequest("Invalid Request")
           }
         }
@@ -60,7 +60,7 @@ trait PropertyDetailsPeriodController extends BackendController {
     implicit request =>
       withJsonBody[PropertyDetailsInRelief] { draftPropertyDetails =>
         propertyDetailsService.cacheDraftInRelief(atedRefNo, id, draftPropertyDetails).map {
-            case Some(x) => Ok("")
+            case Some(_) => Ok("")
             case None => BadRequest("Invalid Request")
           }
         }
@@ -71,7 +71,7 @@ trait PropertyDetailsPeriodController extends BackendController {
       withJsonBody[PropertyDetailsDatesLiable] { draftPropertyDetails =>
         propertyDetailsService.cacheDraftDatesLiable(atedRefNo, id, draftPropertyDetails).map { updatedDraftPropertyDetails =>
           updatedDraftPropertyDetails match {
-            case Some(x) => Ok("")
+            case Some(_) => Ok("")
             case None => BadRequest("Invalid Request")
           }
         }
@@ -83,7 +83,7 @@ trait PropertyDetailsPeriodController extends BackendController {
       withJsonBody[PropertyDetailsDatesLiable] { draftPropertyDetails =>
         propertyDetailsService.addDraftDatesLiable(atedRefNo, id, draftPropertyDetails).map { updatedDraftPropertyDetails =>
           updatedDraftPropertyDetails match {
-            case Some(x) => Ok("")
+            case Some(_) => Ok("")
             case None => BadRequest("Invalid Request")
           }
         }
@@ -95,7 +95,7 @@ trait PropertyDetailsPeriodController extends BackendController {
       withJsonBody[PropertyDetailsDatesInRelief] { draftPropertyDetails =>
         propertyDetailsService.addDraftDatesInRelief(atedRefNo, id, draftPropertyDetails).map { updatedDraftPropertyDetails =>
           updatedDraftPropertyDetails match {
-            case Some(x) => Ok("")
+            case Some(_) => Ok("")
             case None => BadRequest("Invalid Request")
           }
         }
@@ -107,7 +107,7 @@ trait PropertyDetailsPeriodController extends BackendController {
       withJsonBody[LocalDate] { dateToDelete =>
         propertyDetailsService.deleteDraftPeriod(atedRefNo, id, dateToDelete).map { updatedDraftPropertyDetails =>
           updatedDraftPropertyDetails match {
-            case Some(x) => Ok(Json.toJson(updatedDraftPropertyDetails))
+            case Some(_) => Ok(Json.toJson(updatedDraftPropertyDetails))
             case None => BadRequest(Json.toJson(updatedDraftPropertyDetails))
           }
         }

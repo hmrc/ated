@@ -17,10 +17,10 @@
 package models
 
 import java.time.LocalDate
-import play.api.libs.functional.syntax._
+import play.api.libs.functional.syntax.*
 import play.api.libs.json.{JsPath, Json, OFormat, OWrites, Reads}
-import play.api.libs.json.Writes._
-import play.api.libs.json.Reads._
+import play.api.libs.json.Writes.*
+import play.api.libs.json.Reads.*
 
 case class EtmpReturn(formBundleNumber: String,
                       dateOfSubmission: LocalDate,
@@ -44,7 +44,7 @@ object EtmpReturn {
     ) (EtmpReturn.apply _)
 
   implicit val writes = Json.writes[EtmpReturn]*/
-   implicit val formats: OFormat[EtmpReturn] = Json.format[EtmpReturn]
+   given formats: OFormat[EtmpReturn] = Json.format[EtmpReturn]
 }
 
 case class EtmpPropertySummary(contractObject: String,
@@ -54,14 +54,14 @@ case class EtmpPropertySummary(contractObject: String,
                                `return`: Seq[EtmpReturn])
 
 object EtmpPropertySummary {
-  implicit val formats: OFormat[EtmpPropertySummary] = Json.format[EtmpPropertySummary]
+  given formats: OFormat[EtmpPropertySummary] = Json.format[EtmpPropertySummary]
 }
 
 
 case class EtmpLiabilityReturnSummary(propertySummary: Option[Seq[EtmpPropertySummary]] = None)
 
 object EtmpLiabilityReturnSummary {
-  implicit val formats: OFormat[EtmpLiabilityReturnSummary] = Json.format[EtmpLiabilityReturnSummary]
+  given formats: OFormat[EtmpLiabilityReturnSummary] = Json.format[EtmpLiabilityReturnSummary]
 }
 
 case class EtmpReliefReturnsSummary(formBundleNumber: String,
@@ -74,20 +74,20 @@ case class EtmpReliefReturnsSummary(formBundleNumber: String,
                                     taxAvoidancePromoterReference: Option[String] = None)
 
 object EtmpReliefReturnsSummary {
-  implicit val formats: OFormat[EtmpReliefReturnsSummary] = Json.format[EtmpReliefReturnsSummary]
+  given formats: OFormat[EtmpReliefReturnsSummary] = Json.format[EtmpReliefReturnsSummary]
 }
 
 case class EtmpReturnData(reliefReturnSummary: Option[Seq[EtmpReliefReturnsSummary]] = None,
                           liabilityReturnSummary: Option[Seq[EtmpLiabilityReturnSummary]] = None)
 
 object EtmpReturnData {
-  implicit val formats: OFormat[EtmpReturnData] = Json.format[EtmpReturnData]
+  given formats: OFormat[EtmpReturnData] = Json.format[EtmpReturnData]
 }
 
 case class EtmpPeriodSummary(periodKey: String, returnData: EtmpReturnData)
 
 object EtmpPeriodSummary {
-  implicit val formats: OFormat[EtmpPeriodSummary] = Json.format[EtmpPeriodSummary]
+  given formats: OFormat[EtmpPeriodSummary] = Json.format[EtmpPeriodSummary]
 }
 
 case class EtmpGetReturnsResponse(
@@ -99,7 +99,7 @@ case class EtmpGetReturnsResponse(
 
 object EtmpGetReturnsResponse {
 
-  implicit val reads: Reads[EtmpGetReturnsResponse] = (
+  given reads: Reads[EtmpGetReturnsResponse] = (
     (JsPath \ "safeId").read[String] and
       (JsPath \ "organisationName").read[String] and
       (JsPath \ "periodData").read[Seq[EtmpPeriodSummary]] and
@@ -107,5 +107,5 @@ object EtmpGetReturnsResponse {
       (JsPath \ "atedBalance").read[String].map(a => BigDecimal(a.trim.replaceAll("\\s+", "")))
     ) (EtmpGetReturnsResponse.apply _)
 
-  implicit val writes: OWrites[EtmpGetReturnsResponse] = Json.writes[EtmpGetReturnsResponse]
+  given writes: OWrites[EtmpGetReturnsResponse] = Json.writes[EtmpGetReturnsResponse]
 }

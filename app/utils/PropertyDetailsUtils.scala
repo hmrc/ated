@@ -16,7 +16,7 @@
 
 package utils
 
-import models._
+import models.*
 import java.time.LocalDate
 import uk.gov.hmrc.http.InternalServerException
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -29,7 +29,7 @@ object PropertyDetailsUtils extends ReliefConstants {
   val _2022ValuationPolicyDate: Option[LocalDate] = Some(LocalDate.of(2022, 4, 1))
 
   def propertyDetailsCalculated(propertyDetails: PropertyDetails)
-                               (implicit servicesConfig: ServicesConfig): PropertyDetailsCalculated = {
+                               (using servicesConfig: ServicesConfig): PropertyDetailsCalculated = {
 
     def getProfessionalValuation(propertyDetails: PropertyDetails): Option[Boolean] = {
       propertyDetails.value.flatMap { v =>
@@ -119,7 +119,7 @@ object PropertyDetailsUtils extends ReliefConstants {
   }
 
   def getValuationDate(propertyDetailsValue: Option[PropertyDetailsValue], acquistionDateToUse: Option[LocalDate], periodKey: Int)
-                      (implicit servicesConfig: ServicesConfig): Option[LocalDate] = {
+                      (using servicesConfig: ServicesConfig): Option[LocalDate] = {
 
     def getBasicValuationDate(value: PropertyDetailsValue): Option[LocalDate] = {
       val valuation2022Active: Boolean = servicesConfig.getBoolean("feature.valuation2022DateActive")
@@ -148,7 +148,7 @@ object PropertyDetailsUtils extends ReliefConstants {
   }
 
   def getInitialValueForSubmission(propertyDetailsValue: Option[PropertyDetailsValue], periodKey: Int)
-                                  (implicit servicesConfig: ServicesConfig): Option[BigDecimal] = {
+                                  (using servicesConfig: ServicesConfig): Option[BigDecimal] = {
     propertyDetailsValue match {
       case None => None
       case Some(value) =>
@@ -166,7 +166,7 @@ object PropertyDetailsUtils extends ReliefConstants {
 
 
   def getAcquisitionValueAndDate(value: PropertyDetailsValue, periodKey: Int)
-                                (implicit servicesConfig: ServicesConfig): (Option[BigDecimal], Option[LocalDate]) = {
+                                (using servicesConfig: ServicesConfig): (Option[BigDecimal], Option[LocalDate]) = {
     val ownedBefore = PropertyDetailsOwnedBefore(value.isOwnedBeforePolicyYear, value.ownedBeforePolicyYearValue)
     (ownedBefore.policyYear(periodKey), value.isNewBuild, value.isPropertyRevalued) match {
       case (IsOwnedBefore2012, _, _) => (value.ownedBeforePolicyYearValue, _2012ValuationPolicyDate)
@@ -182,7 +182,7 @@ object PropertyDetailsUtils extends ReliefConstants {
   }
 
   def getAcquisitionData(propertyDetailsValue: Option[PropertyDetailsValue], periodKey: Int)
-                        (implicit servicesConfig: ServicesConfig): (Option[BigDecimal], Option[LocalDate]) = {
+                        (using servicesConfig: ServicesConfig): (Option[BigDecimal], Option[LocalDate]) = {
     propertyDetailsValue match {
       case None => (None, None)
       case Some(value) => getAcquisitionValueAndDate(value, periodKey)
@@ -224,7 +224,7 @@ object PropertyDetailsUtils extends ReliefConstants {
   }
 
   def getLineItems(propertyCalc: PropertyDetailsCalculated): Seq[EtmpLineItems] = {
-    implicit val lineItemOrdering: Ordering[EtmpLineItems] = Ordering.by(_.dateFrom)
+    given lineItemOrdering: Ordering[EtmpLineItems] = Ordering.by(_.dateFrom)
 
     val etmpReliefLineItems = propertyCalc.reliefPeriods.map(item =>
       EtmpLineItems(item.value, item.startDate, item.endDate, item.lineItemType, item.description)
@@ -249,7 +249,7 @@ object PropertyDetailsUtils extends ReliefConstants {
   }
 
   def populateBankDetails(propertyDetails: Option[PropertyDetails]): Option[PropertyDetails] = {
-    import models.BankDetailsConversions._
+    import models.BankDetailsConversions.given
     propertyDetails.map {
       foundDetails =>
 

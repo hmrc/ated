@@ -25,10 +25,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait NotificationService  {
 
-  implicit val ec: ExecutionContext
+  given ec: ExecutionContext
   def emailConnector: EmailConnector
 
-  def sendMail(subscriptionData: JsValue, template: String, reference: Map[String, String] = Map.empty)(implicit hc: HeaderCarrier): Future[EmailStatus] = {
+  def sendMail(subscriptionData: JsValue, template: String, reference: Map[String, String] = Map.empty)(using hc: HeaderCarrier): Future[EmailStatus] = {
 
     (subscriptionData \\ "emailAddress").headOption.map {
       emailAddressJson =>

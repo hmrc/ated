@@ -24,7 +24,7 @@ import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions, UpdateOptions}
 import play.api.Logging
-import uk.gov.hmrc.mongo._
+import uk.gov.hmrc.mongo.*
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import models.mongo.MongoDateTimeFormats
 import uk.gov.hmrc.mdc.Mdc.preservingMdc
@@ -44,10 +44,10 @@ case object ReliefDeletedError extends ReliefDelete
 @Singleton
 class ReliefsMongoWrapperImpl @Inject()(val mongo: MongoComponent,
                                         val serviceMetrics: ServiceMetrics)(
-  override implicit val ec: ExecutionContext) extends ReliefsMongoWrapper
+  using val ec: ExecutionContext) extends ReliefsMongoWrapper
 
 trait ReliefsMongoWrapper {
-  implicit val ec: ExecutionContext
+  given ec: ExecutionContext
   val mongo: MongoComponent
   val serviceMetrics: ServiceMetrics
 
@@ -67,7 +67,7 @@ trait ReliefsMongoRepository extends PlayMongoRepository[ReliefsTaxAvoidance] {
 }
 
 class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: ServiceMetrics)
-                                    (implicit val ec: ExecutionContext)
+                                    (using val ec: ExecutionContext)
   extends  PlayMongoRepository[ReliefsTaxAvoidance](
     collectionName = "reliefs",
     mongoComponent = mongo,

@@ -16,20 +16,20 @@
 
 package services
 
-import builders.ChangeLiabilityReturnBuilder._
-import builders._
+import builders.ChangeLiabilityReturnBuilder.*
+import builders.*
 import connectors.{EtmpReturnsConnector, HipReturnsConnector}
-import models._
+import models.*
 
 import java.time.LocalDate
 import org.mockito.ArgumentMatchers
-import org.mockito.Mockito._
+import org.mockito.Mockito.*
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import utils.FeatureSwitch
@@ -38,7 +38,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with MockitoSugar with BeforeAndAfterEach {
 
-  implicit val mockServicesConfig: ServicesConfig = mock[ServicesConfig]
+  given mockServicesConfig: ServicesConfig = mock[ServicesConfig]
   val mockEtmpConnector: EtmpReturnsConnector = mock[EtmpReturnsConnector]
   val mockHipConnector: HipReturnsConnector = mock[HipReturnsConnector]
   val mockPropertyDetailsService: PropertyDetailsService = mock[PropertyDetailsService]
@@ -48,8 +48,8 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
   val noOfYears = 4
   val successResponseJson: JsValue = Json.parse( """{"sapNumber":"1234567890", "safeId": "EX0012345678909", "agentReferenceNumber": "AARN1234567"}""")
 
-  implicit val hc: HeaderCarrier = HeaderCarrier()
-  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+  given hc: HeaderCarrier = HeaderCarrier()
+  given ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val formBundle1 = "123456789012"
   val formBundle2 = "123456789000"
@@ -78,7 +78,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
       override val propertyDetailsService: PropertyDetailsService = mockPropertyDetailsService
       override val reliefsService: ReliefsService = mockReliefsService
       override val disposeLiabilityReturnService: DisposeLiabilityReturnService = mockDisposeLiabilityReturnService
-      override implicit val sc: ServicesConfig = mockServicesConfig
+      given sc: ServicesConfig = mockServicesConfig
     }
 
     val testReturnSummaryService = new TestReturnSummaryService()
@@ -155,7 +155,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
               List(SubmittedLiabilityReturns("12345", "line1 line2", 1000, LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5),
                 changeAllowed = true, paymentReference = "pay-123")))))))
 
-        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
@@ -192,7 +192,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
               List(SubmittedLiabilityReturns("12345", "line1 line2", 1000, LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5), LocalDate.of(2014, 5, 5),
                 changeAllowed = true, paymentReference = "pay-123")))))))
 
-        when(mockHipConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHipConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
@@ -241,7 +241,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
           )
         )
 
-        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
@@ -290,7 +290,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
           )
         )
 
-        when(mockHipConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHipConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
@@ -316,7 +316,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
           PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")),
             Some(SubmittedReturns(periodKey, List(), List())))))
 
-        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
@@ -342,7 +342,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
           PeriodSummaryReturns(periodKey, List(DraftReturns(periodKey, "123456789012", "line1 line2", None, "Dispose_Liability")),
             Some(SubmittedReturns(periodKey, List(), List())))))
 
-        when(mockHipConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHipConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
@@ -369,7 +369,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
           Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5),
             LocalDate.of(2014, 5, 5), None, None)), List())))))
 
-        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
@@ -396,7 +396,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
           Some(SubmittedReturns(periodKey, List(SubmittedReliefReturns("12345", "Farmhouses", LocalDate.of(2014, 9, 5), LocalDate.of(2014, 10, 5),
             LocalDate.of(2014, 5, 5), None, None)), List())))))
 
-        when(mockHipConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHipConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
@@ -416,7 +416,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
         val dispLiab: Seq[DisposeLiabilityReturn] = Seq(disposeLiability1)
         val years = 6
 
-        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(NOT_FOUND, "")))
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
@@ -440,7 +440,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
         val dispLiab: Seq[DisposeLiabilityReturn] = Seq(disposeLiability1)
         val years = 6
 
-        when(mockHipConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHipConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(NOT_FOUND, "")))
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
@@ -463,7 +463,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
 
         val expected: SummaryReturnsModel = SummaryReturnsModel(None, Nil)
 
-        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(NOT_FOUND, "")))
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
@@ -483,7 +483,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
 
         val expected: SummaryReturnsModel = SummaryReturnsModel(None, Nil)
 
-        when(mockHipConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHipConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(NOT_FOUND, "")))
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
@@ -502,7 +502,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
 
         val expected: SummaryReturnsModel = SummaryReturnsModel(None, Nil)
 
-        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, "")))
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
@@ -522,7 +522,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
 
         val expected: SummaryReturnsModel = SummaryReturnsModel(None, Nil)
 
-        when(mockHipConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHipConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, "")))
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
@@ -542,7 +542,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
 
         val expected: SummaryReturnsModel = SummaryReturnsModel(None, Nil)
 
-        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockEtmpConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
@@ -564,7 +564,7 @@ class ReturnSummaryServiceSpec extends PlaySpec with GuiceOneServerPerSuite with
 
         val expected: SummaryReturnsModel = SummaryReturnsModel(None, Nil)
 
-        when(mockHipConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHipConnector.getSummaryReturns(ArgumentMatchers.eq(atedRefNo), ArgumentMatchers.eq(years))(using ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse(OK, etmpReturnJson, Map.empty[String, Seq[String]])))
         when(mockPropertyDetailsService.retrieveDraftPropertyDetails(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(propDetailsSeq))
         when(mockReliefsService.retrieveDraftReliefs(ArgumentMatchers.eq(atedRefNo))).thenReturn(Future.successful(reliefDrafts))
