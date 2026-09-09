@@ -18,8 +18,7 @@ package crypto
 
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
-import uk.gov.hmrc.crypto.{Decrypter, Encrypter, SymmetricCryptoFactory}
-import uk.gov.hmrc.crypto.SymmetricCryptoFactory._
+import uk.gov.hmrc.crypto.{Crypted, Decrypter, Encrypter, PlainBytes, PlainContent, PlainText, SymmetricCryptoFactory}
 
 @Singleton
 class MongoCryptoProvider @Inject()(config: Configuration) {
@@ -30,6 +29,17 @@ class MongoCryptoProvider @Inject()(config: Configuration) {
   private val ecbCrypto: Encrypter with Decrypter =
     SymmetricCryptoFactory.aesCryptoFromConfig("mongodb.encryption", config.underlying)
 
-  val crypto: Encrypter with Decrypter =
-    composeCrypto(ecbCrypto, List(gcmCrypto))
+  private val decrypter: Decrypter =
+    SymmetricCryptoFactory.composeCrypto(gcmCrypto, List(ecbCrypto))
+
+  val crypto: Encrypter with Decrypter = new Encrypter with Decrypter {
+    override def encrypt(plain: PlainContent): Crypted =
+      ecbCrypto.encrypt(plain)
+
+    override def decrypt(encrypted: Crypted): PlainText =
+      decrypter.decrypt(encrypted)
+
+    override def decryptAsBytes(encrypted: Crypted): PlainBytes =
+      decrypter.decryptAsBytes(encrypted)
+  }
 }

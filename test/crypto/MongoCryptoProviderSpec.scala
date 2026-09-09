@@ -81,6 +81,17 @@ class MongoCryptoProviderSpec extends PlaySpec {
       new MongoCryptoProvider(cfg).crypto.decrypt(gcmValue).value mustBe "future-gcm-record"
     }
 
+    "decrypt GCM values reliably, including plaintexts that are an exact multiple of the AES block size" in {
+      val cfg      = cfgWith(gcmKeyA, ecbKeyA)
+      val provider = new MongoCryptoProvider(cfg)
+      val gcm      = SymmetricCryptoFactory.aesGcmCryptoFromConfig("mongodb.encryptionGcm", cfg.underlying)
+      val plain    = "\"ATED Tax Payer\"" // exactly 16 bytes
+
+      (1 to 5000).foreach { _ =>
+        provider.crypto.decrypt(gcm.encrypt(PlainText(plain))).value mustBe plain
+      }
+    }
+
     "support rotation via ECB previousKeys (new provider reads old ciphertext)" in {
       val ciphertext  = legacyEcbCrypto(cfgWith(gcmKeyA, ecbKeyOld)).encrypt(PlainText("rotate-me"))
       val newProvider = new MongoCryptoProvider(cfgWith(gcmKeyA, ecbKeyA, ecbPrevious = Seq(ecbKeyOld)))
