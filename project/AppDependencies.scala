@@ -9,7 +9,8 @@ private object AppDependencies {
   val compile: Seq[ModuleID] = Seq(
     ws,
     "uk.gov.hmrc"            %% "bootstrap-backend-play-30"   % bootstrapVersion,
-    "io.github.samueleresca" %% "pekko-quartz-scheduler"      % "1.3.0-pekko-1.1.x"  exclude("com.mchange", "mchange-commons-java"),
+    "io.github.samueleresca" %% "pekko-quartz-scheduler"      % "1.3.0-pekko-1.1.x" exclude("com.mchange", "c3p0") exclude("com.mchange", "mchange-commons-java"),
+    "com.mchange"            %  "c3p0"                        % "0.14.2",
     "com.mchange"            %  "mchange-commons-java"        % "0.6.1",
     "uk.gov.hmrc"            %% "domain-play-30"              % "13.0.0",
     "uk.gov.hmrc.mongo"      %% "hmrc-mongo-play-30"          % "2.13.0",
