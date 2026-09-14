@@ -63,6 +63,10 @@ trait DeleteLiabilityReturnsService extends ScheduledService[Int] with Logging {
       case None =>
         logger.warn(s"[DeleteLiabilityReturnsService] Failed to acquire lock")
         0
+    } recover {
+      case e =>
+        logger.error("[DeleteLiabilityReturnsService] sweep failed", e)
+        0
     }
   }
 }

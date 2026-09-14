@@ -57,6 +57,10 @@ trait DeleteReliefsService extends ScheduledService[Int] with Logging {
       case None =>
         logger.warn(s"[DeleteReliefsService] Failed to acquire lock")
         0
+    } recover {
+      case e =>
+        logger.error("[DeleteReliefsService] sweep failed", e)
+        0
     }
   }
 }

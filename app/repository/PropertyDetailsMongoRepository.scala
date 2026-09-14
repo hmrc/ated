@@ -110,7 +110,11 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
 
     val query2 = lte("timeStamp", dateTimeThreshold)
 
-    val foundPropertyDetails: Future[Option[Seq[PropertyDetails]]] = collection.find(query2).batchSize(batchSize).collect().toFutureOption()
+    val foundPropertyDetails: Future[Option[Seq[PropertyDetails]]] =
+      collection.countDocuments(query2).toFuture() flatMap { count =>
+        logger.info(s"[deleteExpired60PropertyDetails] $count documents older than $dateTimeThreshold")
+        collection.find(query2).batchSize(batchSize).collect().toFutureOption()
+      }
 
     foundPropertyDetails flatMap {
       case Some(propertyDetails) =>

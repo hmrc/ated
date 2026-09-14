@@ -106,7 +106,11 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
 
     val query2 = lte("timeStamp", dateTimeThreshold)
 
-    val foundReliefs: Future[Option[Seq[ReliefsTaxAvoidance]]] = collection.find(query2).batchSize(batchSize).collect().toFutureOption()
+    val foundReliefs: Future[Option[Seq[ReliefsTaxAvoidance]]] =
+      collection.countDocuments(query2).toFuture() flatMap { count =>
+        logger.info(s"[deleteExpired60Reliefs] $count documents older than $dateTimeThreshold")
+        collection.find(query2).batchSize(batchSize).collect().toFutureOption()
+      }
 
     foundReliefs flatMap {
       case Some(reliefs) =>

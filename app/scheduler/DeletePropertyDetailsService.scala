@@ -57,6 +57,10 @@ trait DeletePropertyDetailsService extends ScheduledService[Int] with Logging {
       case None =>
         logger.warn(s"[deleteOldPropertyDetails] Failed to acquire lock")
         0
+    } recover {
+      case e =>
+        logger.error("[deleteOldPropertyDetails] sweep failed", e)
+        0
     }
   }
 }

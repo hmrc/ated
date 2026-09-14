@@ -107,9 +107,13 @@ class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: Servi
     val dayThreshold = 61
     val dateTimeThreshold = ZonedDateTime.now(ZoneId.of("UTC")).withHour(0).minusDays(dayThreshold)
 
-    val query2 = lte("timeStamp", dateTimeThreshold)
+            val query2 = lte("timeStamp", dateTimeThreshold)
 
-    val foundLiabilityReturns: Future[Option[Seq[DisposeLiabilityReturn]]] = collection.find(query2).batchSize(batchSize).collect().toFutureOption()
+    val foundLiabilityReturns: Future[Option[Seq[DisposeLiabilityReturn]]] =
+      collection.countDocuments(query2).toFuture() flatMap { count =>
+        logger.info(s"[deleteExpired60DayLiabilityReturns] $count documents older than $dateTimeThreshold")
+        collection.find(query2).batchSize(batchSize).collect().toFutureOption()
+      }
 
     foundLiabilityReturns flatMap {
       case Some(res) =>
@@ -118,7 +122,7 @@ class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: Servi
 
           preservingMdc(collection.deleteOne(deleteQuery).toFutureOption()) map {
             case Some(res) =>
-              if (res.wasAcknowledged() && res.getDeletedCount == 1) {
+            if (res.wasAcknowledged() && res.getDeletedCount == 1) {
                 1
               } else {
                 logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated liability return - ex: $res")
