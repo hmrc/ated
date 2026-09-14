@@ -4,7 +4,6 @@ import sbt.*
 private object AppDependencies {
 
   val bootstrapVersion = "10.8.0"
-  val pekkoVersion     = "1.1.2"
 
   val compile: Seq[ModuleID] = Seq(
     ws,
@@ -14,12 +13,7 @@ private object AppDependencies {
     "com.mchange"            %  "mchange-commons-java"        % "0.6.1",
     "uk.gov.hmrc"            %% "domain-play-30"              % "13.0.0",
     "uk.gov.hmrc.mongo"      %% "hmrc-mongo-play-30"          % "2.13.0",
-    "uk.gov.hmrc"            %% "crypto-json-play-30"         % "8.4.0",
-    "org.apache.pekko"       %% "pekko-protobuf-v3"           % pekkoVersion,
-    "org.apache.pekko"       %% "pekko-serialization-jackson" % pekkoVersion,
-    "org.apache.pekko"       %% "pekko-stream"                % pekkoVersion,
-    "org.apache.pekko"       %% "pekko-actor-typed"           % pekkoVersion,
-    "org.apache.pekko"       %% "pekko-slf4j"                 % pekkoVersion
+    "uk.gov.hmrc"            %% "crypto-json-play-30"         % "8.4.0"
   )
 
   val test: Seq[ModuleID] = Seq(
