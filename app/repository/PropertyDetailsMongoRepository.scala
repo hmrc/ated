@@ -80,9 +80,10 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
       IndexModel(ascending("id"), IndexOptions().name("idIndex").unique(true).sparse(true)),
       IndexModel(ascending("id", "periodKey", "atedRefNo"), IndexOptions().name("idAndperiodKeyAndAtedRefIndex").unique(true)),
       IndexModel(ascending("atedRefNo"), IndexOptions().name("atedRefIndex")),
-      IndexModel(ascending("timestamp"), IndexOptions().name("propDetailsDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
+      IndexModel(ascending("timeStamp"), IndexOptions().name("propDetailsDraftExpiry").expireAfter(60 * 60 * 24 * 60, TimeUnit.SECONDS).sparse(true).background(true))
     ),
-    extraCodecs = Seq(Codecs.playFormatCodec(MongoDateTimeFormats.tolerantDateTimeFormat))
+    extraCodecs = Seq(Codecs.playFormatCodec(MongoDateTimeFormats.tolerantDateTimeFormat)),
+    replaceIndexes = true
   ) with PropertyDetailsMongoRepository with Logging {
 
   def updateTimeStamp(propertyDetails: PropertyDetails, date: ZonedDateTime): Future[PropertyDetailsCache] = {

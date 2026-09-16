@@ -76,9 +76,10 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
       IndexModel(ascending("id"), IndexOptions().name("idIndex").unique(true).sparse(true)),
       IndexModel(ascending("periodKey", "atedRefNo"), IndexOptions().name("periodKeyAndAtedRefIndex").unique(true)),
       IndexModel(ascending("atedRefNo"), IndexOptions().name("atedRefIndex")),
-      IndexModel(ascending("timestamp"), IndexOptions().name("reliefDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
+      IndexModel(ascending("timeStamp"), IndexOptions().name("reliefDraftExpiry").expireAfter(60 * 60 * 24 * 60, TimeUnit.SECONDS).sparse(true).background(true))
     ),
-    extraCodecs = Seq(Codecs.playFormatCodec(MongoDateTimeFormats.tolerantDateTimeFormat))
+    extraCodecs = Seq(Codecs.playFormatCodec(MongoDateTimeFormats.tolerantDateTimeFormat)),
+    replaceIndexes = true
   ) with ReliefsMongoRepository with Logging {
 
   def updateTimeStamp(relief: ReliefsTaxAvoidance, date: ZonedDateTime): Future[ReliefCached] = {
