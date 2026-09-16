@@ -19,7 +19,7 @@ package crypto
 import com.typesafe.config.ConfigFactory
 import org.scalatestplus.play.PlaySpec
 import play.api.Configuration
-import uk.gov.hmrc.crypto.{PlainText, SymmetricCryptoFactory}
+import uk.gov.hmrc.crypto.{Crypted, PlainText, SymmetricCryptoFactory}
 
 class MongoCryptoProviderSpec extends PlaySpec {
 
@@ -48,6 +48,9 @@ class MongoCryptoProviderSpec extends PlaySpec {
 
   private def legacyEcbCrypto(cfg: Configuration) =
     SymmetricCryptoFactory.aesCryptoFromConfig("mongodb.encryption", cfg.underlying)
+
+  private def gcmCrypto(cfg: Configuration) =
+    SymmetricCryptoFactory.aesGcmCryptoFromConfig("mongodb.encryptionGcm", cfg.underlying)
 
   "MongoCryptoProvider" should {
 
@@ -81,15 +84,20 @@ class MongoCryptoProviderSpec extends PlaySpec {
       new MongoCryptoProvider(cfg).crypto.decrypt(gcmValue).value mustBe "future-gcm-record"
     }
 
-    "decrypt GCM values reliably, including plaintexts that are an exact multiple of the AES block size" in {
-      val cfg      = cfgWith(gcmKeyA, ecbKeyA)
-      val provider = new MongoCryptoProvider(cfg)
-      val gcm      = SymmetricCryptoFactory.aesGcmCryptoFromConfig("mongodb.encryptionGcm", cfg.underlying)
-      val plain    = "\"ATED Tax Payer\"" // exactly 16 bytes
+    "decrypt a value that GCM reads correctly but legacy ECB reads as garbage" in {
+      val cfg   = cfgWith(gcmKeyA, ecbKeyA)
+      val textToEncrypt = "\"ATED Tax Payer\""
+      val wrongEcbEncryptionValue = "�\u05CC؏��\u00049���\u0013v���\u0000}�D�d3�<?��M($\u0012�1�\u001C�e�g�#�Ktw"
+      val value = Crypted("8EFW3woBxybFCTkH69xxO5p3GW+MR8Z6GXT2BS8JgB+IVlLix+fOXBJIfCbHQRhR")
 
-      (1 to 5000).foreach { _ =>
-        provider.crypto.decrypt(gcm.encrypt(PlainText(plain))).value mustBe plain
-      }
+      gcmCrypto(cfg).decrypt(value).value mustBe textToEncrypt // GCM reads it correctly
+
+      legacyEcbCrypto(cfg).decrypt(value).value must not equal textToEncrypt  // ECB succeeds, but is wrong
+
+      legacyEcbCrypto(cfg).decrypt(value).value mustBe wrongEcbEncryptionValue
+
+      // verify provider is correct
+      new MongoCryptoProvider(cfg).crypto.decrypt(value).value mustBe textToEncrypt
     }
 
     "support rotation via ECB previousKeys (new provider reads old ciphertext)" in {
