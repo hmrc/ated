@@ -80,9 +80,10 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
       IndexModel(ascending("id"), IndexOptions().name("idIndex").unique(true).sparse(true)),
       IndexModel(ascending("id", "periodKey", "atedRefNo"), IndexOptions().name("idAndperiodKeyAndAtedRefIndex").unique(true)),
       IndexModel(ascending("atedRefNo"), IndexOptions().name("atedRefIndex")),
-      IndexModel(ascending("timestamp"), IndexOptions().name("propDetailsDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
+      IndexModel(ascending("timeStamp"), IndexOptions().name("propDetailsDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
     ),
-    extraCodecs = Seq(Codecs.playFormatCodec(MongoDateTimeFormats.tolerantDateTimeFormat))
+    extraCodecs = Seq(Codecs.playFormatCodec(MongoDateTimeFormats.tolerantDateTimeFormat)),
+    replaceIndexes = true
   ) with PropertyDetailsMongoRepository with Logging {
 
   def updateTimeStamp(propertyDetails: PropertyDetails, date: ZonedDateTime): Future[PropertyDetailsCache] = {
@@ -110,27 +111,23 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
 
     val query2 = lte("timeStamp", dateTimeThreshold)
 
-    val foundPropertyDetails: Future[Option[Seq[PropertyDetails]]] =
-      collection.countDocuments(query2).toFuture() flatMap { count =>
-        logger.info(s"[deleteExpired60PropertyDetails] $count documents older than $dateTimeThreshold")
-        collection.find(query2).batchSize(batchSize).collect().toFutureOption()
-      }
+    val foundPropertyDetails = collection.find[org.mongodb.scala.bson.BsonDocument](query2).batchSize(batchSize).collect().toFutureOption()
 
     foundPropertyDetails flatMap {
       case Some(propertyDetails) =>
         Future.sequence(propertyDetails map { propDetails =>
-          val deleteQuery = and(equal("atedRefNo", propDetails.atedRefNo), equal("id", propDetails.id))
+          val deleteQuery = and(equal("atedRefNo", propDetails.getString("atedRefNo").getValue), equal("id", propDetails.getString("id").getValue))
 
           preservingMdc(collection.deleteOne(deleteQuery).toFutureOption()) map {
             case Some(res) =>
               if (res.wasAcknowledged() && res.getDeletedCount == 1) {
                 1
               } else {
-                logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated property details - ex: $res")
+                logger.error(s"[deleteExpiredPropertyDetails] Mongo failed to remove an outdated property details - ex: $res")
                 0
               }
             case None =>
-              logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated property details, no DeleteResult")
+              logger.error(s"[deleteExpiredPropertyDetails] Mongo failed to remove an outdated property details, no DeleteResult")
               0
           }
 
@@ -138,7 +135,7 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
           _.sum
         }
       case None =>
-        logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove any outdated property details")
+        logger.error(s"[deleteExpiredPropertyDetails] Mongo failed to remove any outdated property details")
         Future.successful(0)
     }
   }

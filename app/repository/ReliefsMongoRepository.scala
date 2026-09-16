@@ -76,9 +76,10 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
       IndexModel(ascending("id"), IndexOptions().name("idIndex").unique(true).sparse(true)),
       IndexModel(ascending("periodKey", "atedRefNo"), IndexOptions().name("periodKeyAndAtedRefIndex").unique(true)),
       IndexModel(ascending("atedRefNo"), IndexOptions().name("atedRefIndex")),
-      IndexModel(ascending("timestamp"), IndexOptions().name("reliefDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
+      IndexModel(ascending("timeStamp"), IndexOptions().name("reliefDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
     ),
-    extraCodecs = Seq(Codecs.playFormatCodec(MongoDateTimeFormats.tolerantDateTimeFormat))
+    extraCodecs = Seq(Codecs.playFormatCodec(MongoDateTimeFormats.tolerantDateTimeFormat)),
+    replaceIndexes = true
   ) with ReliefsMongoRepository with Logging {
 
   def updateTimeStamp(relief: ReliefsTaxAvoidance, date: ZonedDateTime): Future[ReliefCached] = {
@@ -106,21 +107,19 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
 
     val query2 = lte("timeStamp", dateTimeThreshold)
 
-    val foundReliefs: Future[Option[Seq[ReliefsTaxAvoidance]]] =
-      collection.countDocuments(query2).toFuture() flatMap { count =>
-        logger.info(s"[deleteExpired60Reliefs] $count documents older than $dateTimeThreshold")
-        collection.find(query2).batchSize(batchSize).collect().toFutureOption()
-      }
+    val foundReliefs = collection.find[org.mongodb.scala.bson.BsonDocument](query2).batchSize(batchSize).collect().toFutureOption()
 
     foundReliefs flatMap {
       case Some(reliefs) =>
         Future.sequence(reliefs map { relief =>
-          val deleteQuery = and(equal("atedRefNo", relief.atedRefNo), equal("periodKey", relief.periodKey))
+          val atedRefNo = relief.getString("atedRefNo").getValue
+          val periodKey = relief.getNumber("periodKey").intValue
+          val deleteQuery = and(equal("atedRefNo", atedRefNo), equal("periodKey", periodKey))
 
           preservingMdc(collection.deleteOne(deleteQuery).toFutureOption()) map {
             case Some(res) =>
               if (res.wasAcknowledged() && res.getDeletedCount == 1) {
-                logger.info(s"${relief.atedRefNo} - ${relief.periodKey}")
+                logger.info(s"$atedRefNo - $periodKey")
                 1
               } else {
                 logger.error(s"[deleteExpiredReliefs] Mongo failed to remove an outdated relief - ex: $res")
