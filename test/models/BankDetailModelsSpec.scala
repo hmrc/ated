@@ -20,8 +20,8 @@ package models
 import org.scalatest.matchers.should.Matchers.*
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
-import play.api.libs.json.{JsString, JsValue, Json}
-import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
+import play.api.libs.json._
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter, PlainText, SymmetricCryptoFactory}
 import crypto.MongoCryptoProvider
 
 import scala.reflect.ClassManifestFactory.Nothing
@@ -175,6 +175,35 @@ class BankDetailModelsSpec extends PlaySpec with GuiceOneServerPerSuite {
       (json \ "sortCode").get shouldBe JsString("8B8yBnV3SEbDieXbkU1veQ==")
       (json \ "bicSwiftCode").get shouldBe JsString("8B8yBnV3SEbDieXbkU1veQ==")
       (json \ "iban").get shouldBe JsString("8B8yBnV3SEbDieXbkU1veQ==")
+    }
+    "decrypt a mix of ECB and GCM fields in one document" in {
+      given jsonCrypto: (Encrypter & Decrypter) = mongoCrypto.crypto
+      val rawEcb = SymmetricCryptoFactory.aesCryptoFromConfig("mongodb.encryption", app.configuration.underlying)
+      val rawGcm = SymmetricCryptoFactory.aesGcmCryptoFromConfig("mongodb.encryptionGcm", app.configuration.underlying)
+      def field(c: Encrypter, v: JsValue): JsString = JsString(c.encrypt(PlainText(Json.stringify(v))).value)
+
+      val json = Json.obj(
+        "hasUKBankAccount" -> field(rawEcb, JsBoolean(true)),
+        "accountName"      -> field(rawGcm, JsString("ATED Tax Payer")),
+        "accountNumber"    -> field(rawEcb, JsString("1111111")),
+        "sortCode"         -> field(rawGcm, Json.toJson(SortCode("11", "11", "11"))),
+        "bicSwiftCode"     -> field(rawEcb, Json.toJson(BicSwiftCode("12345678901"))),
+        "iban"             -> field(rawGcm, Json.toJson(Iban("iBanCode"))))
+
+      ProtectedBankDetails.bankDetailsFormats.reads(json).get shouldBe ProtectedBankDetails(
+        Some(SensitiveHasUKBankAccount(Some(true))), Some(SensitiveAccountName(Some("ATED Tax Payer"))),
+        Some(SensitiveAccountNumber(Some("1111111"))), Some(SensitiveSortCode(Some(SortCode("11", "11", "11")))),
+        Some(SensitiveBicSwiftCode(Some(BicSwiftCode("12345678901")))), Some(SensitiveIban(Some(Iban("iBanCode")))))
+    }
+
+    "throw when protectedBankDetails cannot be decrypted (whole read fails, not None)" in {
+      given jsonCrypto: (Encrypter & Decrypter) = mongoCrypto.crypto
+      val foreignCrypto = SymmetricCryptoFactory.aesGcmCrypto("yY/qUIQgQjMjzPzyU8qCJ4GiTvtgfUv4UYVbrto7Puk=")
+      val model = BankDetailsModel(hasBankDetails = true, protectedBankDetails = Some(ProtectedBankDetails(
+        Some(SensitiveHasUKBankAccount(Some(true))), Some(SensitiveAccountName(Some("x"))), None, None, None, None)))
+
+      val written = Json.toJson(model)(BankDetailsModel.format(using foreignCrypto))
+      a [SecurityException] must be thrownBy Json.fromJson(written)(BankDetailsModel.format)
     }
   }
 }
