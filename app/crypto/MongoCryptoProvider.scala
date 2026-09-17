@@ -34,7 +34,7 @@ class MongoCryptoProvider @Inject()(config: Configuration) {
 
   val crypto: Encrypter with Decrypter = new Encrypter with Decrypter {
     override def encrypt(plain: PlainContent): Crypted =
-      ecbCrypto.encrypt(plain)
+      gcmCrypto.encrypt(plain)
 
     override def decrypt(encrypted: Crypted): PlainText =
       decrypter.decrypt(encrypted)
