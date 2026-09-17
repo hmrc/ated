@@ -79,9 +79,10 @@ class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: Servi
       IndexModel(ascending("id"), IndexOptions().name("idIndex").unique(true).sparse(true)),
       IndexModel(ascending("id", "periodKey", "atedRefNo"), IndexOptions().name("idAndperiodKeyAndAtedRefIndex").unique(true)),
       IndexModel(ascending("atedRefNo"), IndexOptions().name("atedRefIndex")),
-      IndexModel(ascending("timestamp"), IndexOptions().name("dispLiabilityDraftExpiry").expireAfter(60 * 60 * 24 * 28, TimeUnit.SECONDS).sparse(true).background(true))
+      IndexModel(ascending("timeStamp"), IndexOptions().name("dispLiabilityDraftExpiry").expireAfter(60 * 60 * 24 * 60, TimeUnit.SECONDS).sparse(true).background(true))
     ),
-    extraCodecs = Seq(Codecs.playFormatCodec(MongoDateTimeFormats.tolerantDateTimeFormat))
+    extraCodecs = Seq(Codecs.playFormatCodec(MongoDateTimeFormats.tolerantDateTimeFormat)),
+    replaceIndexes = true
   ) with DisposeLiabilityReturnMongoRepository with Logging {
 
   override def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: ZonedDateTime): Future[DisposeLiabilityReturnDelete] = {
