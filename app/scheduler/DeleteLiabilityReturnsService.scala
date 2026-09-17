@@ -58,10 +58,14 @@ trait DeleteLiabilityReturnsService extends ScheduledService[Int] with Logging {
   def invoke()(using ec: ExecutionContext): Future[Int] = {
     Mdc.preservingMdc(lockService.withLock(deleteOldLiabilityReturns())) map {
       case Some(result) =>
-        logger.info(s"[DeleteLiabilityReturnsService] Deleted $result draft documents past the given day limit")
+        logger.warn(s"[DeleteLiabilityReturnsService] Deleted $result draft documents past the given day limit")
         result
       case None =>
         logger.warn(s"[DeleteLiabilityReturnsService] Failed to acquire lock")
+        0
+    } recover {
+      case e =>
+        logger.error(s"[DeleteLiabilityReturnsService] failed: ${e.getClass.getName}")
         0
     }
   }
