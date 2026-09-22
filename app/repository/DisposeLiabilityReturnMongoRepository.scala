@@ -109,7 +109,15 @@ class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: Servi
 
     val query2 = lte("timeStamp", dateTimeThreshold)
 
-    val foundLiabilityReturns: Future[Option[Seq[DisposeLiabilityReturn]]] = collection.find(query2).batchSize(batchSize).collect().toFutureOption()
+    val foundLiabilityReturns: Future[Option[Seq[DisposeLiabilityReturn]]] =
+      collection.find(query2).batchSize(batchSize).collect().toFutureOption().recover {
+        case e: Throwable if Option(e.getMessage).exists(_.contains("Failed to parse json")) =>
+          logger.error("[deleteExpiredLiabilityReturns] MongoDB failed to parse a document onto the repo model")
+          None
+        case e: Throwable =>
+          logger.error("[deleteExpiredLiabilityReturns] MongoDB unknown error: " + e.getClass.getName)
+          None
+      }
 
     foundLiabilityReturns flatMap {
       case Some(res) =>
