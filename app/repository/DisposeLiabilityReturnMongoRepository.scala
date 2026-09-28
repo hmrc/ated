@@ -79,7 +79,7 @@ class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: Servi
       IndexModel(ascending("id"), IndexOptions().name("idIndex").unique(true).sparse(true)),
       IndexModel(ascending("id", "periodKey", "atedRefNo"), IndexOptions().name("idAndperiodKeyAndAtedRefIndex").unique(true)),
       IndexModel(ascending("atedRefNo"), IndexOptions().name("atedRefIndex")),
-      IndexModel(ascending("timeStamp"), IndexOptions().name("dispLiabilityDraftExpiry").expireAfter(60 * 60 * 24 * 60, TimeUnit.SECONDS).sparse(true).background(true))
+      IndexModel(ascending("timeStamp"), IndexOptions().name("dispLiabilityDraftExpiry").expireAfter(60, TimeUnit.DAYS))
     ),
     extraCodecs = Seq(Codecs.playFormatCodec(MongoDateTimeFormats.tolerantDateTimeFormat)),
     replaceIndexes = true
