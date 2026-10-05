@@ -32,7 +32,6 @@ class ServiceBindings extends Module {
     Seq(
       playBind(classOf[DeletePropertyDetailsService]).to[DefaultDeletePropertyDetailsService].eagerly(),
       playBind(classOf[DeleteReliefsService]).to[DefaultDeleteReliefsService].eagerly(),
-      playBind(classOf[DeleteLiabilityReturnsService]).to[DefaultDeleteLiabilityReturnsService].eagerly(),
       playBind(classOf[LockRepositoryProvider]).to[DefaultLockRepositoryProvider].eagerly(),
       playBind(classOf[AuthConnector]).to(classOf[DefaultAuthConnector]),
       playBind(classOf[EmailConnector]).to(classOf[EmailConnectorImpl]),
@@ -54,7 +53,6 @@ class ServiceBindings extends Module {
       playBind(classOf[PropertyDetailsMongoWrapper]).to(classOf[PropertyDetailsMongoWrapperImpl]),
       playBind(classOf[ReliefsMongoWrapper]).to(classOf[ReliefsMongoWrapperImpl]),
       playBind(classOf[DeleteOldReliefsJob]).toSelf.eagerly(),
-      playBind(classOf[DeleteOldLiabilityReturnsJob]).toSelf.eagerly(),
       playBind(classOf[DeleteOldPropertyDetailsJob]).toSelf.eagerly()
     )
 }
