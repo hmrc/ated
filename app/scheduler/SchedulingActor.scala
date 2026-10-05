@@ -36,8 +36,6 @@ object SchedulingActor {
     val service: ScheduledService[Int]
   }
 
-  case class deletePropertyDetailsDrafts(service: DeletePropertyDetailsService) extends ScheduledMessage[Int]
-
   case class deleteReliefDrafts(service: DeleteReliefsService) extends ScheduledMessage[Int]
 
   def props: Props = Props[SchedulingActor]()
