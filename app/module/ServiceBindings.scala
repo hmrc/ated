@@ -30,7 +30,6 @@ import play.api.inject.{bind => playBind}
 class ServiceBindings extends Module {
   override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] =
     Seq(
-      playBind(classOf[DeletePropertyDetailsService]).to[DefaultDeletePropertyDetailsService].eagerly(),
       playBind(classOf[DeleteReliefsService]).to[DefaultDeleteReliefsService].eagerly(),
       playBind(classOf[LockRepositoryProvider]).to[DefaultLockRepositoryProvider].eagerly(),
       playBind(classOf[AuthConnector]).to(classOf[DefaultAuthConnector]),
@@ -52,7 +51,6 @@ class ServiceBindings extends Module {
       playBind(classOf[DisposeLiabilityReturnMongoWrapper]).to(classOf[DisposeLiabilityReturnMongoWrapperImpl]),
       playBind(classOf[PropertyDetailsMongoWrapper]).to(classOf[PropertyDetailsMongoWrapperImpl]),
       playBind(classOf[ReliefsMongoWrapper]).to(classOf[ReliefsMongoWrapperImpl]),
-      playBind(classOf[DeleteOldReliefsJob]).toSelf.eagerly(),
-      playBind(classOf[DeleteOldPropertyDetailsJob]).toSelf.eagerly()
+      playBind(classOf[DeleteOldReliefsJob]).toSelf.eagerly()
     )
 }
