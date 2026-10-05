@@ -23,8 +23,7 @@ import models.DisposeLiabilityReturn
 import java.time.{ZoneId, ZonedDateTime}
 import org.mongodb.scala.model.Filters.{equal, _}
 import org.mongodb.scala.model.Indexes.ascending
-import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions, UpdateOptions}
+import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions}
 import play.api.Logging
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.mongo.MongoComponent
@@ -47,8 +46,6 @@ case object DisposeLiabilityReturnDeleteError extends DisposeLiabilityReturnDele
 trait DisposeLiabilityReturnMongoRepository extends PlayMongoRepository[DisposeLiabilityReturn] {
   def cacheDisposeLiabilityReturns(disposeLiabilityReturn: DisposeLiabilityReturn): Future[DisposeLiabilityReturnCache]
   def fetchDisposeLiabilityReturns(atedRefNo: String): Future[Seq[DisposeLiabilityReturn]]
-  def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: ZonedDateTime): Future[DisposeLiabilityReturnDelete]
-  def deleteExpired60DayLiabilityReturns(batchSize: Int): Future[Int]
   def metrics: ServiceMetrics
 }
 
@@ -84,67 +81,6 @@ class DisposeLiabilityReturnRepository(mongo: MongoComponent, val metrics: Servi
     extraCodecs = Seq(Codecs.playFormatCodec(MongoDateTimeFormats.tolerantDateTimeFormat)),
     replaceIndexes = true
   ) with DisposeLiabilityReturnMongoRepository with Logging {
-
-  override def updateTimeStamp(liabilityReturn: DisposeLiabilityReturn, date: ZonedDateTime): Future[DisposeLiabilityReturnDelete] = {
-    val query = and(equal("atedRefNo", liabilityReturn.atedRefNo), equal("id", liabilityReturn.id))
-    val updateQuery = set("timeStamp", date)
-
-    preservingMdc(collection.updateOne(query, updateQuery, UpdateOptions().upsert(false)).toFutureOption()) map {
-      case Some(res) =>
-        if (res.wasAcknowledged() && res.getModifiedCount == 1) {
-          logger.info(s"[updateTimestamp] Updated timestamp for ${liabilityReturn.id} with $date")
-          DisposeLiabilityReturnDeleted
-        } else {
-          logger.error(s"[updateTimeStamp: LiabilityReturn] Mongo failed to update, problem occurred in collect - ex: $res")
-          DisposeLiabilityReturnDeleteError
-        }
-      case _ =>
-        logger.error(s"[updateTimeStamp: LiabilityReturn] Mongo failed to update, problem occurred in collect, was not defined")
-        DisposeLiabilityReturnDeleteError
-    }
-  }
-
-  def deleteExpired60DayLiabilityReturns(batchSize: Int): Future[Int] = {
-    val dayThreshold = 61
-    val dateTimeThreshold = ZonedDateTime.now(ZoneId.of("UTC")).withHour(0).minusDays(dayThreshold)
-
-    val query2 = lte("timeStamp", dateTimeThreshold)
-
-    val foundLiabilityReturns: Future[Option[Seq[DisposeLiabilityReturn]]] =
-      collection.find(query2).batchSize(batchSize).collect().toFutureOption().recover {
-        case e: Throwable if Option(e.getMessage).exists(_.contains("Failed to parse json")) =>
-          logger.error("[deleteExpiredLiabilityReturns] MongoDB failed to parse a document onto the repo model")
-          None
-        case e: Throwable =>
-          logger.error("[deleteExpiredLiabilityReturns] MongoDB unknown error: " + e.getClass.getName)
-          None
-      }
-
-    foundLiabilityReturns flatMap {
-      case Some(res) =>
-        Future.sequence(res map { rtn =>
-          val deleteQuery = and(equal("atedRefNo", rtn.atedRefNo), equal("id", rtn.id))
-
-          preservingMdc(collection.deleteOne(deleteQuery).toFutureOption()) map {
-            case Some(res) =>
-              if (res.wasAcknowledged() && res.getDeletedCount == 1) {
-                1
-              } else {
-                logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated liability return - ex: $res")
-                0
-              }
-            case None =>
-              logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated liability return, no DeleteResult")
-              0
-          }
-        }) map {
-          _.sum
-        }
-      case None =>
-        logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to delete outdated liability returns")
-        Future.successful(0)
-    }
-  }
 
   def cacheDisposeLiabilityReturns(disposeLiabilityReturn: DisposeLiabilityReturn): Future[DisposeLiabilityReturnCache] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryInsertDispLiability)
