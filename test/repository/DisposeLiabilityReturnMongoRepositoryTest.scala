@@ -18,7 +18,7 @@ package repository
 
 import crypto.MongoCryptoProvider
 import metrics.ServiceMetrics
-import models.{DisposeLiabilityReturn}
+import models.DisposeLiabilityReturn
 import org.scalatestplus.mockito.MockitoSugar.mock
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
