@@ -23,10 +23,9 @@ import metrics.{MetricsEnum, ServiceMetrics}
 import models.PropertyDetails
 
 import java.time.{ZoneId, ZonedDateTime}
-import org.mongodb.scala.model.Filters.{and, equal, lte}
+import org.mongodb.scala.model.Filters.{and, equal}
 import org.mongodb.scala.model.Indexes.ascending
-import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions, UpdateOptions}
+import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions}
 import play.api.Logging
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.mongo.*
@@ -49,9 +48,7 @@ trait PropertyDetailsMongoRepository extends PlayMongoRepository[PropertyDetails
   def cachePropertyDetails(propertyDetails: PropertyDetails): Future[PropertyDetailsCache]
   def fetchPropertyDetails(atedRefNo: String): Future[Seq[PropertyDetails]]
   def fetchPropertyDetailsById(atedRefNo: String, id: String): Future[Seq[PropertyDetails]]
-  def deleteExpired60PropertyDetails(batchSize: Int): Future[Int]
   def deletePropertyDetailsByfieldName(atedRefNo: String, id: String): Future[PropertyDetailsDelete]
-  def updateTimeStamp(propertyDetails: PropertyDetails, date: ZonedDateTime): Future[PropertyDetailsCache]
   def metrics: ServiceMetrics
 }
 
@@ -84,60 +81,6 @@ class PropertyDetailsReactiveMongoRepository(mongo: MongoComponent, val metrics:
     ),
     extraCodecs = Seq(Codecs.playFormatCodec(MongoDateTimeFormats.tolerantDateTimeFormat))
   ) with PropertyDetailsMongoRepository with Logging {
-
-  def updateTimeStamp(propertyDetails: PropertyDetails, date: ZonedDateTime): Future[PropertyDetailsCache] = {
-    val query = and(equal("atedRefNo", propertyDetails.atedRefNo), equal("id", propertyDetails.id), equal("periodKey", propertyDetails.periodKey))
-    val updateQuery = set("timeStamp", date)
-
-    preservingMdc(collection.updateOne(query, updateQuery, UpdateOptions().upsert(false)).toFutureOption()) map {
-      case Some(res) =>
-        if (res.wasAcknowledged() && res.getModifiedCount == 1) {
-          logger.info(s"[updateTimestamp] Updated timestamp for ${propertyDetails.id} with $date")
-          PropertyDetailsCached
-        } else {
-          logger.error(s"[updateTimeStamp: PropertyDetails] Mongo failed to update, problem occurred in collect - ex: $res")
-          PropertyDetailsCacheError
-        }
-      case None =>
-        logger.error(s"[updateTimeStamp: PropertyDetails] Mongo failed to update, res was None")
-        PropertyDetailsCacheError
-    }
-  }
-
-  def deleteExpired60PropertyDetails(batchSize: Int): Future[Int] = {
-    val dayThreshold = 61
-    val dateTimeThreshold = ZonedDateTime.now(ZoneId.of("UTC")).withHour(0).minusDays(dayThreshold)
-
-    val query2 = lte("timeStamp", dateTimeThreshold)
-
-    val foundPropertyDetails: Future[Option[Seq[PropertyDetails]]] = collection.find(query2).batchSize(batchSize).collect().toFutureOption()
-
-    foundPropertyDetails flatMap {
-      case Some(propertyDetails) =>
-        Future.sequence(propertyDetails map { propDetails =>
-          val deleteQuery = and(equal("atedRefNo", propDetails.atedRefNo), equal("id", propDetails.id))
-
-          preservingMdc(collection.deleteOne(deleteQuery).toFutureOption()) map {
-            case Some(res) =>
-              if (res.wasAcknowledged() && res.getDeletedCount == 1) {
-                1
-              } else {
-                logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated property details - ex: $res")
-                0
-              }
-            case None =>
-              logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove an outdated property details, no DeleteResult")
-              0
-          }
-
-        }) map {
-          _.sum
-        }
-      case None =>
-        logger.error(s"[deleteExpiredLiabilityReturns] Mongo failed to remove any outdated property details")
-        Future.successful(0)
-    }
-  }
 
   def cachePropertyDetails(propertyDetails: PropertyDetails): Future[PropertyDetailsCache] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryInsertPropDetails)
