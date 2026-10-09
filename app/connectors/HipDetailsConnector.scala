@@ -105,7 +105,7 @@ trait HipDetailsConnector extends Auditable with Logging {
           HipUtilities.extractHipErrorCode(response.body) match {
             case Some(("003", text)) =>
               metrics.incrementFailedCounter(MetricsEnum.EtmpGetSubscriptionData)
-              logger.warn(s"[HipDetailsConnector][getSubscriptionData] - $text")
+              logger.warn(s"[HipDetailsConnector][getSubscriptionData] - Hip error code: 003 - $text")
               doHeaderEvent("getSubscriptionDataFailedHeaders", response.headers)
               doFailedAudit("getSubscriptionDataFailed", getUrl, None, response.body)
               HttpResponse(
@@ -116,7 +116,7 @@ trait HipDetailsConnector extends Auditable with Logging {
 
             case Some(("004", text)) =>
               metrics.incrementFailedCounter(MetricsEnum.EtmpGetSubscriptionData)
-              logger.warn(s"[HipDetailsConnector][getSubscriptionData] - $text")
+              logger.warn(s"[HipDetailsConnector][getSubscriptionData] - Hip error code: 004 - $text")
               doHeaderEvent("getSubscriptionDataFailedHeaders", response.headers)
               doFailedAudit("getSubscriptionDataFailed", getUrl, None, response.body)
               HttpResponse(
@@ -127,7 +127,7 @@ trait HipDetailsConnector extends Auditable with Logging {
 
             case Some(("005", text)) =>
               metrics.incrementFailedCounter(MetricsEnum.EtmpGetSubscriptionData)
-              logger.warn(s"[HipDetailsConnector][getSubscriptionData] - $text")
+              logger.warn(s"[HipDetailsConnector][getSubscriptionData] - Hip error code: 005 - $text")
               doHeaderEvent("getSubscriptionDataFailedHeaders", response.headers)
               doFailedAudit("getSubscriptionDataFailed", getUrl, None, response.body)
               HttpResponse(
@@ -138,7 +138,7 @@ trait HipDetailsConnector extends Auditable with Logging {
 
             case status =>
               metrics.incrementFailedCounter(MetricsEnum.EtmpGetSubscriptionData)
-              logger.warn(s"[HipDetailsConnector][getSubscriptionData - Unsuccessful return of data. Status: $status")
+              logger.warn(s"[HipDetailsConnector][getSubscriptionData - Unsuccessful return of data. Status: $status. Response: ${response.body}")
               doHeaderEvent("getSubscriptionDataFailedHeaders", response.headers)
               doFailedAudit("getSubscriptionDataFailed", getUrl, None, response.body)
               HttpResponse(
@@ -149,7 +149,7 @@ trait HipDetailsConnector extends Auditable with Logging {
           }
         case status =>
           metrics.incrementFailedCounter(MetricsEnum.EtmpGetSubscriptionData)
-          logger.warn(s"[HipDetailsConnector][getSubscriptionData] - status: $status")
+          logger.warn(s"[HipDetailsConnector][getSubscriptionData] - status: $status. Response: ${response.body}")
           doHeaderEvent("getSubscriptionDataFailedHeaders", response.headers)
           doFailedAudit("getSubscriptionDataFailed", getUrl, None, response.body)
           response
@@ -185,7 +185,7 @@ trait HipDetailsConnector extends Auditable with Logging {
           HipUtilities.extractHipErrorCode(response.body) match {
             case Some(("003", text))  =>
               metrics.incrementFailedCounter(MetricsEnum.EtmpUpdateSubscriptionData)
-              logger.warn(s"[HipDetailsConnector][updateSubscriptionData] - $text")
+              logger.warn(s"[HipDetailsConnector][updateSubscriptionData] - Hip error code: 003 - $text")
               doHeaderEvent("updateSubscriptionDataFailedHeaders", response.headers)
               doFailedAudit("updateSubscriptionDataailed", putUrl, None, response.body)
               HttpResponse(
@@ -196,7 +196,7 @@ trait HipDetailsConnector extends Auditable with Logging {
 
             case Some(("004", text)) =>
               metrics.incrementFailedCounter(MetricsEnum.EtmpUpdateSubscriptionData)
-              logger.warn(s"[HipDetailsConnector][updateSubscriptionData] - $text")
+              logger.warn(s"[HipDetailsConnector][updateSubscriptionData] - Hip error code: 004 - $text")
               doHeaderEvent("updateSubscriptionDataFailedHeaders", response.headers)
               doFailedAudit("updateSubscriptionDataFailed", putUrl, None, response.body)
               HttpResponse(
@@ -207,7 +207,7 @@ trait HipDetailsConnector extends Auditable with Logging {
 
             case Some(("005", text)) =>
               metrics.incrementFailedCounter(MetricsEnum.EtmpUpdateSubscriptionData)
-              logger.warn(s"[HipDetailsConnector][updateSubscriptionData] - $text")
+              logger.warn(s"[HipDetailsConnector][updateSubscriptionData] - Hip error code: 005 - $text")
               doHeaderEvent("updateSubscriptionDataFailedHeaders", response.headers)
               doFailedAudit("updateSubscriptionDataFailed", putUrl, None, response.body)
               HttpResponse(
@@ -218,7 +218,7 @@ trait HipDetailsConnector extends Auditable with Logging {
 
             case Some(("006", text)) =>
               metrics.incrementFailedCounter(MetricsEnum.EtmpUpdateSubscriptionData)
-              logger.warn(s"[HipDetailsConnector][updateSubscriptionData] - $text")
+              logger.warn(s"[HipDetailsConnector][updateSubscriptionData] - Hip error code: 006 - $text")
               doHeaderEvent("updateSubscriptionDataFailedHeaders", response.headers)
               doFailedAudit("updateSubscriptionDataFailed", putUrl, None, response.body)
               HttpResponse(
@@ -229,7 +229,7 @@ trait HipDetailsConnector extends Auditable with Logging {
 
             case status =>
               metrics.incrementFailedCounter(MetricsEnum.EtmpUpdateSubscriptionData)
-              logger.warn(s"[HipDetailsConnector][updateSubscriptionData] - Unsuccessful return of data. Status: $status")
+              logger.warn(s"[HipDetailsConnector][updateSubscriptionData] - Unsuccessful return of data. Status: $status. Response: ${response.body}")
               doHeaderEvent("updateSubscriptionDataFailedHeaders", response.headers)
               doFailedAudit("updateSubscriptionDataFailed", putUrl, None, response.body)
               HttpResponse(
@@ -240,7 +240,7 @@ trait HipDetailsConnector extends Auditable with Logging {
           }
         case status =>
           metrics.incrementFailedCounter(MetricsEnum.EtmpUpdateSubscriptionData)
-          logger.warn(s"[HipDetailsConnector][updateSubscriptionData] - status: $status")
+          logger.warn(s"[HipDetailsConnector][updateSubscriptionData] - status: $status. Response: ${response.body}")
           doHeaderEvent("updateSubscriptionDataFailedHeaders", response.headers)
           doFailedAudit("updateSubscriptionDataFailed", putUrl, Some(jsonData.toString), response.body)
           response

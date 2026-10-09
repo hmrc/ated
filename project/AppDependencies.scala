@@ -4,6 +4,7 @@ import sbt.*
 private object AppDependencies {
 
   val bootstrapVersion = "10.8.0"
+  val mongoPlayVersion = "2.14.0"
 
   val compile: Seq[ModuleID] = Seq(
     ws,
@@ -12,14 +13,14 @@ private object AppDependencies {
     "com.mchange"            %  "c3p0"                        % "0.14.2",
     "com.mchange"            %  "mchange-commons-java"        % "0.6.1",
     "uk.gov.hmrc"            %% "domain-play-30"              % "13.0.0",
-    "uk.gov.hmrc.mongo"      %% "hmrc-mongo-play-30"          % "2.13.0",
+    "uk.gov.hmrc.mongo"      %% "hmrc-mongo-play-30"          % mongoPlayVersion,
     "uk.gov.hmrc"            %% "crypto-json-play-30"         % "8.4.0"
   )
 
   val test: Seq[ModuleID] = Seq(
     "uk.gov.hmrc" %% "bootstrap-test-play-30" % bootstrapVersion,
     "uk.gov.hmrc"             %% "bootstrap-test-play-30"    % bootstrapVersion,
-    "uk.gov.hmrc.mongo"       %% "hmrc-mongo-test-play-30"   % "2.13.0"
+    "uk.gov.hmrc.mongo"       %% "hmrc-mongo-test-play-30"   % mongoPlayVersion
 
   ).map(_ % Test)
 
