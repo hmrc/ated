@@ -157,9 +157,11 @@ trait PropertyDetailsService
                     "returnRequest" -> s"""$returnRequest""",
                     "Response" -> s"""$response"""))
                 logger.warn(
-                  s"""[PropertyDetailsService][getLiabilityAmount]: failed with status 400""")
+                  s"""[PropertyDetailsService][getLiabilityAmount]: failed with status 400 - ${response.body}""")
                 throw new BadRequestException(response.body)
-              case _ => throw new InternalServerException("[PropertyDetailsService][getLiabilityAmount] No Liability Amount Found")
+              case _ => {
+                logger.error(s"[PropertyDetailsService][getLiabilityAmount] Hip Error response: ${response.status} - ${response.body}")
+                throw new InternalServerException("[PropertyDetailsService][getLiabilityAmount] No Liability Amount Found")}
             }
           }
         } else {
@@ -174,9 +176,11 @@ trait PropertyDetailsService
                     "returnRequest" -> s"""$returnRequest""",
                     "Response" -> s"""$response"""))
                 logger.warn(
-                  s"""[PropertyDetailsService][getLiabilityAmount]: failed with status 400""")
+                  s"""[PropertyDetailsService][getLiabilityAmount]: failed with status 400 - ${response.body}""")
                 throw new BadRequestException(response.body)
-              case _ => throw new InternalServerException("[PropertyDetailsService][getLiabilityAmount] No Liability Amount Found")
+              case _ =>
+                logger.error(s"[PropertyDetailsService][getLiabilityAmount] Hip Error response: ${response.status} - ${response.body}")
+                throw new InternalServerException("[PropertyDetailsService][getLiabilityAmount] No Liability Amount Found")
             }
           }
         }
