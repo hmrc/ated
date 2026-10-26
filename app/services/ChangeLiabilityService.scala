@@ -160,9 +160,11 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
               response.status match {
                 case OK => getLiabilityAmount(response.json)
                 case BAD_REQUEST =>
-                  throw NoLiabilityAmountException("[ChangeLiabilityService][getAmountDueOrRefund] No Liability Amount Found")
+                  logger.error(s"[ChangeLiabilityService][getAmountDueOrRefund] - Response from Hip: ${response.status} - ${response.body}")
+                  throw NoLiabilityAmountException(s"[ChangeLiabilityService][getAmountDueOrRefund] No Liability Amount Found - status: ${response.status} - ${response.body}")
                 case status =>
-                  throw new InternalServerException(s"[ChangeLiabilityService][getAmountDueOrRefund] Error - status: $status")
+                  logger.error(s"[ChangeLiabilityService][getAmountDueOrRefund] - Response from Hip: ${response.status} - ${response.body}")
+                  throw new InternalServerException(s"[ChangeLiabilityService][getAmountDueOrRefund] Error - status: $status - ${response.body}")
               }
           }
         } else {
@@ -171,13 +173,16 @@ trait ChangeLiabilityService extends PropertyDetailsBaseService with ReliefConst
               response.status match {
                 case OK => getLiabilityAmount(response.json)
                 case BAD_REQUEST =>
-                  throw NoLiabilityAmountException("[ChangeLiabilityService][getAmountDueOrRefund] No Liability Amount Found")
+                  logger.error(s"[ChangeLiabilityService][getAmountDueOrRefund] - Response from Hip: ${response.status} - ${response.body}")
+                  throw NoLiabilityAmountException(s"[ChangeLiabilityService][getAmountDueOrRefund] No Liability Amount Found - status: ${response.status}- ${response.body}")
                 case status =>
-                  throw new InternalServerException(s"[ChangeLiabilityService][getAmountDueOrRefund] Error - status: $status")
+                  logger.error(s"[ChangeLiabilityService][getAmountDueOrRefund] - Response from Hip: ${response.status} - ${response.body}")
+                  throw new InternalServerException(s"[ChangeLiabilityService][getAmountDueOrRefund] Error - status: $status - ${response.body}")
               }
           }
         }
-      case None => throw NoLiabilityAmountException("[ChangeLiabilityService][getAmountDueOrRefund] Invalid Data for the request")
+      case None => 
+        throw NoLiabilityAmountException("[ChangeLiabilityService][getAmountDueOrRefund] Invalid Data for the request")
     }
   }
 
