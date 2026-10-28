@@ -110,6 +110,12 @@ object PropertyDetailsRevalued {
   given formats: OFormat[PropertyDetailsRevalued] = Json.format[PropertyDetailsRevalued]
 }
 
+case class PropertyDetailsIsPropertyRevalued(isPropertyRevalued: Option[Boolean] = None)
+
+object PropertyDetailsIsPropertyRevalued {
+  given formats: OFormat[PropertyDetailsIsPropertyRevalued] = Json.format[PropertyDetailsIsPropertyRevalued]
+}
+
 sealed trait OwnedBeforePolicyYear
 
 case object IsOwnedBefore2012 extends OwnedBeforePolicyYear

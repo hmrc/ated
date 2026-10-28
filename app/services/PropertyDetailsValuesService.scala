@@ -129,6 +129,30 @@ trait PropertyDetailsValuesService extends ReliefConstants {
 
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
+  
+  def cacheDraftPropertyDetailsIsPropertyRevalued(atedRefNo: String, id: String, isPropertyRevalued: PropertyDetailsIsPropertyRevalued)(
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+
+    println("property details values service: isPropertyRevalued = " + isPropertyRevalued)
+    
+    def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
+      val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
+        foundPropertyDetails =>
+          if (isPropertyRevalued.isPropertyRevalued == foundPropertyDetails.value.flatMap(_.isPropertyRevalued)) {
+            println(s"cacheDraftPropertyDetailsIsPropertyRevalued: isPropertyRevalued = $isPropertyRevalued, foundPropertyDetails = $foundPropertyDetails")
+            foundPropertyDetails
+          } else {
+            val updatedValued = foundPropertyDetails.value.map(_.copy(
+              isPropertyRevalued = isPropertyRevalued.isPropertyRevalued
+            ))
+            foundPropertyDetails.copy(value = updatedValued, calculated = None)
+          }
+      }
+      Future.successful(updatedPropertyDetails)
+    }
+
+    cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
+  }
 
   def cacheDraftPropertyDetailsIsNewBuild(atedRefNo: String, id: String, updatedDetails: PropertyDetailsIsNewBuild)(
     using ec: ExecutionContext): Future[Option[PropertyDetails]] = {

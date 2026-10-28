@@ -16,6 +16,7 @@ POST  /ated/:atedRefNo/property-details/title/:id                       controll
 POST  /ated/:atedRefNo/property-details/has-value-change/:id            controllers.PropertyDetailsValuesControllerImpl.saveDraftHasValueChanged(atedRefNo: String, id: String)
 POST  /ated/:atedRefNo/property-details/acquisition/:id                 controllers.PropertyDetailsValuesControllerImpl.saveDraftPropertyDetailsAcquisition(atedRefNo: String, id: String)
 POST  /ated/:atedRefNo/property-details/revalued/:id                    controllers.PropertyDetailsValuesControllerImpl.saveDraftPropertyDetailsRevalued(atedRefNo: String, id: String)
+POST  /ated/:atedRefNo/property-details/has-been-revalued/:id           controllers.PropertyDetailsValuesControllerImpl.saveDraftPropertyDetailsIsPropertyRevalued(atedRefNo: String, id: String)
 POST  /ated/:atedRefNo/property-details/owned-before/:id                controllers.PropertyDetailsValuesControllerImpl.saveDraftPropertyDetailsOwnedBefore(atedRefNo: String, id: String)
 POST  /ated/:atedRefNo/property-details/new-build/:id                   controllers.PropertyDetailsValuesControllerImpl.saveDraftPropertyDetailsIsNewBuild(atedRefNo: String, id: String)
 POST  /ated/:atedRefNo/property-details/new-build-dates/:id             controllers.PropertyDetailsValuesControllerImpl.saveDraftPropertyDetailsNewBuildDates(atedRefNo: String, id: String)
