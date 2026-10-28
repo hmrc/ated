@@ -101,6 +101,18 @@ trait PropertyDetailsValuesController extends BackendController {
         }
       }
   }
+  
+  def saveDraftPropertyDetailsNewValuation(atedRefNo: String, id: String) = Action.async(parse.json) {
+    implicit request =>
+      withJsonBody[PropertyDetailsNewValuation] { draftPropertyDetails =>
+        propertyDetailsService.cacheDraftPropertyDetailsNewValuation(atedRefNo, id, draftPropertyDetails).map { updatedDraftPropertyDetails =>
+          updatedDraftPropertyDetails match {
+            case Some(_) => Ok("")
+            case None => BadRequest("Invalid Request")
+          }
+        }
+      }
+  }
 
   def saveDraftPropertyDetailsOwnedBefore(atedRefNo: String, id: String) = Action.async(parse.json) {
     implicit request =>

@@ -174,6 +174,27 @@ trait PropertyDetailsValuesService extends ReliefConstants {
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
 
+  def cacheDraftPropertyDetailsNewValuation(atedRefNo: String, id: String, updatedDetails: PropertyDetailsNewValuation)(
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+
+    def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
+      val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
+        foundPropertyDetails =>
+          if (updatedDetails.revaluedValue == foundPropertyDetails.value.flatMap(_.revaluedValue)) {
+            foundPropertyDetails
+          } else {
+            val updatedValued = foundPropertyDetails.value.map(_.copy(
+              revaluedValue = updatedDetails.revaluedValue
+            ))
+            foundPropertyDetails.copy(value = updatedValued, calculated = None)
+          }
+      }
+      Future.successful(updatedPropertyDetails)
+    }
+
+    cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
+  }
+
   def cacheDraftPropertyDetailsIsNewBuild(atedRefNo: String, id: String, updatedDetails: PropertyDetailsIsNewBuild)(
     using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 

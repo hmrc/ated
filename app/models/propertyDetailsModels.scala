@@ -122,6 +122,12 @@ object PropertyDetailsFortyThousandValueDateOfChange {
   given formats: OFormat[PropertyDetailsFortyThousandValueDateOfChange] = Json.format[PropertyDetailsFortyThousandValueDateOfChange]
 }
 
+case class PropertyDetailsNewValuation(revaluedValue: Option[BigDecimal] = None)
+
+object PropertyDetailsNewValuation {
+  given formats: OFormat[PropertyDetailsNewValuation] = Json.format[PropertyDetailsNewValuation]
+}
+
 sealed trait OwnedBeforePolicyYear
 
 case object IsOwnedBefore2012 extends OwnedBeforePolicyYear
