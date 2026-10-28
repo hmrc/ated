@@ -139,11 +139,31 @@ trait PropertyDetailsValuesService extends ReliefConstants {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
         foundPropertyDetails =>
           if (isPropertyRevalued.isPropertyRevalued == foundPropertyDetails.value.flatMap(_.isPropertyRevalued)) {
-            println(s"cacheDraftPropertyDetailsIsPropertyRevalued: isPropertyRevalued = $isPropertyRevalued, foundPropertyDetails = $foundPropertyDetails")
             foundPropertyDetails
           } else {
             val updatedValued = foundPropertyDetails.value.map(_.copy(
               isPropertyRevalued = isPropertyRevalued.isPropertyRevalued
+            ))
+            foundPropertyDetails.copy(value = updatedValued, calculated = None)
+          }
+      }
+      Future.successful(updatedPropertyDetails)
+    }
+
+    cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
+  }
+
+  def cacheDraftPropertyDetailsFortyThousandValueDateOfChange(atedRefNo: String, id: String, fortyThousandValueDateOfChange: PropertyDetailsFortyThousandValueDateOfChange)(
+    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+
+    def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
+      val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
+        foundPropertyDetails =>
+          if (fortyThousandValueDateOfChange.dateOfChange == foundPropertyDetails.value.flatMap(_.partAcqDispDate)) {
+            foundPropertyDetails
+          } else {
+            val updatedValued = foundPropertyDetails.value.map(_.copy(
+              partAcqDispDate = fortyThousandValueDateOfChange.dateOfChange
             ))
             foundPropertyDetails.copy(value = updatedValued, calculated = None)
           }

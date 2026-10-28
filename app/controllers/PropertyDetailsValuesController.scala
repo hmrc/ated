@@ -80,10 +80,20 @@ trait PropertyDetailsValuesController extends BackendController {
 
   def saveDraftPropertyDetailsIsPropertyRevalued(atedRefNo: String, id: String) = Action.async(parse.json) {
     implicit request =>
-      println(request.body)
       withJsonBody[PropertyDetailsIsPropertyRevalued] { isPropertyRevalued =>
-        println(s" isPropertyRevalued = $isPropertyRevalued")
         propertyDetailsService.cacheDraftPropertyDetailsIsPropertyRevalued(atedRefNo, id, isPropertyRevalued).map { updatedDraftPropertyDetails =>
+          updatedDraftPropertyDetails match {
+            case Some(_) => Ok("")
+            case None => BadRequest("Invalid Request")
+          }
+        }
+      }
+  }
+  
+  def saveDraftPropertyDetailsFortyThousandValueDateOfChange(atedRefNo: String, id: String) = Action.async(parse.json) {
+    implicit request =>
+      withJsonBody[PropertyDetailsFortyThousandValueDateOfChange] { fortyThousandValueDateOfChange =>
+        propertyDetailsService.cacheDraftPropertyDetailsFortyThousandValueDateOfChange(atedRefNo, id, fortyThousandValueDateOfChange).map { updatedDraftPropertyDetails =>
           updatedDraftPropertyDetails match {
             case Some(_) => Ok("")
             case None => BadRequest("Invalid Request")
