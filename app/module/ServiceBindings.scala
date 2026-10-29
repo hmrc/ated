@@ -21,7 +21,6 @@ import metrics.{ServiceMetrics, ServiceMetricsImpl}
 import play.api.inject.{Binding, Module}
 import play.api.{Configuration, Environment}
 import repository.*
-import scheduler.*
 import services.*
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
@@ -30,7 +29,6 @@ import play.api.inject.{bind => playBind}
 class ServiceBindings extends Module {
   override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] =
     Seq(
-      playBind(classOf[DeleteReliefsService]).to[DefaultDeleteReliefsService].eagerly(),
       playBind(classOf[LockRepositoryProvider]).to[DefaultLockRepositoryProvider].eagerly(),
       playBind(classOf[AuthConnector]).to(classOf[DefaultAuthConnector]),
       playBind(classOf[EmailConnector]).to(classOf[EmailConnectorImpl]),
@@ -50,7 +48,6 @@ class ServiceBindings extends Module {
       playBind(classOf[SubscriptionDataService]).to(classOf[SubscriptionDataServiceImpl]),
       playBind(classOf[DisposeLiabilityReturnMongoWrapper]).to(classOf[DisposeLiabilityReturnMongoWrapperImpl]),
       playBind(classOf[PropertyDetailsMongoWrapper]).to(classOf[PropertyDetailsMongoWrapperImpl]),
-      playBind(classOf[ReliefsMongoWrapper]).to(classOf[ReliefsMongoWrapperImpl]),
-      playBind(classOf[DeleteOldReliefsJob]).toSelf.eagerly()
+      playBind(classOf[ReliefsMongoWrapper]).to(classOf[ReliefsMongoWrapperImpl])
     )
 }

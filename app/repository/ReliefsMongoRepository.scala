@@ -19,10 +19,9 @@ package repository
 import metrics.{MetricsEnum, ServiceMetrics}
 import models.ReliefsTaxAvoidance
 import java.time.{ZonedDateTime, ZoneId}
-import org.mongodb.scala.model.Filters.{and, equal, lte}
+import org.mongodb.scala.model.Filters.{and, equal}
 import org.mongodb.scala.model.Indexes.ascending
-import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions, UpdateOptions}
+import org.mongodb.scala.model.{IndexModel, IndexOptions, ReplaceOptions}
 import play.api.Logging
 import uk.gov.hmrc.mongo.*
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
@@ -61,8 +60,6 @@ trait ReliefsMongoRepository extends PlayMongoRepository[ReliefsTaxAvoidance] {
   def fetchReliefsByYear(atedRefNo: String, periodKey: Int): Future[Seq[ReliefsTaxAvoidance]]
   def deleteReliefs(atedRefNo: String): Future[ReliefDelete]
   def deleteDraftReliefByYear(atedRefNo: String, periodKey: Int): Future[ReliefDelete]
-  def updateTimeStamp(relief: ReliefsTaxAvoidance, date: ZonedDateTime): Future[ReliefCached]
-  def deleteExpired60Reliefs(batchSize: Int): Future[Int]
   def metrics: ServiceMetrics
 }
 
@@ -81,61 +78,6 @@ class ReliefsReactiveMongoRepository(mongo: MongoComponent, val metrics: Service
     extraCodecs = Seq(Codecs.playFormatCodec(MongoDateTimeFormats.tolerantDateTimeFormat)),
     replaceIndexes = true
   ) with ReliefsMongoRepository with Logging {
-
-  def updateTimeStamp(relief: ReliefsTaxAvoidance, date: ZonedDateTime): Future[ReliefCached] = {
-    val query = and(equal("atedRefNo", relief.atedRefNo), equal("periodKey", relief.periodKey))
-    val updateQuery = set("timeStamp", date)
-
-    preservingMdc(collection.updateOne(query, updateQuery, UpdateOptions().upsert(false)).toFutureOption()) map {
-      case Some(res) =>
-        if (res.wasAcknowledged() && res.getModifiedCount == 1) {
-          logger.info(s"[updateTimestamp] Updated timestamp for ${relief.atedRefNo} with $date")
-          ReliefCached
-        } else {
-          logger.error(s"[updateTimeStamp: Relief] Mongo failed to update, problem occurred in collect - ex: $res")
-          ReliefCachedError
-        }
-      case None =>
-        logger.error(s"[updateTimeStamp: Relief] Mongo failed to update, no UpdateResult")
-        ReliefCachedError
-    }
-  }
-
-  def deleteExpired60Reliefs(batchSize: Int): Future[Int] = {
-    val dayThreshold = 61
-    val dateTimeThreshold = ZonedDateTime.now(ZoneId.of("UTC")).withHour(0).minusDays(dayThreshold)
-
-    val query2 = lte("timeStamp", dateTimeThreshold)
-
-    val foundReliefs: Future[Option[Seq[ReliefsTaxAvoidance]]] = collection.find(query2).batchSize(batchSize).collect().toFutureOption()
-
-    foundReliefs flatMap {
-      case Some(reliefs) =>
-        Future.sequence(reliefs map { relief =>
-          val deleteQuery = and(equal("atedRefNo", relief.atedRefNo), equal("periodKey", relief.periodKey))
-
-          preservingMdc(collection.deleteOne(deleteQuery).toFutureOption()) map {
-            case Some(res) =>
-              if (res.wasAcknowledged() && res.getDeletedCount == 1) {
-                logger.info(s"${relief.atedRefNo} - ${relief.periodKey}")
-                1
-              } else {
-                logger.error(s"[deleteExpiredReliefs] Mongo failed to remove an outdated relief - ex: $res")
-                0
-              }
-            case None =>
-              logger.error(s"[deleteExpiredReliefs] Mongo failed to remove an outdated relief, no DeleteResult")
-              0
-          }
-        }
-        ) map {
-          _.sum
-        }
-      case None =>
-        logger.error(s"[deleteExpiredReliefs] Mongo failed to return FindResults")
-        Future.successful(0)
-    }
-  }
 
   def cacheRelief(relief: ReliefsTaxAvoidance): Future[ReliefCached] = {
     val timerContext = metrics.startTimer(MetricsEnum.RepositoryInsertRelief)
