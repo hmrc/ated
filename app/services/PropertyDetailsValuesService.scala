@@ -103,38 +103,36 @@ trait PropertyDetailsValuesService extends ReliefConstants {
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
 
-  def cacheDraftPropertyDetailsRevalued(atedRefNo: String, id: String, updatedDetails: PropertyDetailsRevalued)(
-    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
-
-    def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
-      val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
-        foundPropertyDetails =>
-          if (updatedDetails.isPropertyRevalued == foundPropertyDetails.value.flatMap(_.isPropertyRevalued) &&
-            updatedDetails.revaluedDate == foundPropertyDetails.value.flatMap(_.revaluedDate) &&
-            updatedDetails.revaluedValue == foundPropertyDetails.value.flatMap(_.revaluedValue) &&
-            updatedDetails.partAcqDispDate == foundPropertyDetails.value.flatMap(_.partAcqDispDate)) {
-            foundPropertyDetails
-          } else {
-            val updatedValued = foundPropertyDetails.value.map(_.copy(
-              isPropertyRevalued = updatedDetails.isPropertyRevalued,
-              revaluedDate = updatedDetails.revaluedDate,
-              revaluedValue = updatedDetails.revaluedValue,
-              partAcqDispDate = updatedDetails.partAcqDispDate
-            ))
-            foundPropertyDetails.copy(value = updatedValued, calculated = None)
-          }
-      }
-      Future.successful(updatedPropertyDetails)
-    }
-
-    cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
-  }
+//  def cacheDraftPropertyDetailsRevalued(atedRefNo: String, id: String, updatedDetails: PropertyDetailsRevalued)(
+//    using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
+//
+//    def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
+//      val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
+//        foundPropertyDetails =>
+//          if (updatedDetails.isPropertyRevalued == foundPropertyDetails.value.flatMap(_.isPropertyRevalued) &&
+//            updatedDetails.revaluedDate == foundPropertyDetails.value.flatMap(_.revaluedDate) &&
+//            updatedDetails.revaluedValue == foundPropertyDetails.value.flatMap(_.revaluedValue) &&
+//            updatedDetails.partAcqDispDate == foundPropertyDetails.value.flatMap(_.partAcqDispDate)) {
+//            foundPropertyDetails
+//          } else {
+//            val updatedValued = foundPropertyDetails.value.map(_.copy(
+//              isPropertyRevalued = updatedDetails.isPropertyRevalued,
+//              revaluedDate = updatedDetails.revaluedDate,
+//              revaluedValue = updatedDetails.revaluedValue,
+//              partAcqDispDate = updatedDetails.partAcqDispDate
+//            ))
+//            foundPropertyDetails.copy(value = updatedValued, calculated = None)
+//          }
+//      }
+//      Future.successful(updatedPropertyDetails)
+//    }
+//
+//    cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
+//  }
   
   def cacheDraftPropertyDetailsIsPropertyRevalued(atedRefNo: String, id: String, isPropertyRevalued: PropertyDetailsIsPropertyRevalued)(
     using ec: ExecutionContext): Future[Option[PropertyDetails]] = {
 
-    println("property details values service: isPropertyRevalued = " + isPropertyRevalued)
-    
     def updatePropertyDetails(propertyDetailsList: Seq[PropertyDetails]): Future[Option[PropertyDetails]] = {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
         foundPropertyDetails =>
