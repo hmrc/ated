@@ -140,7 +140,7 @@ trait HipReturnsConnector extends Auditable with Logging {
           }
         case status =>
           metrics.incrementFailedCounter(MetricsEnum.EtmpSubmitReturns)
-          logger.warn(s"  $status. Response: ${response.body}")
+          logger.warn(s"[HipReturnsConnector][submitReturns] : $status. Response: ${response.body}")
           doHeaderEvent("submitReturnsFailedHeaders", response.headers)
           doFailedAudit("submitReturnsFailed", postUrl, Some(jsonData.toString), response.body)
           response
