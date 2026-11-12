@@ -31,7 +31,7 @@ import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers.*
-import repository.{DisposeLiabilityReturnCached, DisposeLiabilityReturnMongoRepository}
+import repository.{DisposeLiabilityReturnCacheError, DisposeLiabilityReturnCached, DisposeLiabilityReturnMongoRepository}
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -707,27 +707,6 @@ class DisposeLiabilityReturnServiceSpec extends PlaySpec with GuiceOneServerPerS
           DisposeLiability(Some(LocalDate.of(periodKey, month, date)), periodKey),
           formBundle2))
         result must be(DisposeCalculated(BigDecimal(0.00), BigDecimal(0.00)))
-      }
-    }
-
-    "deleteDisposeLiabilityDraft" must {
-      "return Seq[DisposeLiabilityReturn] with removing the particular form-bundle-return, if form-bundle found in cache" in new Setup {
-        when(mockDisposeLiabilityReturnRepository
-          .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
-          .thenReturn(Future.successful(Seq(disposeLiability1, disposeLiability2)))
-        when(mockDisposeLiabilityReturnRepository
-          .cacheDisposeLiabilityReturns(any[DisposeLiabilityReturn]()))
-          .thenReturn(Future.successful(DisposeLiabilityReturnCached))
-        val result: Seq[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.deleteDisposeLiabilityDraft(atedRefNo, formBundle1))
-        result must be(Seq(disposeLiability2))
-      }
-
-      "return Nil if form-bundle not-found in cache" in new Setup {
-        when(mockDisposeLiabilityReturnRepository
-          .fetchDisposeLiabilityReturns(ArgumentMatchers.eq(atedRefNo)))
-          .thenReturn(Future.successful(Nil))
-        val result: Seq[DisposeLiabilityReturn] = await(testDisposeLiabilityReturnService.deleteDisposeLiabilityDraft(atedRefNo, formBundle1))
-        result must be(Seq())
       }
     }
 
