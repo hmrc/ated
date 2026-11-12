@@ -303,30 +303,6 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
     }
   }
 
-  def deleteDisposeLiabilityDraft(atedRefNo: String, oldFormBundleNo: String)(
-    using ec: ExecutionContext): Future[Seq[DisposeLiabilityReturn]] = {
-    for {
-      disposeLiabilityReturnList <- retrieveDraftDisposeLiabilityReturns(atedRefNo)
-      updatedListAfterDelete <- {
-        disposeLiabilityReturnList.find(_.id == oldFormBundleNo) match {
-          case Some(_) =>
-            val filteredList = disposeLiabilityReturnList.filterNot(_.id == oldFormBundleNo)
-            filteredList
-              .map {
-                dispLiab =>
-                  disposeLiabilityReturnRepository.cacheDisposeLiabilityReturns(dispLiab)
-                    .flatMap(
-                      _ => Future.successful(filteredList)
-                    )
-              }.headOption getOrElse Future.successful(Nil)
-          case None => Future.successful(Nil)
-        }
-      }
-    } yield {
-      updatedListAfterDelete
-    }
-  }
-
   //scalastyle:off method.length
   def submitDisposeLiability(atedRefNo: String, oldFormBundleNo: String)(
     using hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
@@ -370,7 +346,6 @@ trait DisposeLiabilityReturnService extends NotificationService with AuthFunctio
         submitStatus.status match {
           case OK =>
             for {
-              _ <- deleteDisposeLiabilityDraft(atedRefNo, oldFormBundleNo)
               _ <- sendMail(subscriptionData.json, "disposal_return_submit")
             } yield HttpResponse(
               submitStatus.status,
