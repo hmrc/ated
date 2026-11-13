@@ -111,9 +111,20 @@ trait PropertyDetailsValuesService extends ReliefConstants {
           if (isPropertyRevalued.isPropertyRevalued == foundPropertyDetails.value.flatMap(_.isPropertyRevalued)) {
             foundPropertyDetails
           } else {
-            val updatedValued = foundPropertyDetails.value.map(_.copy(
-              isPropertyRevalued = isPropertyRevalued.isPropertyRevalued
-            ))
+            val updatedValued = foundPropertyDetails.value.map( value =>
+              if (isPropertyRevalued.isPropertyRevalued.contains(false)) {
+                value.copy(
+                  isPropertyRevalued = isPropertyRevalued.isPropertyRevalued,
+                    revaluedValue = None,
+                    revaluedDate = None,
+                    partAcqDispDate = None
+                )
+              } else {
+                value.copy(
+                  isPropertyRevalued = isPropertyRevalued.isPropertyRevalued
+                )
+              }
+            )
             foundPropertyDetails.copy(value = updatedValued, calculated = None)
           }
       }
