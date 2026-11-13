@@ -24,11 +24,29 @@ import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 object PropertyDetailsBuilder  extends PlaySpec with GuiceOneServerPerSuite {
 
   def getPropertyDetailsValueRevalued: Option[PropertyDetailsValue] = {
-    Some(new PropertyDetailsValue(anAcquisition = Some(true),
-      isPropertyRevalued = Some(true),
-      revaluedValue = Some(BigDecimal(1111.11)),
-      revaluedDate = Some(LocalDate.of(1970,1,1))
+    Some(PropertyDetailsValue(
+      isPropertyRevalued = getPropertyDetailsIsPropertyRevalued.isPropertyRevalued,
+      revaluedValue = getPropertyDetailsNewValuation.revaluedValue,
+      revaluedDate = getPropertyDetailsDateOfRevaluation.dateOfRevalue,
+      partAcqDispDate = getPropertyDetailsFortyThousandValueDateOfChange.dateOfChange
     ))
+  }
+
+
+  def getPropertyDetailsIsPropertyRevalued: PropertyDetailsIsPropertyRevalued = {
+    PropertyDetailsIsPropertyRevalued(isPropertyRevalued = Some(true))
+  }
+
+  def getPropertyDetailsFortyThousandValueDateOfChange: PropertyDetailsFortyThousandValueDateOfChange = {
+    PropertyDetailsFortyThousandValueDateOfChange(dateOfChange = Some(LocalDate.of(2026, 4, 1)))
+  }
+  
+  def getPropertyDetailsNewValuation: PropertyDetailsNewValuation = {
+    PropertyDetailsNewValuation(revaluedValue = Some(BigDecimal(1111.11)))
+  }
+  
+  def getPropertyDetailsDateOfRevaluation: PropertyDetailsDateOfRevaluation = {
+    PropertyDetailsDateOfRevaluation(dateOfRevalue = Some(LocalDate.of(2026, 8, 1)))
   }
 
   def getPropertyDetailsValueFull: Option[PropertyDetailsValue] = {

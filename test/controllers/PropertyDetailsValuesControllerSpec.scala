@@ -38,12 +38,15 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
 
   trait Setup {
     val cc: ControllerComponents = app.injector.instanceOf[ControllerComponents]
+
     given ec: ExecutionContext = cc.executionContext
+
     val testAccountRef = "ATED1223123"
     lazy val testPropertyDetails = PropertyDetailsBuilder.getPropertyDetails("1", Some("testPostCode1"))
 
     class TestPropertyDetailsController extends BackendController(cc) with PropertyDetailsValuesController {
       val propertyDetailsService = mockPropertyDetailsService
+
       given ec: ExecutionContext = cc.executionContext
     }
 
@@ -100,26 +103,162 @@ class PropertyDetailsValuesControllerSpec extends PlaySpec with GuiceOneServerPe
       }
     }
 
-    "saveDraftPropertyDetailsRevalued" must {
-      "respond with OK and a list of cached Property Details if this all works" in new Setup {
-        val update = new PropertyDetailsRevalued()
-        when(mockPropertyDetailsService.cacheDraftPropertyDetailsRevalued(ArgumentMatchers.eq(testAccountRef),
+    "saveDraftPropertyDetailsIsPropertyRevalued" must {
+      "respond with OK when saving isPropertyRevalued" in new Setup {
+        val update = PropertyDetailsBuilder.getPropertyDetailsIsPropertyRevalued
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsIsPropertyRevalued(ArgumentMatchers.eq(testAccountRef),
           ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(using ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(testPropertyDetails)))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
-        val result = controller.saveDraftPropertyDetailsRevalued(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftPropertyDetailsIsPropertyRevalued(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(OK)
-
       }
 
-      "respond with BAD_REQUEST and if this failed" in new Setup {
-        val update = new PropertyDetailsRevalued()
-        when(mockPropertyDetailsService.cacheDraftPropertyDetailsRevalued(ArgumentMatchers.eq(testAccountRef),
-          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(using ArgumentMatchers.any())).thenReturn(Future.successful(None))
+      "respond with BAD_REQUEST when saving isPropertyRevalued fails" in new Setup {
+        val update = PropertyDetailsBuilder.getPropertyDetailsIsPropertyRevalued
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsIsPropertyRevalued(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(using ArgumentMatchers.any()))
+          .thenReturn(Future.successful(None))
 
         val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
-        val result = controller.saveDraftPropertyDetailsRevalued(testAccountRef, "1").apply(fakeRequest)
+        val result = controller.saveDraftPropertyDetailsIsPropertyRevalued(testAccountRef, "1").apply(fakeRequest)
+        status(result) must be(BAD_REQUEST)
+      }
+    }
+
+    "saveDraftPropertyDetailsFortyThousandValueDateOfChange" must {
+      "respond with OK when saving revaluedDate" in new Setup {
+        val update = PropertyDetailsBuilder.getPropertyDetailsDateOfRevaluation
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsDateOfRevaluation(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(using ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(testPropertyDetails)))
+
+        val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
+        val result = controller.saveDraftPropertyDetailsDateOfRevaluation(testAccountRef, "1").apply(fakeRequest)
+        status(result) must be(OK)
+      }
+
+      "respond with BAD_REQUEST when saving revaluedDate fails" in new Setup {
+        val update = PropertyDetailsBuilder.getPropertyDetailsDateOfRevaluation
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsDateOfRevaluation(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(using ArgumentMatchers.any()))
+          .thenReturn(Future.successful(None))
+
+        val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
+        val result = controller.saveDraftPropertyDetailsDateOfRevaluation(testAccountRef, "1").apply(fakeRequest)
+        status(result) must be(BAD_REQUEST)
+      }
+    }
+
+    "saveDraftPropertyDetailsNewValuation" must {
+      "respond with OK when saving revaluedValue" in new Setup {
+        val update = PropertyDetailsBuilder.getPropertyDetailsNewValuation
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsNewValuation(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(using ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(testPropertyDetails)))
+
+        val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
+        val result = controller.saveDraftPropertyDetailsNewValuation(testAccountRef, "1").apply(fakeRequest)
+        status(result) must be(OK)
+      }
+
+      "respond with BAD_REQUEST when saving revaluedValue fails" in new Setup {
+        val update = PropertyDetailsBuilder.getPropertyDetailsNewValuation
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsNewValuation(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(using ArgumentMatchers.any()))
+          .thenReturn(Future.successful(None))
+
+        val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
+        val result = controller.saveDraftPropertyDetailsNewValuation(testAccountRef, "1").apply(fakeRequest)
+        status(result) must be(BAD_REQUEST)
+      }
+    }
+
+    "saveDraftPropertyDetailsDateOfRevaluation" must {
+      "respond with OK when saving dateOfChange" in new Setup {
+        val update = PropertyDetailsBuilder.getPropertyDetailsFortyThousandValueDateOfChange
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsFortyThousandValueDateOfChange(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(using ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(testPropertyDetails)))
+
+        val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
+        val result = controller.saveDraftPropertyDetailsFortyThousandValueDateOfChange(testAccountRef, "1").apply(fakeRequest)
+        status(result) must be(OK)
+      }
+
+      "respond with BAD_REQUEST when saving dateOfChange fails" in new Setup {
+        val update = PropertyDetailsBuilder.getPropertyDetailsFortyThousandValueDateOfChange
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsFortyThousandValueDateOfChange(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(update))(using ArgumentMatchers.any()))
+          .thenReturn(Future.successful(None))
+
+        val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(update))
+        val result = controller.saveDraftPropertyDetailsFortyThousandValueDateOfChange(testAccountRef, "1").apply(fakeRequest)
+        status(result) must be(BAD_REQUEST)
+      }
+    }
+
+    "saveDraftPropertyDetailsIsPropertyRevalued, saveDraftPropertyDetailsFortyThousandValueDateOfChange, saveDraftPropertyDetailsNewValuation and saveDraftPropertyDetailsDateOfRevaluation" must {
+      "save all components and retrieve the combined PropertyDetailsValue" in new Setup {
+        val isPropertyRevalued = PropertyDetailsBuilder.getPropertyDetailsIsPropertyRevalued
+        val revaluedValue = PropertyDetailsBuilder.getPropertyDetailsNewValuation
+        val revaluedDate = PropertyDetailsBuilder.getPropertyDetailsDateOfRevaluation
+        val dateOfChange = PropertyDetailsBuilder.getPropertyDetailsFortyThousandValueDateOfChange
+
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsIsPropertyRevalued(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(isPropertyRevalued))(using ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(testPropertyDetails)))
+
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsNewValuation(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(revaluedValue))(using ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(testPropertyDetails)))
+
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsDateOfRevaluation(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(revaluedDate))(using ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(testPropertyDetails)))
+
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsFortyThousandValueDateOfChange(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(dateOfChange))(using ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(testPropertyDetails)))
+
+        val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(isPropertyRevalued))
+        val result = controller.saveDraftPropertyDetailsIsPropertyRevalued(testAccountRef, "1").apply(fakeRequest)
+        status(result) must be(OK)
+
+        val combinedResult = PropertyDetailsBuilder.getPropertyDetailsValueRevalued
+        combinedResult mustBe Some(PropertyDetailsValue(
+          isPropertyRevalued = isPropertyRevalued.isPropertyRevalued,
+          revaluedValue = revaluedValue.revaluedValue,
+          revaluedDate = revaluedDate.dateOfRevalue,
+          partAcqDispDate = dateOfChange.dateOfChange
+        ))
+      }
+
+      "respond with BAD_REQUEST when bulk saving fails" in new Setup {
+        val isPropertyRevalued = PropertyDetailsBuilder.getPropertyDetailsIsPropertyRevalued
+        val revaluedValue = PropertyDetailsBuilder.getPropertyDetailsNewValuation
+        val revaluedDate = PropertyDetailsBuilder.getPropertyDetailsDateOfRevaluation
+        val dateOfChange = PropertyDetailsBuilder.getPropertyDetailsFortyThousandValueDateOfChange
+
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsIsPropertyRevalued(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(isPropertyRevalued))(using ArgumentMatchers.any()))
+          .thenReturn(Future.successful(None))
+
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsNewValuation(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(revaluedValue))(using ArgumentMatchers.any()))
+          .thenReturn(Future.successful(None))
+
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsDateOfRevaluation(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(revaluedDate))(using ArgumentMatchers.any()))
+          .thenReturn(Future.successful(None))
+
+        when(mockPropertyDetailsService.cacheDraftPropertyDetailsFortyThousandValueDateOfChange(ArgumentMatchers.eq(testAccountRef),
+          ArgumentMatchers.eq("1"), ArgumentMatchers.eq(dateOfChange))(using ArgumentMatchers.any()))
+          .thenReturn(Future.successful(None))
+
+        val fakeRequest = FakeRequest(method = "POST", uri = "", headers = FakeHeaders(Seq("Content-type" -> "application/json")), body = Json.toJson(isPropertyRevalued))
+        val result = controller.saveDraftPropertyDetailsIsPropertyRevalued(testAccountRef, "1").apply(fakeRequest)
         status(result) must be(BAD_REQUEST)
       }
     }
