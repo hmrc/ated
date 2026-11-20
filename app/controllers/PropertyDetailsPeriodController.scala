@@ -41,7 +41,7 @@ class PropertyDetailsPeriodControllerImpl @Inject()(
 trait PropertyDetailsPeriodController extends BackendController {
   given ec: ExecutionContext
   val mongoCrypto: MongoCryptoProvider
-  given compositeCrypto: (Encrypter & Decrypter) = mongoCrypto.crypto
+  given cryptoProvider: (Encrypter & Decrypter) = mongoCrypto.gcmCrypto
   given format: OFormat[PropertyDetails] = PropertyDetails.formats
 
   def propertyDetailsService: PropertyDetailsPeriodService

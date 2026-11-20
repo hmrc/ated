@@ -42,7 +42,7 @@ trait PropertyDetailsController extends BackendController with Logging {
   given ec: ExecutionContext
   given servicesConfig: ServicesConfig
   val mongoCrypto: MongoCryptoProvider
-  given compositeCrypto: (Encrypter & Decrypter) = mongoCrypto.crypto
+  given cryptoProvider: (Encrypter & Decrypter) = mongoCrypto.gcmCrypto
   given format: OFormat[PropertyDetails] = PropertyDetails.formats
 
   def propertyDetailsService: PropertyDetailsService

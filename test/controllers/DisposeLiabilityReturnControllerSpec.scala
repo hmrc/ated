@@ -51,7 +51,7 @@ class DisposeLiabilityReturnControllerSpec extends PlaySpec with GuiceOneServerP
   }
 
   private val testMongoCrypto: MongoCryptoProvider = app.injector.instanceOf[MongoCryptoProvider]
-  given crypto: (Encrypter & Decrypter) = testMongoCrypto.crypto
+  given crypto: (Encrypter & Decrypter) = testMongoCrypto.gcmCrypto
   given format: OFormat[DisposeLiabilityReturn] = DisposeLiabilityReturn.formats
   given liabilityFormat: OFormat[DisposeLiability] = DisposeLiability.formats
 
