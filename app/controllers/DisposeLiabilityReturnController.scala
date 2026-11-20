@@ -41,7 +41,7 @@ class DisposeLiabilityReturnControllerImpl @Inject()(
 trait DisposeLiabilityReturnController extends BackendController with Logging {
   given ec: ExecutionContext
   val mongoCrypto: MongoCryptoProvider
-  given compositeCrypto: (Encrypter & Decrypter) = mongoCrypto.crypto
+  given cryptoProvider: (Encrypter & Decrypter) = mongoCrypto.gcmCrypto
   given format: OFormat[DisposeLiabilityReturn] = DisposeLiabilityReturn.formats
 
   def disposeLiabilityReturnService: DisposeLiabilityReturnService

@@ -31,7 +31,7 @@ import scala.concurrent.ExecutionContext
 private class PropertyDetailsMongoRepositoryTest extends PlaySpec with GuiceOneAppPerSuite with DefaultPlayMongoRepositorySupport[PropertyDetails] {
   private val mongoCrypto: MongoCryptoProvider = app.injector.instanceOf[MongoCryptoProvider]
 
-  given crypto: (Encrypter & Decrypter) = mongoCrypto.crypto
+  given crypto: (Encrypter & Decrypter) = mongoCrypto.gcmCrypto
   given ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   override protected val repository: PropertyDetailsReactiveMongoRepository = new PropertyDetailsReactiveMongoRepository(mongoComponent, mock[ServiceMetrics])

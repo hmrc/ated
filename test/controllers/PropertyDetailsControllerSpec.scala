@@ -43,7 +43,7 @@ class PropertyDetailsControllerSpec extends PlaySpec with GuiceOneServerPerSuite
   val mockPropertyDetailsService: PropertyDetailsService = mock[PropertyDetailsService]
 
   private val testMongoCrypto: MongoCryptoProvider = app.injector.instanceOf[MongoCryptoProvider]
-  given crypto: (Encrypter & Decrypter) = testMongoCrypto.crypto
+  given crypto: (Encrypter & Decrypter) = testMongoCrypto.gcmCrypto
   given format: OFormat[PropertyDetails] = PropertyDetails.formats
   given mockServicesConfig: ServicesConfig = mock[ServicesConfig]
 

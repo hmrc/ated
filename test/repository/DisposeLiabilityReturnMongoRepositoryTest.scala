@@ -31,7 +31,7 @@ import scala.concurrent.ExecutionContext
 private class DisposeLiabilityReturnMongoRepositoryTest extends PlaySpec with GuiceOneAppPerSuite with DefaultPlayMongoRepositorySupport[DisposeLiabilityReturn] {
   private val mongoCrypto: MongoCryptoProvider = app.injector.instanceOf[MongoCryptoProvider]
 
-  given crypto: (Encrypter & Decrypter) = mongoCrypto.crypto
+  given crypto: (Encrypter & Decrypter) = mongoCrypto.gcmCrypto
   given ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   override protected val repository: DisposeLiabilityReturnRepository = new DisposeLiabilityReturnRepository(mongoComponent, metrics = mock[ServiceMetrics])

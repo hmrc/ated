@@ -59,7 +59,7 @@ trait DisposeLiabilityReturnMongoWrapper {
   val mongo: MongoComponent
   val serviceMetrics: ServiceMetrics
   val mongoCrypto: MongoCryptoProvider
-  given compositeCrypto: (Encrypter & Decrypter) = mongoCrypto.crypto
+  given cryptoProvider: (Encrypter & Decrypter) = mongoCrypto.gcmCrypto
 
   private lazy val disposeLiabilityReturnRepository = new DisposeLiabilityReturnRepository(mongo, serviceMetrics)
 
