@@ -120,16 +120,21 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuit
 
       val newProp: Option[PropertyDetails] = await(result)
       newProp.isDefined must be(true)
+      newProp.isDefined must be(true)
       newProp.get.periodKey must be(propertyDetails3.periodKey)
       newProp.get.addressProperty must be(propertyDetails3.addressProperty)
-      newProp.get.value.isDefined must be (true)
+      newProp.get.value.isDefined must be(true)
       newProp.get.calculated.isDefined must be(false)
-      newProp.get.period.isDefined must be (true)
-      newProp.get.period.get.isFullPeriod must be (Some(isFullPeriod.isFullPeriod))
-      newProp.get.period.get.isInRelief.isDefined must be (false)
-      newProp.get.period.get.liabilityPeriods.size must be (1)
-      newProp.get.period.get.reliefPeriods.isEmpty must be (true)
+      newProp.get.period.isDefined must be(true)
+      newProp.get.period.get.isFullPeriod must be(Some(isFullPeriod.isFullPeriod))
+      newProp.get.period.get.liabilityPeriods.size must be(1)
 
+      newProp.get.period.get.isInRelief must be(propertyDetails3.period.get.isInRelief)
+      newProp.get.period.get.reliefPeriods must be(propertyDetails3.period.get.reliefPeriods)
+      newProp.get.period.get.isTaxAvoidance must be(propertyDetails3.period.get.isTaxAvoidance)
+      newProp.get.period.get.taxAvoidanceScheme must be(propertyDetails3.period.get.taxAvoidanceScheme)
+      newProp.get.period.get.taxAvoidancePromoterReference must be(propertyDetails3.period.get.taxAvoidancePromoterReference)
+      newProp.get.period.get.supportingInfo must be(propertyDetails3.period.get.supportingInfo)
     }
 
     "Saving existing property details full tax period updates an existing list. Change value so clear future values no period to add" in new Setup {
@@ -152,9 +157,9 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuit
       newProp.get.calculated.isDefined must be(false)
       newProp.get.period.isDefined must be (true)
       newProp.get.period.get.isFullPeriod must be (Some(isFullPeriod.isFullPeriod))
-      newProp.get.period.get.isInRelief.isDefined must be (false)
+      newProp.get.period.get.isInRelief.isDefined must be (true)
       newProp.get.period.get.liabilityPeriods.isEmpty must be (true)
-      newProp.get.period.get.reliefPeriods.isEmpty must be (true)
+      newProp.get.period.get.reliefPeriods.isEmpty must be (false)
 
     }
 
@@ -185,6 +190,47 @@ class PropertyDetailsPeriodsServiceSpec extends PlaySpec with GuiceOneAppPerSuit
       newProp.get.period.get.isInRelief.isDefined must be (true)
       newProp.get.period.get.liabilityPeriods.isEmpty must be (false)
 
+    }
+
+    "create period details when the property has no existing period" in new Setup {
+
+      val currentPropertyDetails: PropertyDetails = propertyDetails3.copy(
+        period = None
+      )
+
+      val updatedValue: IsFullTaxPeriod = IsFullTaxPeriod(
+        false,
+        None
+      )
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, currentPropertyDetails)))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result: Future[Option[PropertyDetails]] =
+        testPropertyDetailsService.cacheDraftFullTaxPeriod(
+          accountRef,
+          currentPropertyDetails.id,
+          updatedValue
+        )
+
+      currentPropertyDetails.calculated.isDefined must be(true)
+      val newProp: Option[PropertyDetails] = await(result)
+
+      val expectedPeriod: PropertyDetailsPeriod = PropertyDetailsPeriod(
+        isFullPeriod = Some(false),
+        liabilityPeriods = Nil
+      )
+
+      val expectedPropertyDetails: PropertyDetails = currentPropertyDetails.copy(
+        period = Some(expectedPeriod),
+        calculated = None
+      )
+
+      newProp must be(Some(expectedPropertyDetails))
+
+      verify(mockPropertyDetailsCache).cachePropertyDetails(expectedPropertyDetails)
     }
   }
 

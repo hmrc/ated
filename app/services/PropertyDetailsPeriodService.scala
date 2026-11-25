@@ -41,17 +41,22 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
       val updatedPropertyDetails = propertyDetailsList.find(_.id == id).map {
         foundPropertyDetails =>
           if (foundPropertyDetails.period.flatMap(_.isFullPeriod).contains(updatedDetails.isFullPeriod))
-          //Don't update anything
             foundPropertyDetails
           else {
-            //Clear down the values
             val liabilityPeriods = updatedDetails.datesLiable match {
               case Some(x) =>
                 List[LineItem](new LineItem(lineItemType = TypeLiability, startDate = x.startDate, endDate = x.endDate, None))
               case None => List[LineItem]()
             }
-            val updatedperiods = Some(PropertyDetailsPeriod(isFullPeriod = Some(updatedDetails.isFullPeriod), liabilityPeriods = liabilityPeriods))
-            foundPropertyDetails.copy(period = updatedperiods, calculated = None)
+
+            val updatedPeriods = Some(
+              foundPropertyDetails.period.getOrElse(PropertyDetailsPeriod()).copy(
+                isFullPeriod = Some(updatedDetails.isFullPeriod),
+                liabilityPeriods = liabilityPeriods
+              )
+            )
+
+            foundPropertyDetails.copy(period = updatedPeriods, calculated = None)
           }
       }
       Future.successful(updatedPropertyDetails)
@@ -191,7 +196,6 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
       }
       Future.successful(updatedPropertyDetails)
     }
-
     cacheDraftPropertyDetails(atedRefNo, updatePropertyDetails)
   }
 
@@ -206,7 +210,8 @@ trait PropertyDetailsPeriodService extends ReliefConstants {
           val filteredPropertyDetailsList = propertyDetailsList.filterNot(_.id == x.id)
           val updatedList = filteredPropertyDetailsList :+ x
           updatedList.map { updateProp =>
-            propertyDetailsCache.cachePropertyDetails(updateProp).map(_ => newPropertyDetails)}.head
+            propertyDetailsCache.cachePropertyDetails(updateProp).map(_ => newPropertyDetails)
+          }.head
         case None => Future.successful(None)
       }
     } yield cacheResponse

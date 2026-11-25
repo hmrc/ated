@@ -16,12 +16,13 @@
 
 package models
 
-import java.time.{ZonedDateTime, ZoneId, LocalDate}
-import play.api.libs.json.*
 import play.api.libs.functional.syntax.*
-import play.api.libs.json.Writes.*
+import play.api.libs.json.*
 import play.api.libs.json.Reads.*
+import play.api.libs.json.Writes.*
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+
+import java.time.{LocalDate, ZoneId, ZonedDateTime}
 
 case class PropertyDetailsAddress(line_1: String, line_2: String, line_3: Option[String], line_4: Option[String],
                                   postcode: Option[String] = None) {
@@ -86,7 +87,7 @@ object PropertyDetailsValue {
       (JsPath \ "hasValueChanged").readNullable[Boolean]
     )(PropertyDetailsValue.apply _)
 
-  given propertyDetailsValueWrites: OWrites[PropertyDetailsValue]=Json.writes[PropertyDetailsValue]
+  given propertyDetailsValueWrites: OWrites[PropertyDetailsValue] = Json.writes[PropertyDetailsValue]
 }
 
 case class PropertyDetailsAcquisition(anAcquisition: Option[Boolean] = None)
@@ -101,13 +102,28 @@ object HasValueChanged {
   given formats: OFormat[HasValueChanged] = Json.format[HasValueChanged]
 }
 
-case class PropertyDetailsRevalued(isPropertyRevalued: Option[Boolean] = None,
-                                   revaluedValue: Option[BigDecimal] = None,
-                                   revaluedDate: Option[LocalDate] = None,
-                                   partAcqDispDate: Option[LocalDate] = None)
+case class PropertyDetailsIsPropertyRevalued(isPropertyRevalued: Option[Boolean] = None)
 
-object PropertyDetailsRevalued {
-  given formats: OFormat[PropertyDetailsRevalued] = Json.format[PropertyDetailsRevalued]
+object PropertyDetailsIsPropertyRevalued {
+  given formats: OFormat[PropertyDetailsIsPropertyRevalued] = Json.format[PropertyDetailsIsPropertyRevalued]
+}
+
+case class PropertyDetailsFortyThousandValueDateOfChange(dateOfChange: Option[LocalDate] = None)
+
+object PropertyDetailsFortyThousandValueDateOfChange {
+  given formats: OFormat[PropertyDetailsFortyThousandValueDateOfChange] = Json.format[PropertyDetailsFortyThousandValueDateOfChange]
+}
+
+case class PropertyDetailsNewValuation(revaluedValue: Option[BigDecimal] = None)
+
+object PropertyDetailsNewValuation {
+  given formats: OFormat[PropertyDetailsNewValuation] = Json.format[PropertyDetailsNewValuation]
+}
+
+case class PropertyDetailsDateOfRevaluation(dateOfRevalue: Option[LocalDate] = None)
+
+object PropertyDetailsDateOfRevaluation {
+  given formats: OFormat[PropertyDetailsDateOfRevaluation] = Json.format[PropertyDetailsDateOfRevaluation]
 }
 
 sealed trait OwnedBeforePolicyYear
@@ -123,7 +139,7 @@ case object NotOwnedBeforePolicyYear extends OwnedBeforePolicyYear
 case class PropertyDetailsOwnedBefore(isOwnedBeforePolicyYear: Option[Boolean] = None,
                                       ownedBeforePolicyYearValue: Option[BigDecimal] = None) {
 
-  def policyYear(periodKey: Int)(using servicesConfig: ServicesConfig) : OwnedBeforePolicyYear = {
+  def policyYear(periodKey: Int)(using servicesConfig: ServicesConfig): OwnedBeforePolicyYear = {
     val valuation2022Active: Boolean = servicesConfig.getBoolean("feature.valuation2022DateActive")
 
     isOwnedBeforePolicyYear match {

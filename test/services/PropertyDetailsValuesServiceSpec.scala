@@ -208,75 +208,335 @@ class PropertyDetailsValuesServiceSpec extends PlaySpec with GuiceOneServerPerSu
     }
   }
 
-  "Save property details Revalued" must {
-    "Saving existing property details Revalued doesnt update the list if no values have changed" in new Setup {
+  "Save property details isPropertyRevalued" must {
+    "preserve existing details when isPropertyRevalued has not changed" in new Setup {
 
-      val updateValue = new PropertyDetailsRevalued(isPropertyRevalued = propertyDetails3.value.get.isPropertyRevalued,
-        revaluedValue = propertyDetails3.value.get.revaluedValue,
-        revaluedDate = propertyDetails3.value.get.revaluedDate)
-
-      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
-        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
-      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
-        .thenReturn(Future.successful(PropertyDetailsCached))
-
-      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsRevalued(accountRef,
-        propertyDetails3.id,
-        updateValue)
-
-      val newProp: Option[PropertyDetails] = await(result)
-      newProp.isDefined must be(true)
-      newProp.get.periodKey must be(propertyDetails3.periodKey)
-      newProp.get.addressProperty must be(propertyDetails3.addressProperty)
-      newProp.get.period.isDefined must be(true)
-      newProp.get.period must be(propertyDetails3.period)
-      newProp.get.calculated.isDefined must be(true)
-
-      newProp.get.value.isDefined must be(true)
-      val newValue: PropertyDetailsValue = newProp.get.value.get
-      newValue.anAcquisition must be(Some(true))
-      newValue.isOwnedBeforePolicyYear.isDefined must be(true)
-      newValue.ownedBeforePolicyYearValue.isDefined must be(true)
-      newValue.isPropertyRevalued.isDefined must be(true)
-      newValue.revaluedValue.isDefined must be(true)
-      newValue.revaluedDate.isDefined must be(true)
-      newValue.isValuedByAgent.isDefined must be(true)
-
-      newValue.isNewBuild.isDefined must be(true)
-      newValue.newBuildValue.isDefined must be(true)
-      newValue.newBuildDate.isDefined must be(true)
-      newValue.notNewBuildValue.isDefined must be(true)
-      newValue.notNewBuildDate.isDefined must be(true)
-    }
-    "Saving existing property details revalued updates an existing list" in new Setup {
-
-      val updateValue = new PropertyDetailsRevalued(isPropertyRevalued = Some(true),
-        revaluedValue = Some(BigDecimal(222.22)),
-        revaluedDate = Some(LocalDate.of(1970, 1, 1)))
+      val updatedValue: PropertyDetailsIsPropertyRevalued = PropertyDetailsIsPropertyRevalued(
+        isPropertyRevalued = Some(true)
+      )
 
       when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
         .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
       when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
         .thenReturn(Future.successful(PropertyDetailsCached))
 
-      val result: Future[Option[PropertyDetails]] = testPropertyDetailsService.cacheDraftPropertyDetailsRevalued(accountRef,
-        propertyDetails3.id,
-        updateValue)
+      val result: Future[Option[PropertyDetails]] =
+        testPropertyDetailsService.cacheDraftPropertyDetailsIsPropertyRevalued(
+          accountRef,
+          propertyDetails3.id,
+          updatedValue
+        )
 
+      propertyDetails3.calculated.isDefined must be(true)
       val newProp: Option[PropertyDetails] = await(result)
-      newProp.isDefined must be(true)
-      newProp.get.periodKey must be(propertyDetails3.periodKey)
-      newProp.get.addressProperty must be(propertyDetails3.addressProperty)
-      newProp.get.period.isDefined must be(true)
-      newProp.get.period must be(propertyDetails3.period)
-      newProp.get.value.isDefined must be(true)
-      newProp.get.value.get.anAcquisition must be(Some(true))
-      newProp.get.value.get.isPropertyRevalued must be(Some(true))
-      newProp.get.value.get.revaluedValue must be(Some(BigDecimal(222.22)))
-      newProp.get.value.get.revaluedDate must be(Some(LocalDate.of(1970, 1, 1)))
-      newProp.get.calculated.isDefined must be(false)
+      newProp must be(Some(propertyDetails3))
+      verify(mockPropertyDetailsCache).cachePropertyDetails(propertyDetails3)
     }
 
+    "clear revaluation details and calculated when isPropertyRevalued changes to false" in new Setup {
+
+      val currentPropertyDetails: PropertyDetails = propertyDetails3.copy(
+        value = Some(propertyDetails3.value.get.copy(
+          isPropertyRevalued = Some(true),
+          revaluedValue = Some(BigDecimal("1111.11")),
+          revaluedDate = Some(LocalDate.of(2024, 4, 1)),
+          partAcqDispDate = Some(LocalDate.of(2024, 5, 1))
+        ))
+      )
+
+      val updatedValue: PropertyDetailsIsPropertyRevalued = PropertyDetailsIsPropertyRevalued(
+        isPropertyRevalued = Some(false)
+      )
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, currentPropertyDetails)))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result: Future[Option[PropertyDetails]] =
+        testPropertyDetailsService.cacheDraftPropertyDetailsIsPropertyRevalued(
+          accountRef,
+          currentPropertyDetails.id,
+          updatedValue
+        )
+
+      currentPropertyDetails.calculated.isDefined must be(true)
+      val newProp: Option[PropertyDetails] = await(result)
+
+      val expectedValue: PropertyDetailsValue = currentPropertyDetails.value.get.copy(
+        isPropertyRevalued = updatedValue.isPropertyRevalued,
+        revaluedValue = None,
+        revaluedDate = None,
+        partAcqDispDate = None
+      )
+
+      val expectedPropertyDetails: PropertyDetails = currentPropertyDetails.copy(
+        value = Some(expectedValue),
+        calculated = None
+      )
+
+      newProp must be(Some(expectedPropertyDetails))
+
+      verify(mockPropertyDetailsCache).cachePropertyDetails(expectedPropertyDetails)
+    }
+
+    "preserve revaluation details and clear calculated when isPropertyRevalued changes to true" in new Setup {
+
+        val currentPropertyDetails: PropertyDetails = propertyDetails3.copy(
+          value = Some(propertyDetails3.value.get.copy(
+            isPropertyRevalued = Some(false),
+            revaluedValue = Some(BigDecimal("1111.11")),
+            revaluedDate = Some(LocalDate.of(2024, 4, 1)),
+            partAcqDispDate = Some(LocalDate.of(2024, 5, 1))
+          ))
+        )
+
+        val updatedValue: PropertyDetailsIsPropertyRevalued =
+          PropertyDetailsIsPropertyRevalued(isPropertyRevalued = Some(true))
+
+        when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+          .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, currentPropertyDetails)))
+        when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+          .thenReturn(Future.successful(PropertyDetailsCached))
+
+        val result: Future[Option[PropertyDetails]] =
+          testPropertyDetailsService.cacheDraftPropertyDetailsIsPropertyRevalued(
+            accountRef,
+            currentPropertyDetails.id,
+            updatedValue
+          )
+
+        currentPropertyDetails.calculated.isDefined must be(true)
+        val newProp: Option[PropertyDetails] = await(result)
+
+        val expectedValue = currentPropertyDetails.value.get.copy(
+          isPropertyRevalued = updatedValue.isPropertyRevalued
+        )
+
+        val expectedPropertyDetails = currentPropertyDetails.copy(
+          value = Some(expectedValue),
+          calculated = None
+        )
+
+        newProp must be(Some(expectedPropertyDetails))
+
+        verify(mockPropertyDetailsCache).cachePropertyDetails(expectedPropertyDetails)
+    }
+  }
+
+  "Save property details FortyThousandValueDateOfChange" must {
+    "preserve existing details when dateOfChange has not changed" in new Setup {
+      val currentPropertyDetails: PropertyDetails = propertyDetails3.copy(
+        value = Some(propertyDetails3.value.get.copy(
+          partAcqDispDate = Some(LocalDate.of(2024, 5, 1))
+        ))
+      )
+
+      val updatedValue: PropertyDetailsFortyThousandValueDateOfChange =
+        PropertyDetailsFortyThousandValueDateOfChange(
+          dateOfChange = Some(LocalDate.of(2024, 5, 1))
+        )
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, currentPropertyDetails)))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result: Future[Option[PropertyDetails]] =
+        testPropertyDetailsService.cacheDraftPropertyDetailsFortyThousandValueDateOfChange(
+          accountRef,
+          currentPropertyDetails.id,
+          updatedValue
+        )
+
+      currentPropertyDetails.calculated.isDefined must be(true)
+      val newProp: Option[PropertyDetails] = await(result)
+
+      newProp must be(Some(currentPropertyDetails))
+
+      verify(mockPropertyDetailsCache).cachePropertyDetails(currentPropertyDetails)
+    }
+
+    "change existing details when dateOfChange has changed" in new Setup {
+      val currentPropertyDetails: PropertyDetails = propertyDetails3.copy(
+        value = Some(propertyDetails3.value.get.copy(
+          partAcqDispDate = Some(LocalDate.of(2024, 5, 1))
+        ))
+      )
+
+      val updatedValue: PropertyDetailsFortyThousandValueDateOfChange =
+        PropertyDetailsFortyThousandValueDateOfChange(
+          dateOfChange = Some(LocalDate.of(2025, 5, 1))
+        )
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, currentPropertyDetails)))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result: Future[Option[PropertyDetails]] =
+        testPropertyDetailsService.cacheDraftPropertyDetailsFortyThousandValueDateOfChange(
+          accountRef,
+          currentPropertyDetails.id,
+          updatedValue
+        )
+
+      currentPropertyDetails.calculated.isDefined must be(true)
+      val newProp: Option[PropertyDetails] = await(result)
+
+      val expectedValue = currentPropertyDetails.value.get.copy(
+        partAcqDispDate = updatedValue.dateOfChange
+      )
+
+      val expectedPropertyDetails = currentPropertyDetails.copy(
+        value = Some(expectedValue),
+        calculated = None
+      )
+
+      newProp must be(Some(expectedPropertyDetails))
+
+      verify(mockPropertyDetailsCache).cachePropertyDetails(expectedPropertyDetails)
+    }
+  }
+
+  "Save property details NewValuation" must {
+    "preserve existing details when revaluedValue has not changed" in new Setup {
+
+      val updatedValue: PropertyDetailsNewValuation =
+        PropertyDetailsNewValuation(
+          revaluedValue = Some(BigDecimal("1111.11"))
+        )
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result: Future[Option[PropertyDetails]] =
+        testPropertyDetailsService.cacheDraftPropertyDetailsNewValuation(
+          accountRef,
+          propertyDetails3.id,
+          updatedValue
+        )
+
+      propertyDetails3.calculated.isDefined must be(true)
+      val newProp: Option[PropertyDetails] = await(result)
+
+      newProp must be(Some(propertyDetails3))
+
+      verify(mockPropertyDetailsCache).cachePropertyDetails(propertyDetails3)
+    }
+
+    "change existing details when revaluedValue has changed" in new Setup {
+
+      val updatedValue: PropertyDetailsNewValuation =
+        PropertyDetailsNewValuation(
+          revaluedValue = Some(BigDecimal("2222.22"))
+        )
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, propertyDetails3)))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result: Future[Option[PropertyDetails]] =
+        testPropertyDetailsService.cacheDraftPropertyDetailsNewValuation(
+          accountRef,
+          propertyDetails3.id,
+          updatedValue
+        )
+
+      propertyDetails3.calculated.isDefined must be(true)
+      val newProp: Option[PropertyDetails] = await(result)
+
+      val expectedValue: PropertyDetailsValue = propertyDetails3.value.get.copy(
+        revaluedValue = updatedValue.revaluedValue
+      )
+
+      val expectedPropertyDetails: PropertyDetails = propertyDetails3.copy(
+        value = Some(expectedValue),
+        calculated = None
+      )
+
+      newProp must be(Some(expectedPropertyDetails))
+
+      verify(mockPropertyDetailsCache).cachePropertyDetails(expectedPropertyDetails)
+    }
+  }
+
+  "Save property details DateOfRevaluation" must {
+    "preserve existing details when dateOfRevalue has not changed" in new Setup {
+      val currentPropertyDetails: PropertyDetails = propertyDetails3.copy(
+        value = Some(propertyDetails3.value.get.copy(
+          revaluedDate = Some(LocalDate.of(2024, 4, 1))
+        ))
+      )
+
+      val updatedValue: PropertyDetailsDateOfRevaluation =
+        PropertyDetailsDateOfRevaluation(
+          dateOfRevalue = Some(LocalDate.of(2024, 4, 1))
+        )
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, currentPropertyDetails)))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result: Future[Option[PropertyDetails]] =
+        testPropertyDetailsService.cacheDraftPropertyDetailsDateOfRevaluation(
+          accountRef,
+          currentPropertyDetails.id,
+          updatedValue
+        )
+
+      currentPropertyDetails.calculated.isDefined must be(true)
+      val newProp: Option[PropertyDetails] = await(result)
+
+      newProp must be(Some(currentPropertyDetails))
+
+      verify(mockPropertyDetailsCache).cachePropertyDetails(currentPropertyDetails)
+    }
+
+    "change existing details when dateOfRevalue has changed" in new Setup {
+      val currentPropertyDetails: PropertyDetails = propertyDetails3.copy(
+        value = Some(propertyDetails3.value.get.copy(
+          revaluedDate = Some(LocalDate.of(2024, 4, 1))
+        ))
+      )
+
+      val updatedValue: PropertyDetailsDateOfRevaluation =
+        PropertyDetailsDateOfRevaluation(
+          dateOfRevalue = Some(LocalDate.of(2025, 4, 1))
+        )
+
+      when(mockPropertyDetailsCache.fetchPropertyDetails(accountRef))
+        .thenReturn(Future.successful(List(propertyDetails1, propertyDetails2, currentPropertyDetails)))
+      when(mockPropertyDetailsCache.cachePropertyDetails(ArgumentMatchers.any[PropertyDetails]()))
+        .thenReturn(Future.successful(PropertyDetailsCached))
+
+      val result: Future[Option[PropertyDetails]] =
+        testPropertyDetailsService.cacheDraftPropertyDetailsDateOfRevaluation(
+          accountRef,
+          currentPropertyDetails.id,
+          updatedValue
+        )
+
+      currentPropertyDetails.calculated.isDefined must be(true)
+      val newProp: Option[PropertyDetails] = await(result)
+
+      val expectedValue: PropertyDetailsValue = currentPropertyDetails.value.get.copy(
+        revaluedDate = updatedValue.dateOfRevalue
+      )
+
+      val expectedPropertyDetails: PropertyDetails = currentPropertyDetails.copy(
+        value = Some(expectedValue),
+        calculated = None
+      )
+
+      newProp must be(Some(expectedPropertyDetails))
+
+      verify(mockPropertyDetailsCache).cachePropertyDetails(expectedPropertyDetails)
+    }
   }
 
   "Save property details OwnedBefore" must {
